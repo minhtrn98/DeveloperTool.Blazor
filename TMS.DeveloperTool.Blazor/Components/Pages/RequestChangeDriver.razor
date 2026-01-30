@@ -1,0 +1,78 @@
+﻿@page "/request-change-driver"
+@using TMS.DeveloperTool.Blazor.Models
+@using TMS.DeveloperTool.Blazor.Services
+@attribute [StreamRendering]
+@inject RequestChangeDriverMonitorService _redisMonitor
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>Yêu cầu đổi tài</PageTitle>
+
+<button class="btn btn-primary mb-3" @onclick="HandleRefreshClicked">Làm mới</button>
+
+@if (data == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Key</th>
+                <th>Vehicle</th>
+                <th>DriverRequest</th>
+                <th>IsConfirm</th>
+                <th>IsCancel</th>
+                <th>#</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (RequestChangeDriverData item in data)
+            {
+                <tr>
+                    <td>@item.Key</td>
+                    <td>@item.VehicleLicensePlate</td>
+                    <td>@item.DriverRequestName</td>
+                    <td>@item.IsConfirm</td>
+                    <td>@item.IsCancel</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" @onclick="() => HandleDeleteClicked(item.Key)">Xóa</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<RequestChangeDriverData>? data;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _redisMonitor.RefreshCacheItem();
+        data = _redisMonitor.GetAllCacheItems();
+        _redisMonitor.RegisterEventHandler(HandleCacheChanged);
+    }
+
+    private async Task HandleRefreshClicked()
+    {
+        await _redisMonitor.RefreshCacheItem();
+    }
+
+    private void HandleDeleteClicked(string key)
+    {
+        _redisMonitor.DeleteCacheItem(key);
+    }
+
+    private void HandleCacheChanged(object? sender, EventArgs e)
+    {
+        data = _redisMonitor.GetAllCacheItems();
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _redisMonitor.UnregisterEventHandler(HandleCacheChanged);
+    }
+}
