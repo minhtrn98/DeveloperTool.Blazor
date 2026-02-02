@@ -269,7 +269,7 @@ ServiceFabricBackup/
 *.ndf
 
 # SQL Lite files
-database*
+# database*
 
 # Business Intelligence projects
 *.rdl.data
