@@ -1,18 +1,9 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">TMS.DeveloperTool</a>
-    </div>
-</div>
-
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="request-change-driver">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Yêu cầu đổi tài
-            </NavLink>
-        </div>
-    </nav>
-</div>
-
+﻿
+<MudNavMenu Rounded Bordered Color="Color.Dark">
+    <MudNavLink Href="/request-change-driver" Match="NavLinkMatch.Prefix">Yêu cầu đổi tài</MudNavLink>
+    <MudNavLink Href="/vietmap" Match="NavLinkMatch.Prefix">Vietmap</MudNavLink>
+    @* <MudNavGroup Title="Settings" Expanded="true">
+        <MudNavLink Href="/users" Match="NavLinkMatch.Prefix">Users</MudNavLink>
+        <MudNavLink Href="/security" Match="NavLinkMatch.Prefix">Security</MudNavLink>
+    </MudNavGroup> *@
+</MudNavMenu>

@@ -12,7 +12,7 @@ public sealed class FleetService
         _dbQuery = dbQuery;
     }
 
-    public async Task<Dictionary<Guid, string>> GetVehiclePlateAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
+    public async Task<Dictionary<Guid, string>> GetVehiclePlateAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
     {
         const string sql = """
             SELECT "Id", "LicensePlate"
@@ -20,6 +20,16 @@ public sealed class FleetService
             WHERE "Id" = ANY(@Ids)
         """;
         IEnumerable<VehicleRecord> drivers = await _dbQuery.QueryAsync<VehicleRecord>(sql, new { Ids = ids }, cancellationToken);
+        return drivers.ToDictionary(d => d.Id, d => d.LicensePlate);
+    }
+
+    public async Task<Dictionary<Guid, string>> GetAllVehiclePlateAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT "Id", "LicensePlate"
+            FROM public."Vehicles"
+        """;
+        IEnumerable<VehicleRecord> drivers = await _dbQuery.QueryAsync<VehicleRecord>(sql, null, cancellationToken);
         return drivers.ToDictionary(d => d.Id, d => d.LicensePlate);
     }
 }

@@ -47,12 +47,13 @@ else
 
 @code {
     private List<RequestChangeDriverData>? data;
+    private Guid? _key;
 
     protected override async Task OnInitializedAsync()
     {
         await _redisMonitor.RefreshCacheItem();
         data = _redisMonitor.GetAllCacheItems();
-        _redisMonitor.RegisterEventHandler(HandleCacheChanged);
+        _key = _redisMonitor.RegisterEventHandler(HandleCacheChanged);
     }
 
     private async Task HandleRefreshClicked()
@@ -73,6 +74,9 @@ else
 
     public void Dispose()
     {
-        _redisMonitor.UnregisterEventHandler(HandleCacheChanged);
+        if (_key is not null)
+        {
+            _redisMonitor.UnregisterEventHandler(_key.Value);
+        }
     }
 }

@@ -9,27 +9,30 @@ public sealed class RequestChangeDriverMonitorService : IDisposable
     private readonly IConnectionMultiplexer _redis;
     private readonly IDatabase _db;
     private readonly ConcurrentDictionary<string, RequestChangeDriverData> _cacheItems;
-    private readonly ConcurrentBag<EventHandler> _eventRegisters;
-    private readonly DriverService _driverService;
-    private readonly FleetService _fleetService;
+    private readonly ConcurrentDictionary<Guid, EventHandler> _eventRegisters;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<RequestChangeDriverMonitorService> _logger;
 
-    public RequestChangeDriverMonitorService(IConnectionMultiplexer redis, DriverService driverService, FleetService fleetService)
+    public RequestChangeDriverMonitorService(IConnectionMultiplexer redis, IServiceProvider serviceProvider, ILogger<RequestChangeDriverMonitorService> logger)
     {
         _redis = redis;
         _db = _redis.GetDatabase();
         _cacheItems = [];
         _eventRegisters = [];
-        _driverService = driverService;
-        _fleetService = fleetService;
+        _serviceProvider = serviceProvider;
+        _logger = logger;
     }
 
-    public void RegisterEventHandler(EventHandler handler)
+    public Guid RegisterEventHandler(EventHandler handler)
     {
-        _eventRegisters.Add(handler);
+        Guid key = Guid.NewGuid();
+        _eventRegisters[key] = handler;
+        return key;
     }
 
-    public void UnregisterEventHandler(EventHandler handler)
+    public void UnregisterEventHandler(Guid key)
     {
+        _eventRegisters.TryRemove(key, out _);
     }
 
     public List<RequestChangeDriverData> GetAllCacheItems()
@@ -56,7 +59,7 @@ public sealed class RequestChangeDriverMonitorService : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error deleting cache item {key}: {ex.Message}");
+            _logger.LogError(ex, "Error deleting cache item {Key}", key);
         }
     }
 
@@ -87,23 +90,39 @@ public sealed class RequestChangeDriverMonitorService : IDisposable
                 .Select(x => x.DriverRequest)
                 .Distinct()
                 .ToList();
-            Dictionary<Guid, string> driverDic = await _driverService.GetDriverNamesAsync(driverIds, CancellationToken.None);
-
             List<Guid> vehicleIds = _cacheItems.Values.Where(x => x.VehicleLicensePlate is null)
                 .Select(x => x.VehicleId)
                 .Distinct()
                 .ToList();
-            Dictionary<Guid, string> vehicleDic = await _fleetService.GetVehiclePlateAsync(vehicleIds, CancellationToken.None);
 
-            foreach (RequestChangeDriverData data in _cacheItems.Values)
+            if (driverIds.Count > 0 || vehicleIds.Count > 0)
             {
-                data.DriverRequestName = driverDic.GetValueOrDefault(data.DriverRequest) ?? data.DriverRequestName;
-                data.VehicleLicensePlate = vehicleDic.GetValueOrDefault(data.VehicleId) ?? data.VehicleLicensePlate;
+                using IServiceScope scope = _serviceProvider.CreateScope();
+                
+                Dictionary<Guid, string> driverDic = [];
+                Dictionary<Guid, string> vehicleDic = [];
+                
+                if (driverIds.Count > 0)
+                {
+                    DriverService driverService = scope.ServiceProvider.GetRequiredService<DriverService>();
+                    driverDic = await driverService.GetDriverNamesAsync(driverIds, CancellationToken.None);
+                }
+                if (driverIds.Count > 0)
+                {
+                    FleetService fleetService = scope.ServiceProvider.GetRequiredService<FleetService>();
+                    vehicleDic = await fleetService.GetVehiclePlateAsync(vehicleIds, CancellationToken.None);
+                }
+
+                foreach (RequestChangeDriverData data in _cacheItems.Values)
+                {
+                    data.DriverRequestName = driverDic.GetValueOrDefault(data.DriverRequest) ?? data.DriverRequestName;
+                    data.VehicleLicensePlate = vehicleDic.GetValueOrDefault(data.VehicleId) ?? data.VehicleLicensePlate;
+                }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading initial cache items: {ex.Message}");
+            _logger.LogError(ex, "Error loading initial cache items");
         }
     }
 
@@ -158,14 +177,14 @@ public sealed class RequestChangeDriverMonitorService : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error getting cache item {key}: {ex.Message}");
+            _logger.LogError(ex, "Error getting cache item {Key}", key);
             return null;
         }
     }
 
     private void InvokeEventHandlers()
     {
-        foreach (EventHandler handler in _eventRegisters)
+        foreach (var (_, handler) in _eventRegisters)
         {
             handler.Invoke(this, EventArgs.Empty);
         }
