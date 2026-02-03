@@ -20,23 +20,37 @@ public sealed class FakeVehicleTransportService
 
     public async Task StartAsync(string licensePlate, Guid templateId, CancellationToken cancellationToken = default)
     {
-        Vehicle vehicle = await _dbContext.Vehicles
-            .FirstAsync(x => x.LicensePlate == licensePlate, cancellationToken);
+        Vehicle? vehicle = await _dbContext.Vehicles
+            .FirstOrDefaultAsync(x => x.LicensePlate == licensePlate, cancellationToken);
 
-        if (vehicle.IsMoving)
+        if (vehicle?.IsMoving == true)
         {
             throw new InvalidOperationException("Vehicle is already moving.");
         }
-        try
+
+        if (vehicle is null)
+        {
+            vehicle = new Vehicle
+            {
+                LicensePlate = licensePlate,
+                LastOdo = 0,
+                IsMoving = true
+            };
+            _dbContext.Vehicles.Add(vehicle);
+        }
+        else
         {
             vehicle.IsMoving = true;
-            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
+        try
+        {
             RouteCheckPointTemplate template = await _dbContext.RouteCheckPointTemplates
                 .AsNoTracking()
                 .Include(x => x.RouteCheckPoints)
                 .FirstAsync(x => x.Id == templateId, cancellationToken);
-            List<RouteCheckPoint> checkPoints = template.RouteCheckPoints.ToList();
+            List<RouteCheckPoint> checkPoints = template.RouteCheckPoints.OrderBy(x => x.Order).ToList();
 
             foreach (RouteCheckPoint checkPoint in checkPoints)
             {

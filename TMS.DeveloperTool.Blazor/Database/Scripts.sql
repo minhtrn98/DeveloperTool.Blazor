@@ -1,5 +1,6 @@
 CREATE TABLE route_checkpoint_templates (
     id UUID PRIMARY KEY,
+    "name" VARCHAR(255) NOT NULL,
     jump_seconds INTEGER NOT NULL
 );
 
@@ -10,12 +11,8 @@ CREATE TABLE route_checkpoints (
     "address" TEXT NOT NULL,
     km INTEGER NOT NULL,
     "order" INTEGER NOT NULL,
-
     template_id UUID NOT NULL,
-    CONSTRAINT fk_route_checkpoints_template
-        FOREIGN KEY (template_id)
-        REFERENCES route_checkpoint_templates (id)
-        ON DELETE CASCADE
+    CONSTRAINT fk_route_checkpoints_template FOREIGN KEY (template_id) REFERENCES route_checkpoint_templates (id) ON DELETE CASCADE
 );
 
 CREATE TABLE vehicles (
@@ -24,5 +21,4 @@ CREATE TABLE vehicles (
     is_moving BOOL NOT NULL
 );
 
-CREATE INDEX idx_route_checkpoints_template_id
-ON route_checkpoints (template_id);
+CREATE INDEX idx_route_checkpoints_template_id ON route_checkpoints (template_id);

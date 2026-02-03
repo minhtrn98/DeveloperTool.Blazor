@@ -5,6 +5,7 @@ using StackExchange.Redis;
 using TMS.DeveloperTool.Blazor.Components;
 using TMS.DeveloperTool.Blazor.Database;
 using TMS.DeveloperTool.Blazor.Services;
+using TMS.DeveloperTool.Blazor.SettingModels;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
@@ -16,6 +17,8 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .ReadFrom.Services(services)
         .Enrich.FromLogContext();
 });
+
+builder.Services.Configure<RabbitMqConfig>(builder.Configuration.GetSection("RabbitMq"));
 
 builder.Services.AddMudServices();
 
@@ -59,6 +62,7 @@ builder.Services.AddKeyedScoped("FleetDb", (sp, _) =>
 builder.Services.AddScoped<DriverService>();
 builder.Services.AddScoped<FleetService>();
 builder.Services.AddScoped<FakeVehicleTransportService>();
+builder.Services.AddScoped<RouteCheckPointTemplateService>();
 builder.Services.AddSingleton<EventService>();
 
 WebApplication app = builder.Build();
