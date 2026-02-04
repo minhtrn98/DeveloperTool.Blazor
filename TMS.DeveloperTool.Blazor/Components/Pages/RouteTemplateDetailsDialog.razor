@@ -19,8 +19,7 @@
 
             @if (Template.RouteCheckPoints.Any())
             {
-                <MudTable Items="@Template.RouteCheckPoints.OrderBy(cp => cp.Order)" Dense="true" Bordered="true"
-                    Striped="true">
+                <MudTable Items="@Template.RouteCheckPoints.OrderBy(cp => cp.Order)" Hover="true" Breakpoint="Breakpoint.Sm">
                     <HeaderContent>
                         <MudTh>Thứ tự</MudTh>
                         <MudTh>Kinh độ</MudTh>
