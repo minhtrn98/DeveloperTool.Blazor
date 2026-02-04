@@ -99,13 +99,13 @@
             CloseOnEscapeKey = true
         };
 
-        await DialogService.ShowAsync<RouteTemplateFormDialog>("Tạo lộ trình mẫu mới", parameters, options);
-        // DialogResult? result = await dialog.Result;
+        IDialogReference dialog = await DialogService.ShowAsync<RouteTemplateFormDialog>("Tạo lộ trình mẫu mới", parameters, options);
+        DialogResult? result = await dialog.Result;
 
-        // if (result?.Canceled != true)
-        // {
-        //     await LoadTemplates();
-        // }
+        if (result?.Canceled != true)
+        {
+            await LoadTemplates();
+        }
     }
 
     private async Task OpenEditModal(RouteCheckPointTemplate template)
@@ -127,13 +127,13 @@
             CloseOnEscapeKey = true
         };
 
-        await DialogService.ShowAsync<RouteTemplateFormDialog>("Chỉnh sửa lộ trình mẫu", parameters, options);
-        // DialogResult? result = await dialog.Result;
+        IDialogReference dialog = await DialogService.ShowAsync<RouteTemplateFormDialog>("Chỉnh sửa lộ trình mẫu", parameters, options);
+        DialogResult? result = await dialog.Result;
 
-        // if (result?.Canceled != true)
-        // {
-        //     await LoadTemplates();
-        // }
+        if (result?.Canceled != true)
+        {
+            await LoadTemplates();
+        }
     }
 
     private async Task DeleteTemplate(Guid id)
