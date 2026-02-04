@@ -32,4 +32,15 @@ public sealed class FleetService
         IEnumerable<VehicleRecord> drivers = await _dbQuery.QueryAsync<VehicleRecord>(sql, null, cancellationToken);
         return drivers.ToDictionary(d => d.Id, d => d.LicensePlate);
     }
+
+    public async Task<Dictionary<Guid, string>> GetNeverMovingVehiclePlateAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT "Id", "LicensePlate"
+            FROM public."Vehicles"
+            WHERE "LastOdo" IS NULL
+        """;
+        IEnumerable<VehicleRecord> drivers = await _dbQuery.QueryAsync<VehicleRecord>(sql, null, cancellationToken);
+        return drivers.ToDictionary(d => d.Id, d => d.LicensePlate);
+    }
 }

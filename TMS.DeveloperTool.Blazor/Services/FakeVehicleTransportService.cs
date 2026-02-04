@@ -20,8 +20,10 @@ public sealed class FakeVehicleTransportService
 
     public async Task StartAsync(string licensePlate, Guid templateId, CancellationToken cancellationToken = default)
     {
+        string actualPlate = licensePlate.Replace("-", "").Replace(".", "");
+
         Vehicle? vehicle = await _dbContext.Vehicles
-            .FirstOrDefaultAsync(x => x.LicensePlate == licensePlate, cancellationToken);
+            .FirstOrDefaultAsync(x => x.LicensePlate == actualPlate, cancellationToken);
 
         if (vehicle?.IsMoving == true)
         {
@@ -32,7 +34,7 @@ public sealed class FakeVehicleTransportService
         {
             vehicle = new Vehicle
             {
-                LicensePlate = licensePlate,
+                LicensePlate = actualPlate,
                 LastOdo = 0,
                 IsMoving = true
             };

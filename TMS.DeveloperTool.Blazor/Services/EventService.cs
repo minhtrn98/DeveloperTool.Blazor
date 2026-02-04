@@ -34,7 +34,7 @@ public sealed class EventService
 
         string queueName = _config.Exchanges[0].Queues["vehicles"].QueueName;
         using IChannel channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
-        await channel.QueueDeclareAsync(queue: queueName, durable: false, exclusive: false, autoDelete: false, arguments: null, cancellationToken: cancellationToken);
+        await channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null, cancellationToken: cancellationToken);
 
         string message = JsonConvert.SerializeObject(trackingEvent, new JsonSerializerSettings
         {
