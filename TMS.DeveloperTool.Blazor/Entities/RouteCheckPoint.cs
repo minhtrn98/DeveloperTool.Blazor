@@ -4,6 +4,25 @@ namespace TMS.DeveloperTool.Blazor.Entities;
 
 public sealed class RouteCheckPoint
 {
+    public RouteCheckPoint()
+    {
+        
+    }
+
+    public static RouteCheckPoint Copy(RouteCheckPoint data)
+    {
+        return new RouteCheckPoint
+        {
+            Id = data.Id,
+            Lon = data.Lon,
+            Lat = data.Lat,
+            Address = data.Address,
+            Km = data.Km,
+            Order = data.Order,
+            TemplateId = data.TemplateId
+        };
+    }
+
     public Guid Id { get; set; }
     public double Lon { get; set; }
     public double Lat { get; set; }

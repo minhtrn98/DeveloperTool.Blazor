@@ -113,22 +113,8 @@
 
     private async Task OpenEditModal(RouteCheckPointTemplate template)
     {
-        RouteCheckPointTemplate editTemplate = new()
-        {
-            Id = template.Id,
-            JumpSeconds = template.JumpSeconds
-        };
-
-        List<RouteCheckPoint> checkPoints = template.RouteCheckPoints
-        .Select(cp => new RouteCheckPoint
-        {
-            Order = cp.Order,
-            Lon = cp.Lon,
-            Lat = cp.Lat,
-            Address = cp.Address,
-            Km = cp.Km
-        })
-        .ToList();
+        RouteCheckPointTemplate editTemplate = RouteCheckPointTemplate.Copy(template);
+        List<RouteCheckPoint> checkPoints = editTemplate.RouteCheckPoints.ToList();
 
         DialogParameters parameters = new()
         {
