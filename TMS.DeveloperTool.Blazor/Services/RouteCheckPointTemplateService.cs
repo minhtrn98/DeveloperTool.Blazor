@@ -1,10 +1,10 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using TMS.DeveloperTool.Blazor.Database;
 using TMS.DeveloperTool.Blazor.Entities;
 
 namespace TMS.DeveloperTool.Blazor.Services;
 
-public class RouteCheckPointTemplateService
+public sealed class RouteCheckPointTemplateService
 {
     private readonly ApplicationDbContext _context;
 
@@ -16,6 +16,7 @@ public class RouteCheckPointTemplateService
     public async Task<List<RouteCheckPointTemplate>> GetAllAsync()
     {
         return await _context.RouteCheckPointTemplates
+            .AsNoTracking()
             .Include(t => t.RouteCheckPoints.OrderBy(cp => cp.Order))
             .ToListAsync();
     }
@@ -23,6 +24,7 @@ public class RouteCheckPointTemplateService
     public async Task<RouteCheckPointTemplate?> GetByIdAsync(Guid id)
     {
         return await _context.RouteCheckPointTemplates
+            .AsNoTracking()
             .Include(t => t.RouteCheckPoints.OrderBy(cp => cp.Order))
             .FirstOrDefaultAsync(t => t.Id == id);
     }
@@ -30,7 +32,7 @@ public class RouteCheckPointTemplateService
     public async Task<RouteCheckPointTemplate> CreateAsync(RouteCheckPointTemplate template)
     {
         template.Id = Guid.NewGuid();
-        foreach (var checkPoint in template.RouteCheckPoints)
+        foreach (RouteCheckPoint checkPoint in template.RouteCheckPoints)
         {
             checkPoint.Id = Guid.NewGuid();
             checkPoint.TemplateId = template.Id;
@@ -43,7 +45,7 @@ public class RouteCheckPointTemplateService
 
     public async Task<RouteCheckPointTemplate> UpdateAsync(RouteCheckPointTemplate template)
     {
-        var existingTemplate = await _context.RouteCheckPointTemplates
+        RouteCheckPointTemplate? existingTemplate = await _context.RouteCheckPointTemplates
             .Include(t => t.RouteCheckPoints)
             .FirstOrDefaultAsync(t => t.Id == template.Id);
 
@@ -54,16 +56,24 @@ public class RouteCheckPointTemplateService
 
         // Update template properties
         existingTemplate.JumpSeconds = template.JumpSeconds;
+        existingTemplate.Name = template.Name;
 
-        // Remove old checkpoints
+        // Clear existing checkpoints
         _context.RouteCheckPoints.RemoveRange(existingTemplate.RouteCheckPoints);
 
         // Add new checkpoints
-        foreach (var checkPoint in template.RouteCheckPoints)
+        foreach (RouteCheckPoint checkPoint in template.RouteCheckPoints)
         {
-            checkPoint.Id = Guid.NewGuid();
-            checkPoint.TemplateId = template.Id;
-            existingTemplate.RouteCheckPoints.Add(checkPoint);
+            _context.RouteCheckPoints.Add(new RouteCheckPoint
+            {
+                Id = Guid.NewGuid(),
+                TemplateId = template.Id,
+                Order = checkPoint.Order,
+                Lon = checkPoint.Lon,
+                Lat = checkPoint.Lat,
+                Address = checkPoint.Address,
+                Km = checkPoint.Km,
+            });
         }
 
         await _context.SaveChangesAsync();
@@ -72,7 +82,7 @@ public class RouteCheckPointTemplateService
 
     public async Task DeleteAsync(Guid id)
     {
-        var template = await _context.RouteCheckPointTemplates
+        RouteCheckPointTemplate? template = await _context.RouteCheckPointTemplates
             .Include(t => t.RouteCheckPoints)
             .FirstOrDefaultAsync(t => t.Id == id);
 

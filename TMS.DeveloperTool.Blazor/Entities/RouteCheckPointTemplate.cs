@@ -4,7 +4,6 @@ public sealed class RouteCheckPointTemplate
 {
     public RouteCheckPointTemplate()
     {
-        
     }
 
     public static RouteCheckPointTemplate Copy(RouteCheckPointTemplate data)
@@ -18,7 +17,7 @@ public sealed class RouteCheckPointTemplate
         };
     }
 
-    public Guid Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = default!;
     public int JumpSeconds { get; set; } = 10;
 

@@ -6,7 +6,6 @@ public sealed class RouteCheckPoint
 {
     public RouteCheckPoint()
     {
-        
     }
 
     public static RouteCheckPoint Copy(RouteCheckPoint data)
@@ -23,7 +22,7 @@ public sealed class RouteCheckPoint
         };
     }
 
-    public Guid Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
     public double Lon { get; set; }
     public double Lat { get; set; }
     public string Address { get; set; } = default!;

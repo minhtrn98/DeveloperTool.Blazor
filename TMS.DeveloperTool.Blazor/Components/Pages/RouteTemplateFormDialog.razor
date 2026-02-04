@@ -35,8 +35,7 @@
             <MudTable Items="@CheckPoints" Hover="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
                     <MudTh>Thứ tự</MudTh>
-                    <MudTh>Kinh độ</MudTh>
-                    <MudTh>Vĩ độ</MudTh>
+                    <MudTh>Tọa độ (Lat, Lon)</MudTh>
                     <MudTh>Địa chỉ</MudTh>
                     <MudTh>Km</MudTh>
                     <MudTh>Hành động</MudTh>
@@ -45,13 +44,12 @@
                     <MudTd DataLabel="Thứ tự">
                         <MudText>@context.Order</MudText>
                     </MudTd>
-                    <MudTd DataLabel="Kinh độ">
-                        <MudNumericField @bind-Value="context.Lon" Variant="Variant.Outlined" Margin="Margin.Dense"
-                            Step="0.000001" />
-                    </MudTd>
-                    <MudTd DataLabel="Vĩ độ">
-                        <MudNumericField @bind-Value="context.Lat" Variant="Variant.Outlined" Margin="Margin.Dense"
-                            Step="0.000001" />
+                    <MudTd DataLabel="Tọa độ (Lat, Lon)">
+                        <MudTextField Value="@GetCoordinateString(context)" 
+                            ValueChanged="@((string value) => ParseCoordinates(context, value))"
+                            Variant="Variant.Outlined" 
+                            Margin="Margin.Dense"
+                            Placeholder="10.818135, 106.757819" />
                     </MudTd>
                     <MudTd DataLabel="Địa chỉ">
                         <MudTextField @bind-Value="context.Address" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -110,6 +108,43 @@
     private void RemoveCheckPoint(int index)
     {
         CheckPoints.RemoveAt(index);
+        // Reorder remaining checkpoints
+        for (int i = 0; i < CheckPoints.Count; i++)
+        {
+            CheckPoints[i].Order = i + 1;
+        }
+    }
+
+    private string GetCoordinateString(RouteCheckPoint checkPoint)
+    {
+        if (checkPoint.Lat == 0 && checkPoint.Lon == 0)
+        {
+            return string.Empty;
+        }
+        return $"{checkPoint.Lat}, {checkPoint.Lon}";
+    }
+
+    private void ParseCoordinates(RouteCheckPoint checkPoint, string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            checkPoint.Lat = 0;
+            checkPoint.Lon = 0;
+            return;
+        }
+
+        string[] parts = value.Split(',', StringSplitOptions.TrimEntries);
+        if (parts.Length == 2)
+        {
+            if (double.TryParse(parts[0], out double lat))
+            {
+                checkPoint.Lat = lat;
+            }
+            if (double.TryParse(parts[1], out double lon))
+            {
+                checkPoint.Lon = lon;
+            }
+        }
     }
 
     private async Task SaveTemplate()
