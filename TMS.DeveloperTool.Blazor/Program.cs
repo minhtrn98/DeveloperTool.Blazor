@@ -51,6 +51,7 @@ builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
 });
 
 builder.Services.AddSingleton<RequestChangeDriverMonitorService>();
+builder.Services.AddSingleton<CacheService>();
 builder.Services.AddKeyedScoped("DriverDb", (sp, _) =>
 {
     return new ApplicationDbQuery(sp.GetRequiredService<IConfiguration>(), "DriverDb");
@@ -59,8 +60,13 @@ builder.Services.AddKeyedScoped("FleetDb", (sp, _) =>
 {
     return new ApplicationDbQuery(sp.GetRequiredService<IConfiguration>(), "FleetDb");
 });
+builder.Services.AddKeyedScoped("RouteDb", (sp, _) =>
+{
+    return new ApplicationDbQuery(sp.GetRequiredService<IConfiguration>(), "RouteDb");
+});
 builder.Services.AddScoped<DriverService>();
 builder.Services.AddScoped<FleetService>();
+builder.Services.AddScoped<RouteService>();
 builder.Services.AddScoped<FakeVehicleTransportService>();
 builder.Services.AddScoped<RouteCheckPointTemplateService>();
 builder.Services.AddSingleton<EventService>();

@@ -1,4 +1,6 @@
 @page "/simulate-route"
+@using Microsoft.EntityFrameworkCore
+@using TMS.DeveloperTool.Blazor.Database
 @using TMS.DeveloperTool.Blazor.Models
 @using TMS.DeveloperTool.Blazor.Services
 @using TMS.DeveloperTool.Blazor.Entities
@@ -8,6 +10,7 @@
 @inject RouteCheckPointTemplateService RouteCheckPointTemplateService
 @inject FakeVehicleTransportService FakeVehicleTransportService
 @inject NavigationManager NavigationManager
+@inject ApplicationDbContext DbContext
 
 <PageTitle>Mô phỏng lộ trình</PageTitle>
 
@@ -26,10 +29,10 @@
         else
         {
             <MudStack Spacing="3">
-                <MudAutocomplete T="Guid"
+                <MudAutocomplete T="string"
                     @bind-Value="SelectedVehicle"
                     SearchFunc="@SearchEmpty"
-                    ToStringFunc="@(e=> e == Guid.Empty ? "" : Vehicles[e])"
+                    ToStringFunc="@(e=> e)"
                     Label="Chọn xe"
                     AdornmentColor="Color.Primary"
                     Variant="Variant.Outlined"
@@ -53,7 +56,7 @@
                         Tới cấu hình lộ trình
                     </MudButton>
                 }
-                else if (SelectedVehicle != Guid.Empty)
+                else if (SelectedVehicle != string.Empty)
                 {
                     <MudSelect T="Guid" @bind-Value="SelectedTemplate" Label="Chọn lộ trình mẫu" Variant="Variant.Outlined">
                         @foreach (var template in Templates)
@@ -81,9 +84,9 @@
 
 
 @code {
-    private Guid SelectedVehicle { get; set; } = Guid.Empty;
+    private string SelectedVehicle { get; set; } = string.Empty;
     private Guid SelectedTemplate { get; set; } = Guid.Empty;
-    private Dictionary<Guid, string> Vehicles { get; set; } = [];
+    private HashSet<string> Vehicles { get; set; } = [];
     private List<RouteCheckPointTemplate> Templates { get; set; } = [];
     private bool IsOperationInProgress { get; set; } = false;
     private bool isLoading { get; set; } = true;
@@ -98,7 +101,10 @@
         isLoading = true;
         try
         {
-            Vehicles = await FleetService.GetNeverMovingVehiclePlateAsync();
+            Vehicles = await DbContext.Vehicles
+                .AsNoTracking()
+                .Select(v => v.LicensePlate)
+                .ToHashSetAsync(StringComparer.OrdinalIgnoreCase);
             Templates = await RouteCheckPointTemplateService.GetAllAsync();
             SelectedTemplate = Templates.FirstOrDefault()?.Id ?? Guid.Empty;
         }
@@ -108,25 +114,25 @@
         }
     }
 
-    protected Task<IEnumerable<Guid>> SearchEmpty(string value, CancellationToken cancellationToken)
+    protected Task<IEnumerable<string>> SearchEmpty(string value, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return Task.FromResult<IEnumerable<Guid>>(Vehicles.Keys);
+            return Task.FromResult<IEnumerable<string>>(Vehicles);
         }
 
-        return Task.FromResult(Vehicles.Where(x => x.Value.Contains(value, StringComparison.InvariantCultureIgnoreCase)).Select(x => x.Key));
+        return Task.FromResult(Vehicles.Where(x => x.Contains(value, StringComparison.OrdinalIgnoreCase)));
     }
 
     private async Task StartAsync()
     {
-        if (SelectedVehicle == Guid.Empty || SelectedTemplate == Guid.Empty)
+        if (string.IsNullOrEmpty(SelectedVehicle))
             return;
 
         IsOperationInProgress = true;
         try
         {
-            await FakeVehicleTransportService.StartAsync(Vehicles[SelectedVehicle], SelectedTemplate);
+            await FakeVehicleTransportService.StartAsync(SelectedVehicle, SelectedTemplate);
         }
         finally
         {

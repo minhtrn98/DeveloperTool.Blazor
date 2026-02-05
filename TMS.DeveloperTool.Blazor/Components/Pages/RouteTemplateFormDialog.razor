@@ -1,6 +1,8 @@
 @using TMS.DeveloperTool.Blazor.Entities
+@using TMS.DeveloperTool.Blazor.Models
 @using TMS.DeveloperTool.Blazor.Services
 @inject RouteCheckPointTemplateService TemplateService
+@inject RouteService RouteService
 
 <MudDialog>
     <TitleContent>
@@ -35,6 +37,7 @@
             <MudTable Items="@CheckPoints" Hover="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
                     <MudTh>Thứ tự</MudTh>
+                    <MudTh>Bưu cục</MudTh>
                     <MudTh>Tọa độ (Lat, Lon)</MudTh>
                     <MudTh>Địa chỉ</MudTh>
                     <MudTh>Km</MudTh>
@@ -44,10 +47,22 @@
                     <MudTd DataLabel="Thứ tự">
                         <MudText>@context.Order</MudText>
                     </MudTd>
+                    <MudTd DataLabel="Bưu cục">
+                        <MudAutocomplete T="PostOffice"
+                            MaxItems="100"
+                            Value="@(GetSelectedPostOffice(context))"
+                            ValueChanged="@(postOffice => OnPostOfficeSelected(context, postOffice))"
+                            SearchFunc="@SearchPostOffices"
+                            ToStringFunc="@GetPostOfficeLabel"
+                            Variant="Variant.Outlined"
+                            Margin="Margin.Dense"
+                            Clearable="true"
+                            Placeholder="Mã hoặc tên bưu cục" />
+                    </MudTd>
                     <MudTd DataLabel="Tọa độ (Lat, Lon)">
-                        <MudTextField Value="@GetCoordinateString(context)" 
+                        <MudTextField Value="@GetCoordinateString(context)"
                             ValueChanged="@((string value) => ParseCoordinates(context, value))"
-                            Variant="Variant.Outlined" 
+                            Variant="Variant.Outlined"
                             Margin="Margin.Dense"
                             Placeholder="10.818135, 106.757819" />
                     </MudTd>
@@ -91,6 +106,13 @@
     public bool IsEditMode { get; set; }
 
     private string validationMessage = string.Empty;
+    private List<PostOffice> postOffices = new();
+    private Dictionary<RouteCheckPoint, PostOffice?> selectedPostOffices = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        postOffices = (await RouteService.GetPostOfficesAsync()).ToList();
+    }
 
     private void AddCheckPoint()
     {
@@ -210,5 +232,55 @@
     private void Cancel()
     {
         MudDialog.Cancel();
+    }
+
+    private string GetPostOfficeLabel(PostOffice? postOffice)
+    {
+        if (postOffice == null)
+        {
+            return string.Empty;
+        }
+
+        return $"{postOffice.PostOfficeCode} - {postOffice.PostOfficeName}";
+    }
+
+    private Task<IEnumerable<PostOffice>> SearchPostOffices(string value, CancellationToken cancellationToken)
+    {
+        if (postOffices.Count == 0)
+        {
+            return Task.FromResult<IEnumerable<PostOffice>>(Array.Empty<PostOffice>());
+        }
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return Task.FromResult<IEnumerable<PostOffice>>(postOffices);
+        }
+
+        IEnumerable<PostOffice> results = postOffices.Where(postOffice =>
+            (!string.IsNullOrWhiteSpace(postOffice.PostOfficeCode)
+                && postOffice.PostOfficeCode.Contains(value, StringComparison.OrdinalIgnoreCase))
+            || (!string.IsNullOrWhiteSpace(postOffice.PostOfficeName)
+                && postOffice.PostOfficeName.Contains(value, StringComparison.OrdinalIgnoreCase)));
+
+        return Task.FromResult(results);
+    }
+
+    private PostOffice? GetSelectedPostOffice(RouteCheckPoint checkPoint)
+    {
+        return selectedPostOffices.TryGetValue(checkPoint, out PostOffice? postOffice) ? postOffice : null;
+    }
+
+    private void OnPostOfficeSelected(RouteCheckPoint checkPoint, PostOffice? postOffice)
+    {
+        selectedPostOffices[checkPoint] = postOffice;
+
+        if (postOffice == null)
+        {
+            return;
+        }
+
+        checkPoint.Lat = postOffice.Latitude;
+        checkPoint.Lon = postOffice.Longitude;
+        checkPoint.Address = postOffice.StreetAddress ?? string.Empty;
     }
 }
