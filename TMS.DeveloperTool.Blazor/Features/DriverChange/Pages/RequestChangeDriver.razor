@@ -1,0 +1,96 @@
+﻿@page "/request-change-driver"
+@using TMS.DeveloperTool.Blazor.Features.DriverChange.Models
+@using TMS.DeveloperTool.Blazor.Features.DriverChange.Services
+@attribute [StreamRendering]
+@inject RequestChangeDriverMonitorService _redisMonitor
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>Yêu cầu đổi tài</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4">
+        <div class="d-flex justify-space-between mb-4">
+            <MudText Typo="Typo.h4">Yêu cầu đổi tài</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="HandleRefreshClicked">
+                Làm mới
+            </MudButton>
+        </div>
+
+        @if (data == null)
+        {
+            <div class="d-flex justify-content-center">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (!data.Any())
+        {
+            <MudAlert Severity="Severity.Info">
+                Chưa có yêu cầu đổi tài nào.
+            </MudAlert>
+        }
+        else
+        {
+            <MudTable Items="@data" Hover="true" Striped="true" Dense="true">
+                <HeaderContent>
+                    <MudTh>Key</MudTh>
+                    <MudTh>Vehicle</MudTh>
+                    <MudTh>DriverRequest</MudTh>
+                    <MudTh>IsConfirm</MudTh>
+                    <MudTh>IsCancel</MudTh>
+                    <MudTh>Hành động</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Key">@context.Key</MudTd>
+                    <MudTd DataLabel="Vehicle">@context.VehicleLicensePlate</MudTd>
+                    <MudTd DataLabel="DriverRequest">@context.DriverRequestName</MudTd>
+                    <MudTd DataLabel="IsConfirm">@context.IsConfirm</MudTd>
+                    <MudTd DataLabel="IsCancel">@context.IsCancel</MudTd>
+                    <MudTd DataLabel="Hành động">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
+                                   OnClick="() => HandleDeleteClicked(context.Key)">
+                            Xóa
+                        </MudButton>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<RequestChangeDriverData>? data;
+    private Guid? _key;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _redisMonitor.RefreshCacheItem();
+        data = _redisMonitor.GetAllCacheItems();
+        _key = _redisMonitor.RegisterEventHandler(HandleCacheChanged);
+    }
+
+    private async Task HandleRefreshClicked()
+    {
+        await _redisMonitor.RefreshCacheItem();
+    }
+
+    private void HandleDeleteClicked(string key)
+    {
+        _redisMonitor.DeleteCacheItem(key);
+    }
+
+    private void HandleCacheChanged(object? sender, EventArgs e)
+    {
+        data = _redisMonitor.GetAllCacheItems();
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        if (_key is not null)
+        {
+            _redisMonitor.UnregisterEventHandler(_key.Value);
+        }
+    }
+}

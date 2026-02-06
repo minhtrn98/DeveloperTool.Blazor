@@ -3,9 +3,9 @@ using MudBlazor.Services;
 using Serilog;
 using StackExchange.Redis;
 using TMS.DeveloperTool.Blazor.Components;
-using TMS.DeveloperTool.Blazor.Database;
-using TMS.DeveloperTool.Blazor.Services;
-using TMS.DeveloperTool.Blazor.SettingModels;
+using TMS.DeveloperTool.Blazor.Features.DriverChange.Services;
+using TMS.DeveloperTool.Blazor.Features.Routing.Services;
+using TMS.DeveloperTool.Blazor.Features.Simulation.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
@@ -64,9 +64,9 @@ builder.Services.AddKeyedScoped("RouteDb", (sp, _) =>
 {
     return new ApplicationDbQuery(sp.GetRequiredService<IConfiguration>(), "RouteDb");
 });
-builder.Services.AddScoped<DriverService>();
-builder.Services.AddScoped<FleetService>();
-builder.Services.AddScoped<RouteService>();
+builder.Services.AddScoped<DriverRepository>();
+builder.Services.AddScoped<FleetRepository>();
+builder.Services.AddScoped<RouteRepository>();
 builder.Services.AddScoped<FakeVehicleTransportService>();
 builder.Services.AddScoped<RouteCheckPointTemplateService>();
 builder.Services.AddSingleton<EventService>();
