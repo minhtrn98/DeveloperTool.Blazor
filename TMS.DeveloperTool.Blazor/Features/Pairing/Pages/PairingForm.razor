@@ -117,13 +117,13 @@
 
 @code {
     private const string ApiPath = "/api/v1/assignments/pairing";
-    private readonly List<string> apiHostOptions =
+    private static readonly List<string> apiHostOptions =
     [
         "http://localhost:10000",
         "http://247tech.vn:25020"
     ];
 
-    private string apiHost = "http://localhost:10000";
+    private string apiHost = apiHostOptions[0];
     private string accessToken = string.Empty;
     private string companyId = "01000000-7000-5000-0000-000000000001";
     private string departmentId = "ed4e5a8e-6f02-4d8f-9d1d-2fdca4d0981c";
