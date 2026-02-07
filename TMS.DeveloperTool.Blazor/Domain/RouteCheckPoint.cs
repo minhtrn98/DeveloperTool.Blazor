@@ -22,7 +22,7 @@ public sealed class RouteCheckPoint
         };
     }
 
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; } = Guid.CreateVersion7();
     public double Lon { get; set; }
     public double Lat { get; set; }
     public string Address { get; set; } = default!;

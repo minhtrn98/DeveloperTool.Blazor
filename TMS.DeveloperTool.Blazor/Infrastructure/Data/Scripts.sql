@@ -21,37 +21,47 @@ CREATE TABLE vehicles (
     is_moving BOOL NOT NULL
 );
 
+CREATE TABLE drivers (
+    driver_id UUID PRIMARY KEY,
+    "name" VARCHAR(255) NOT NULL,
+    bearer_token TEXT NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    code VARCHAR(50) NOT NULL
+);
+
 CREATE INDEX idx_route_checkpoints_template_id ON route_checkpoints (template_id);
 
 -- init data for vehicles table
-INSERT INTO vehicles (license_plate, last_odo, is_moving) VALUES
-('50h22177', 0, false),
-('50h07276', 0, false),
-('51c87400', 0, false),
-('50h22620', 0, false),
-('50h22600', 0, false),
-('29c61163', 0, false),
-('50h08069', 0, false),
-('29c61606', 0, false),
-('50h10606', 0, false),
-('51d64584', 0, false),
-('51c39685', 0, false),
-('50h21055', 0, false),
-('50h22378', 0, false),
-('50h24670', 0, false),
-('50h00441', 0, false),
-('50g01410', 0, false),
-('50h22662', 0, false),
-('51d64937', 0, false),
-('29d30872', 0, false),
-('30g35129', 0, false),
-('51b50370', 0, false),
-('51c60161', 0, false),
-('51d43029', 0, false),
-('50h20904', 0, false),
-('50h20901', 0, false),
-('51b50271', 0, false),
-('50g02257', 0, false),
-('51b29873', 0, false),
-('51b29785', 0, false),
-('51b50371', 0, false);
+INSERT INTO
+    vehicles (license_plate, last_odo, is_moving)
+VALUES
+    ('50h22177', 0, false),
+    ('50h07276', 0, false),
+    ('51c87400', 0, false),
+    ('50h22620', 0, false),
+    ('50h22600', 0, false),
+    ('29c61163', 0, false),
+    ('50h08069', 0, false),
+    ('29c61606', 0, false),
+    ('50h10606', 0, false),
+    ('51d64584', 0, false),
+    ('51c39685', 0, false),
+    ('50h21055', 0, false),
+    ('50h22378', 0, false),
+    ('50h24670', 0, false),
+    ('50h00441', 0, false),
+    ('50g01410', 0, false),
+    ('50h22662', 0, false),
+    ('51d64937', 0, false),
+    ('29d30872', 0, false),
+    ('30g35129', 0, false),
+    ('51b50370', 0, false),
+    ('51c60161', 0, false),
+    ('51d43029', 0, false),
+    ('50h20904', 0, false),
+    ('50h20901', 0, false),
+    ('51b50271', 0, false),
+    ('50g02257', 0, false),
+    ('51b29873', 0, false),
+    ('51b29785', 0, false),
+    ('51b50371', 0, false);

@@ -10,6 +10,7 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<Vehicle> Vehicles { get; set; }
+    public DbSet<Driver> Drivers { get; set; }
     public DbSet<RouteCheckPoint> RouteCheckPoints { get; set; }
     public DbSet<RouteCheckPointTemplate> RouteCheckPointTemplates { get; set; }
 
@@ -20,6 +21,9 @@ public class ApplicationDbContext : DbContext
         // Configure table names to match PostgreSQL schema (lowercase with underscores)
         modelBuilder.Entity<Vehicle>()
             .ToTable("vehicles");
+
+        modelBuilder.Entity<Driver>()
+            .ToTable("drivers");
 
         modelBuilder.Entity<RouteCheckPointTemplate>()
             .ToTable("route_checkpoint_templates");
@@ -51,6 +55,15 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.LicensePlate).HasColumnName("license_plate");
             entity.Property(e => e.LastOdo).HasColumnName("last_odo");
             entity.Property(e => e.IsMoving).HasColumnName("is_moving");
+        });
+
+        modelBuilder.Entity<Driver>(entity =>
+        {
+            entity.Property(e => e.DriverId).HasColumnName("driver_id");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.BearerToken).HasColumnName("bearer_token");
+            entity.Property(e => e.Email).HasColumnName("email");
+            entity.Property(e => e.Code).HasColumnName("code");
         });
     }
 }

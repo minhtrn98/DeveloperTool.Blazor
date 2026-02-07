@@ -29,10 +29,10 @@ public sealed class RouteCheckPointTemplateService
 
     public async Task<RouteCheckPointTemplate> CreateAsync(RouteCheckPointTemplate template)
     {
-        template.Id = Guid.NewGuid();
+        template.Id = Guid.CreateVersion7();
         foreach (RouteCheckPoint checkPoint in template.RouteCheckPoints)
         {
-            checkPoint.Id = Guid.NewGuid();
+            checkPoint.Id = Guid.CreateVersion7();
             checkPoint.TemplateId = template.Id;
         }
 
@@ -64,7 +64,7 @@ public sealed class RouteCheckPointTemplateService
         {
             _context.RouteCheckPoints.Add(new RouteCheckPoint
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.CreateVersion7(),
                 TemplateId = template.Id,
                 Order = checkPoint.Order,
                 Lon = checkPoint.Lon,

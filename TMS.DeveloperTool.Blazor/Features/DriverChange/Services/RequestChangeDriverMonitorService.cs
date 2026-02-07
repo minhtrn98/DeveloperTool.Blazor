@@ -25,7 +25,7 @@ public sealed class RequestChangeDriverMonitorService : IDisposable
 
     public Guid RegisterEventHandler(EventHandler handler)
     {
-        Guid key = Guid.NewGuid();
+        Guid key = Guid.CreateVersion7();
         _eventRegisters[key] = handler;
         return key;
     }
