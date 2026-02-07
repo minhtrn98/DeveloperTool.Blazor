@@ -65,3 +65,15 @@ VALUES
     ('51b29873', 0, false),
     ('51b29785', 0, false),
     ('51b50371', 0, false);
+
+-- init data for drivers table
+INSERT INTO
+    drivers (driver_id, code, "name", bearer_token, email)
+VALUES
+    (
+        '6a3994cf-1696-4d6f-ab45-10bde5f3dec9',
+        'EMP_00202',
+        'Phạm Phan Minh Đức',
+        '',
+        'duc.pham.phan.minh@example.com'
+    );
