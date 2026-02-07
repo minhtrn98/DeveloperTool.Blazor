@@ -22,6 +22,8 @@ builder.Services.Configure<RabbitMqConfig>(builder.Configuration.GetSection("Rab
 
 builder.Services.AddMudServices();
 
+builder.Services.AddHttpClient();
+
 builder.Services
     .AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -52,23 +54,20 @@ builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
 
 builder.Services.AddSingleton<RequestChangeDriverMonitorService>();
 builder.Services.AddSingleton<CacheService>();
-builder.Services.AddKeyedScoped("DriverDb", (sp, _) =>
-{
-    return new ApplicationDbQuery(sp.GetRequiredService<IConfiguration>(), "DriverDb");
-});
-builder.Services.AddKeyedScoped("FleetDb", (sp, _) =>
-{
-    return new ApplicationDbQuery(sp.GetRequiredService<IConfiguration>(), "FleetDb");
-});
-builder.Services.AddKeyedScoped("RouteDb", (sp, _) =>
-{
-    return new ApplicationDbQuery(sp.GetRequiredService<IConfiguration>(), "RouteDb");
-});
+
+builder.Services.AddTMSDbQuery("DriverDb");
+builder.Services.AddTMSDbQuery("FleetDb");
+builder.Services.AddTMSDbQuery("RouteDb");
+builder.Services.AddTMSDbQuery("PlanningDb");
+
 builder.Services.AddScoped<DriverRepository>();
 builder.Services.AddScoped<FleetRepository>();
 builder.Services.AddScoped<RouteRepository>();
+builder.Services.AddScoped<PlanningRepository>();
+
 builder.Services.AddScoped<FakeVehicleTransportService>();
 builder.Services.AddScoped<RouteCheckPointTemplateService>();
+
 builder.Services.AddSingleton<EventService>();
 
 WebApplication app = builder.Build();
@@ -92,3 +91,15 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 await app.RunAsync();
+
+static class Extensions
+{
+    public static IServiceCollection AddTMSDbQuery(this IServiceCollection services, string database)
+    {
+        services.AddKeyedScoped(database, (sp, _) =>
+        {
+            return new ApplicationDbQuery(sp.GetRequiredService<IConfiguration>(), database);
+        });
+        return services;
+    }
+}
