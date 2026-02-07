@@ -25,6 +25,7 @@ CREATE TABLE drivers (
     driver_id UUID PRIMARY KEY,
     "name" VARCHAR(255) NOT NULL,
     bearer_token TEXT NOT NULL,
+    token_expired_at TIMESTAMPTZ NULL,
     email VARCHAR(255) NOT NULL,
     code VARCHAR(50) NOT NULL
 );
@@ -68,12 +69,20 @@ VALUES
 
 -- init data for drivers table
 INSERT INTO
-    drivers (driver_id, code, "name", bearer_token, email)
+    drivers (
+        driver_id,
+        code,
+        "name",
+        bearer_token,
+        token_expired_at,
+        email
+    )
 VALUES
     (
         '6a3994cf-1696-4d6f-ab45-10bde5f3dec9',
         'EMP_00202',
         'Phạm Phan Minh Đức',
         '',
+        NULL,
         'duc.pham.phan.minh@example.com'
     );

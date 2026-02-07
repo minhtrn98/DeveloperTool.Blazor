@@ -1,4 +1,8 @@
-﻿@inherits LayoutComponentBase
+﻿@using TMS.DeveloperTool.Blazor.Infrastructure.Security
+@using TMS.DeveloperTool.Blazor.Services
+@inherits LayoutComponentBase
+@inject MyDriverService MyDriverService
+@inject ISnackbar Snackbar
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
@@ -11,6 +15,18 @@
                        OnClick="@((e) => DrawerToggle())" />
         <MudText Typo="Typo.h5" Class="ml-3">TMS DeveloperTools</MudText>
         <MudSpacer />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@_isGeneratingTokens"
+                   StartIcon="@Icons.Material.Filled.VpnKey" OnClick="GenerateDriverTokensAsync">
+            @if (_isGeneratingTokens)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                <MudText>Đang tạo token</MudText>
+            }
+            else
+            {
+                <MudText>Tạo token</MudText>
+            }
+        </MudButton>
         <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" />
         <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Inherit" Edge="Edge.End" />
     </MudAppBar>
@@ -32,6 +48,7 @@
 @code {
     private bool _drawerOpen = true;
     private bool _isDarkMode = true;
+    private bool _isGeneratingTokens;
     private MudTheme? _theme = null;
 
     protected override void OnInitialized()
@@ -54,6 +71,34 @@
     private void DarkModeToggle()
     {
         _isDarkMode = !_isDarkMode;
+    }
+
+    private async Task GenerateDriverTokensAsync()
+    {
+        if (_isGeneratingTokens)
+        {
+            return;
+        }
+
+        _isGeneratingTokens = true;
+        try
+        {
+            int updatedCount = await MyDriverService.GenerateTokensForAllDriversAsync();
+            if (updatedCount == 0)
+            {
+                Snackbar.Add("Tất cả tài xế đã có token.", Severity.Info);
+                return;
+            }
+            Snackbar.Add($"Đã tạo token cho {updatedCount} tài xế.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không tạo được token: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isGeneratingTokens = false;
+        }
     }
 
     private readonly PaletteLight _lightPalette = new()

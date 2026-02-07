@@ -7,6 +7,7 @@ using TMS.DeveloperTool.Blazor.Features.DriverChange.Services;
 using TMS.DeveloperTool.Blazor.Features.Routing.Services;
 using TMS.DeveloperTool.Blazor.Features.Simulation.Services;
 using TMS.DeveloperTool.Blazor.Infrastructure.Security;
+using TMS.DeveloperTool.Blazor.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
@@ -72,6 +73,7 @@ builder.Services.AddScoped<RouteCheckPointTemplateService>();
 
 builder.Services.AddSingleton<EventService>();
 builder.Services.AddSingleton<JwtTokenService>();
+builder.Services.AddScoped<MyDriverService>();
 
 WebApplication app = builder.Build();
 

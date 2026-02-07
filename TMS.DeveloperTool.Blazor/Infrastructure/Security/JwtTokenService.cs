@@ -79,4 +79,10 @@ public sealed class JwtTokenService
 
         return _handler.WriteToken(token);
     }
+
+    public DateTimeOffset GetDefaultExpiresAtUtc(DateTimeOffset? utcNow = null)
+    {
+        DateTimeOffset baseTime = utcNow ?? DateTimeOffset.UtcNow;
+        return baseTime.AddMinutes(_options.DefaultExpiresMinutes);
+    }
 }

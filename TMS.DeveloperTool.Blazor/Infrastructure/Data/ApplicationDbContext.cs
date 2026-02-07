@@ -62,6 +62,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.DriverId).HasColumnName("driver_id");
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.BearerToken).HasColumnName("bearer_token");
+            entity.Property(e => e.TokenExpiredAt).HasColumnName("token_expired_at");
             entity.Property(e => e.Email).HasColumnName("email");
             entity.Property(e => e.Code).HasColumnName("code");
         });
