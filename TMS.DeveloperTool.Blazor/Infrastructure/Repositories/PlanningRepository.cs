@@ -11,10 +11,15 @@ public sealed class PlanningRepository
 
     public async Task<IEnumerable<DropdownItem<Guid>>> GetDailyPlans(CancellationToken cancellationToken)
     {
-        const string sql = """
+        // create gmt+7 now datetime
+        DateTimeOffset utcNow = DateTimeOffset.UtcNow;
+        DateTimeOffset gmt7Now = utcNow.ToOffset(TimeSpan.FromHours(7));
+        string todayGmt7 = gmt7Now.ToString("yyyy-MM-dd");
+
+        string sql = $"""
             select id as "Id", code as "Code", name as "Name"
             from public.real_plans
-            where is_deleted = false
+            where execution_date = '{todayGmt7}'
         """;
         IEnumerable<DropdownItem<Guid>> records = await _dbQuery.QueryAsync<DropdownItem<Guid>>(sql, null, cancellationToken);
         return records;

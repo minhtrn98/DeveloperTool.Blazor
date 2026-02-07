@@ -47,7 +47,7 @@
                     </MudItem>
                 </MudGrid>
 
-                <MudAutocomplete T="DropdownItem<Guid>" @bind-Value="SelectedVehicleOption"
+                <MudAutocomplete T="DropdownItem<Guid>" Value="SelectedVehicleOption" ValueChanged="OnVehicleChanged"
                                  SearchFunc="SearchVehicleOptions" ToStringFunc="GetVehicleDropdownLabel" Label="Xe"
                                  Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
 
@@ -133,7 +133,7 @@
     private int actionType;
     private int planningType;
     private Guid planningId;
-    private double odometer = 100;
+    private double odometer = 0;
     private bool autoCreateMaintenancePlan;
 
     private List<DropdownItem<Guid>> vehicleOptions = [];
@@ -198,6 +198,26 @@
         {
             selectedVehicleOption = value;
             vehicleId = value?.Id ?? Guid.Empty;
+        }
+    }
+
+    private async Task OnVehicleChanged(DropdownItem<Guid>? value)
+    {
+        SelectedVehicleOption = value;
+
+        if (vehicleId == Guid.Empty)
+        {
+            odometer = 0;
+            return;
+        }
+
+        try
+        {
+            odometer = await FleetRepository.GetVehicleOdometerAsync(vehicleId);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không lấy được odometer: {ex.Message}", Severity.Warning);
         }
     }
 

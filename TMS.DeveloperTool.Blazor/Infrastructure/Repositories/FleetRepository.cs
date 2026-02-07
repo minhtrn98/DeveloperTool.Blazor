@@ -54,6 +54,17 @@ public sealed class FleetRepository
         return records;
     }
 
+    public async Task<double> GetVehicleOdometerAsync(Guid vehicleId, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT "LastOdo"
+            FROM public."Vehicles"
+            WHERE "Id" = @VehicleId
+        """;
+        double? odometer = await _dbQuery.SingleOrDefaultAsync<double?>(sql, new { VehicleId = vehicleId }, cancellationToken);
+        return odometer ?? 0;
+    }
+
     public IEnumerable<DropdownItem<int>> GetActionTypes()
     {
         return EnumExtensions.ToList<ActionType>()
