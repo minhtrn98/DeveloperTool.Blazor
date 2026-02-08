@@ -81,7 +81,8 @@
 
                 <MudGrid>
                     <MudItem xs="12" md="6">
-                        <MudSelect T="AssignmentPlanType" @bind-Value="planningType" Label="Loại kế hoạch" Variant="Variant.Outlined"
+                        <MudSelect T="AssignmentPlanType" @bind-Value="planningType" @bind-Value:after="OnPlanningTypeChanged"
+                                   Label="Loại kế hoạch" Variant="Variant.Outlined"
                                    FullWidth="true" Class="mb-3">
                             @foreach (var item in planningTypes)
                             {
@@ -91,7 +92,7 @@
                     </MudItem>
                     <MudItem xs="12" md="6">
                         <MudAutocomplete T="DropdownItem<Guid>" @bind-Value="SelectedPlanningOption"
-                                         SearchFunc="SearchDailyPlans" ToStringFunc="GetDropdownLabel" Label="Kế hoạch"
+                                         SearchFunc="SearchPlanningOptions" ToStringFunc="GetDropdownLabel" Label="Kế hoạch"
                                          Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
                     </MudItem>
                 </MudGrid>
@@ -145,7 +146,7 @@
     private List<DropdownItem<Guid>> pairingReasonTypes = [];
     private List<DropdownItem<ActionType>> actionTypes = [];
     private List<DropdownItem<AssignmentPlanType>> planningTypes = [];
-    private List<DropdownItem<Guid>> dailyPlans = [];
+    private List<DropdownItem<Guid>> planningOptions = [];
     private List<PostOffice> postOffices = [];
     private List<Driver> drivers = [];
 
@@ -180,7 +181,6 @@
             pairingReasonTypes = (await FleetRepository.GetPairingReasonTypes(cancellationToken)).ToList();
             actionTypes = FleetRepository.GetActionTypes().ToList();
             planningTypes = FleetRepository.GetAssignmentPlanTypes().ToList();
-            dailyPlans = (await PlanningRepository.GetDailyPlans(cancellationToken)).ToList();
             postOffices = (await RouteRepository.GetPostOfficesAsync(cancellationToken))
                 .OrderBy(x => x.PostOfficeCode)
                 .ToList();
@@ -196,6 +196,7 @@
             SelectedPlanningOption = null;
             SelectedPostOffice = null;
             SelectedDriver = null;
+            await LoadPlanningOptionsAsync(cancellationToken);
         }
         finally
         {
@@ -241,9 +242,11 @@
                 planningType = latestAssignment.PlanningType.Value;
             }
 
+            await LoadPlanningOptionsAsync(CancellationToken.None);
+
             if (latestAssignment?.PlanningId is not null)
             {
-                SelectedPlanningOption = dailyPlans.FirstOrDefault(plan => plan.Id == latestAssignment.PlanningId.Value);
+                SelectedPlanningOption = planningOptions.FirstOrDefault(plan => plan.Id == latestAssignment.PlanningId.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(latestAssignment?.Address))
@@ -334,18 +337,44 @@
         return Task.FromResult(results);
     }
 
-    private Task<IEnumerable<DropdownItem<Guid>>> SearchDailyPlans(string value, CancellationToken cancellationToken)
+    private Task<IEnumerable<DropdownItem<Guid>>> SearchPlanningOptions(string value, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return Task.FromResult<IEnumerable<DropdownItem<Guid>>>(dailyPlans);
+            return Task.FromResult<IEnumerable<DropdownItem<Guid>>>(planningOptions);
         }
 
-        IEnumerable<DropdownItem<Guid>> results = dailyPlans.Where(item =>
+        IEnumerable<DropdownItem<Guid>> results = planningOptions.Where(item =>
             item.Name.Contains(value, StringComparison.OrdinalIgnoreCase)
             || item.Code.Contains(value, StringComparison.OrdinalIgnoreCase));
 
         return Task.FromResult(results);
+    }
+
+    private async Task OnPlanningTypeChanged()
+    {
+        await LoadPlanningOptionsAsync(CancellationToken.None);
+    }
+
+    private async Task LoadPlanningOptionsAsync(CancellationToken cancellationToken)
+    {
+        planningOptions = [];
+        SelectedPlanningOption = null;
+
+        switch (planningType)
+        {
+            case AssignmentPlanType.DailyPlan:
+                planningOptions = (await PlanningRepository.GetDailyPlans(cancellationToken)).ToList();
+                break;
+            case AssignmentPlanType.Inspection when vehicleId != Guid.Empty:
+                planningOptions = (await FleetRepository.GetInspectionPlansByVehicleAsync(vehicleId, cancellationToken)).ToList();
+                break;
+            case AssignmentPlanType.Maintenance when vehicleId != Guid.Empty:
+                planningOptions = (await FleetRepository.GetMaintenancePlanByVehicleAsync(vehicleId, cancellationToken)).ToList();
+                break;
+            default:
+                break;
+        }
     }
 
     private Task<IEnumerable<PostOffice>> SearchPostOffices(string value, CancellationToken cancellationToken)

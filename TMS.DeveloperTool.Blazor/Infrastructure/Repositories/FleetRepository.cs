@@ -65,13 +65,13 @@ public sealed class FleetRepository
         return odometer ?? 0;
     }
 
-    public IEnumerable<DropdownItem<ActionType>> GetActionTypes()
+    public static IEnumerable<DropdownItem<ActionType>> GetActionTypes()
     {
         return EnumExtensions.ToList<ActionType>()
             .Select(e => new DropdownItem<ActionType>((ActionType)e.Value, e.Code, e.Description));
     }
 
-    public IEnumerable<DropdownItem<AssignmentPlanType>> GetAssignmentPlanTypes()
+    public static IEnumerable<DropdownItem<AssignmentPlanType>> GetAssignmentPlanTypes()
     {
         return EnumExtensions.ToList<AssignmentPlanType>()
             .Select(e => new DropdownItem<AssignmentPlanType>((AssignmentPlanType)e.Value, e.Code, e.Description));
@@ -96,5 +96,33 @@ public sealed class FleetRepository
             LIMIT 1
         """;
         return await _dbQuery.SingleOrDefaultAsync<LatestAssignmentResponse>(sql, new { VehicleId = vehicleId }, cancellationToken);
+    }
+
+    public async Task<IEnumerable<DropdownItem<Guid>>> GetInspectionPlansByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT "Id", "Code", "Name"
+            FROM public."InspectionPlans"
+            WHERE "VehicleId" = @VehicleId and "Status" = Any(@Statuses)
+        """;
+        IEnumerable<DropdownItem<Guid>> records = await _dbQuery.QueryAsync<DropdownItem<Guid>>(
+            sql,
+            new { VehicleId = vehicleId, Statuses = new[] { (int)InspectionPlanStatus.WaitingForInspection, (int)InspectionPlanStatus.InProgress } },
+            cancellationToken);
+        return records;
+    }
+
+    public async Task<IEnumerable<DropdownItem<Guid>>> GetMaintenancePlanByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT "Id", "Code", "Name"
+            FROM public."MaintenancePlans"
+            WHERE "VehicleId" = @VehicleId and "Status" = Any(@Statuses)
+        """;
+        IEnumerable<DropdownItem<Guid>> records = await _dbQuery.QueryAsync<DropdownItem<Guid>>(
+            sql,
+            new { VehicleId = vehicleId, Statuses = new[] { (int)MaintenancePlanStatus.Pending, (int)MaintenancePlanStatus.InTransit, (int)MaintenancePlanStatus.InProgress } },
+            cancellationToken);
+        return records;
     }
 }
