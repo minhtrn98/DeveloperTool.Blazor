@@ -1,0 +1,121 @@
+@page "/job-trigger"
+@using System.Net.Http.Headers
+@inject IHttpClientFactory HttpClientFactory
+@inject ISnackbar Snackbar
+
+<PageTitle>Kích hoạt job</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4">
+        <MudText Typo="Typo.h5" Class="mb-4">Kích hoạt job</MudText>
+
+        <MudForm>
+            <MudSelect T="string" @bind-Value="apiHost" Label="Host API" Variant="Variant.Outlined" FullWidth="true"
+                       Adornment="Adornment.End" AdornmentText="@ApiPath" Class="mb-3">
+                @foreach (string host in apiHostOptions)
+                {
+                    <MudSelectItem Value="@host">@host</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudSelect T="string" @bind-Value="jobName" Label="Job" Variant="Variant.Outlined" FullWidth="true" Class="mb-3">
+                @foreach (string name in jobNames)
+                {
+                    <MudSelectItem Value="@name">@name</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudTextField @bind-Value="externalAuthToken" Label="X-External-Auth" Variant="Variant.Outlined" FullWidth="true"
+                          Lines="3" Class="mb-4" />
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSubmitting" OnClick="TriggerJobAsync">
+                @if (isSubmitting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                    <MudText>Dang gui...</MudText>
+                }
+                else
+                {
+                    <MudText>Trigger</MudText>
+                }
+            </MudButton>
+        </MudForm>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private const string ApiPath = "/api/v1/operational/maintain/jobs";
+    private const string DefaultGroup = "DEFAULT";
+    private static readonly string[] apiHostOptions =
+    [
+        "http://localhost:10000",
+        "http://247tech.vn:25020"
+    ];
+
+    private static readonly List<string> jobNames =
+    [
+        "InsurancePlanCreator",
+        "InspectionPlanCreator",
+        "MaintenancePlanCreator"
+    ];
+
+    private string apiHost = apiHostOptions[0];
+    private string jobName = jobNames[0];
+    private string externalAuthToken = string.Empty;
+    private bool isSubmitting;
+
+    private async Task TriggerJobAsync()
+    {
+        if (string.IsNullOrWhiteSpace(jobName))
+        {
+            Snackbar.Add("Vui long chon job.", Severity.Warning);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(apiHost))
+        {
+            Snackbar.Add("Vui long chon host API.", Severity.Warning);
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            string requestUrl = BuildApiUrl();
+            using HttpClient client = HttpClientFactory.CreateClient();
+            using HttpRequestMessage httpRequest = new(HttpMethod.Post, requestUrl)
+            {
+                Content = JsonContent.Create(new { })
+            };
+
+            if (!string.IsNullOrWhiteSpace(externalAuthToken))
+            {
+                httpRequest.Headers.Add("X-External-Auth", externalAuthToken.Trim());
+            }
+
+            HttpResponseMessage response = await client.SendAsync(httpRequest);
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Trigger job thành công.", Severity.Success);
+                return;
+            }
+
+            string error = await response.Content.ReadAsStringAsync();
+            Snackbar.Add($"Trigger job thất bại: {(int)response.StatusCode} {response.ReasonPhrase}. {error}", Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Trigger job thất bại: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private string BuildApiUrl()
+    {
+        string trimmedHost = apiHost.Trim().TrimEnd('/');
+        return $"{trimmedHost}{ApiPath}/{jobName}/trigger?group={DefaultGroup}";
+    }
+}
