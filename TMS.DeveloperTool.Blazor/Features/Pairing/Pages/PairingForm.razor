@@ -27,7 +27,7 @@
         {
             <MudForm>
                 <MudSelect T="string" @bind-Value="apiHost" Label="Host API" Variant="Variant.Outlined" FullWidth="true"
-                           Adornment="Adornment.End" AdornmentText="@ApiPath" Class="mb-3">
+                           Adornment="Adornment.End" AdornmentText="@GetApiPath()" Class="mb-3">
                     @foreach (string host in apiHostOptions)
                     {
                         <MudSelectItem Value="@host">@host</MudSelectItem>
@@ -120,7 +120,8 @@
 </MudContainer>
 
 @code {
-    private const string ApiPath = "/api/v1/assignments/pairing";
+    private const string PairingApiPath = "/api/v1/assignments/pairing";
+    private const string UnpairingApiPath = "/api/v1/assignments/unpairing";
     private static readonly List<string> apiHostOptions =
     [
         "http://localhost:10000",
@@ -353,6 +354,13 @@
 
     private async Task SubmitAsync()
     {
+        string apiPath = GetApiPath();
+        if (string.IsNullOrWhiteSpace(apiPath))
+        {
+            Snackbar.Add("Hành động này chưa hỗ trợ.", Severity.Warning);
+            return;
+        }
+
         if (vehicleId == Guid.Empty || pairingReasonTypeId == Guid.Empty || planningId == Guid.Empty)
         {
             Snackbar.Add("Vui lòng chọn xe, lý do ghép và kế hoạch.", Severity.Warning);
@@ -378,7 +386,7 @@
             };
 
             using HttpClient client = HttpClientFactory.CreateClient();
-            using HttpRequestMessage httpRequest = new(HttpMethod.Post, BuildApiUrl())
+            using HttpRequestMessage httpRequest = new(HttpMethod.Post, BuildApiUrl(apiPath))
             {
                 Content = JsonContent.Create(request)
             };
@@ -425,14 +433,24 @@
             .ToList();
     }
 
-    private string BuildApiUrl()
+    private string BuildApiUrl(string apiPath)
     {
         if (string.IsNullOrWhiteSpace(apiHost))
         {
-            return ApiPath;
+            return apiPath;
         }
 
         string trimmedHost = apiHost.Trim().TrimEnd('/');
-        return $"{trimmedHost}{ApiPath}";
+        return $"{trimmedHost}{apiPath}";
+    }
+
+    private string GetApiPath()
+    {
+        return actionType switch
+        {
+            ActionType.Pairing => PairingApiPath,
+            ActionType.Unpairing => UnpairingApiPath,
+            _ => string.Empty
+        };
     }
 }
