@@ -225,7 +225,38 @@
 
         try
         {
-            odometer = await FleetRepository.GetVehicleOdometerAsync(vehicleId);
+            LatestAssignmentResponse? latestAssignment = await FleetRepository.GetLatestAssignmentAsync(vehicleId);
+
+            if (latestAssignment?.Odometer is not null)
+            {
+                odometer = (double)latestAssignment.Odometer.Value;
+            }
+            else
+            {
+                odometer = await FleetRepository.GetVehicleOdometerAsync(vehicleId);
+            }
+
+            if (latestAssignment?.PlanningType is not null)
+            {
+                planningType = latestAssignment.PlanningType.Value;
+            }
+
+            if (latestAssignment?.PlanningId is not null)
+            {
+                SelectedPlanningOption = dailyPlans.FirstOrDefault(plan => plan.Id == latestAssignment.PlanningId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(latestAssignment?.Address))
+            {
+                string startOfficeCode = latestAssignment.Address[..3];
+                SelectedPostOffice = postOffices.FirstOrDefault(postOffice =>
+                    postOffice.PostOfficeCode == startOfficeCode);
+            }
+
+            if (!string.IsNullOrWhiteSpace(latestAssignment?.Address))
+            {
+                address = latestAssignment.Address;
+            }
         }
         catch (Exception ex)
         {

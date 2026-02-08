@@ -76,4 +76,25 @@ public sealed class FleetRepository
         return EnumExtensions.ToList<AssignmentPlanType>()
             .Select(e => new DropdownItem<AssignmentPlanType>((AssignmentPlanType)e.Value, e.Code, e.Description));
     }
+
+    public async Task<LatestAssignmentResponse?> GetLatestAssignmentAsync(Guid vehicleId, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT
+                a."Id" AS "AssignmentId",
+                vd."Odometer",
+                a."StartOfficeCode",
+                vd."Address",
+                vd."CheckStatus",
+                a."PlanningId",
+                a."PlanningType"
+            FROM public."VehicleDrivers" vd
+            INNER JOIN public."Assignments" a ON vd."AssignmentId" = a."Id"
+            WHERE vd."VehicleId" = @VehicleId
+                AND a."IsCompleted" = false
+            ORDER BY vd."Code" DESC
+            LIMIT 1
+        """;
+        return await _dbQuery.SingleOrDefaultAsync<LatestAssignmentResponse>(sql, new { VehicleId = vehicleId }, cancellationToken);
+    }
 }
