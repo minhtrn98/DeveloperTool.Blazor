@@ -65,7 +65,7 @@
 
                 <MudGrid>
                     <MudItem xs="12" md="6">
-                        <MudSelect T="int" @bind-Value="actionType" Label="Hành động" Variant="Variant.Outlined"
+                        <MudSelect T="ActionType" @bind-Value="actionType" Label="Hành động" Variant="Variant.Outlined"
                                    FullWidth="true" Class="mb-3">
                             @foreach (var item in actionTypes)
                             {
@@ -81,7 +81,7 @@
 
                 <MudGrid>
                     <MudItem xs="12" md="6">
-                        <MudSelect T="int" @bind-Value="planningType" Label="Loại kế hoạch" Variant="Variant.Outlined"
+                        <MudSelect T="AssignmentPlanType" @bind-Value="planningType" Label="Loại kế hoạch" Variant="Variant.Outlined"
                                    FullWidth="true" Class="mb-3">
                             @foreach (var item in planningTypes)
                             {
@@ -134,16 +134,16 @@
 
     private Guid vehicleId;
     private Guid pairingReasonTypeId;
-    private int actionType;
-    private int planningType;
+    private ActionType actionType;
+    private AssignmentPlanType planningType;
     private Guid planningId;
     private double odometer = 0;
     private bool autoCreateMaintenancePlan;
 
     private List<DropdownItem<Guid>> vehicleOptions = [];
     private List<DropdownItem<Guid>> pairingReasonTypes = [];
-    private List<DropdownItem<int>> actionTypes = [];
-    private List<DropdownItem<int>> planningTypes = [];
+    private List<DropdownItem<ActionType>> actionTypes = [];
+    private List<DropdownItem<AssignmentPlanType>> planningTypes = [];
     private List<DropdownItem<Guid>> dailyPlans = [];
     private List<PostOffice> postOffices = [];
     private List<Driver> drivers = [];
@@ -190,8 +190,8 @@
 
             SelectedVehicleOption = null;
             pairingReasonTypeId = pairingReasonTypes.FirstOrDefault()?.Id ?? Guid.Empty;
-            actionType = (int)ActionType.Pairing;
-            planningType = (int)AssignmentPlanType.DailyPlan;
+            actionType = ActionType.Pairing;
+            planningType = AssignmentPlanType.DailyPlan;
             SelectedPlanningOption = null;
             SelectedPostOffice = null;
             SelectedDriver = null;

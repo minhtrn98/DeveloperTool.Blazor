@@ -1,3 +1,5 @@
+using TMS.DeveloperTool.Blazor.Domain.Enums;
+
 namespace TMS.DeveloperTool.Blazor.Features.Pairing.Models;
 
 public sealed class PairingRequest
@@ -6,9 +8,9 @@ public sealed class PairingRequest
     public Guid PairingReasonTypeId { get; set; }
     public double Odometer { get; set; }
     public string Address { get; set; } = string.Empty;
-    public int ActionType { get; set; }
+    public ActionType ActionType { get; set; }
     public int CheckStatus { get; set; }
-    public int PlanningType { get; set; }
+    public AssignmentPlanType PlanningType { get; set; }
     public Guid PlanningId { get; set; }
     public bool AutoCreateMaintenancePlan { get; set; }
     public string PostOfficeCode { get; set; } = string.Empty;

@@ -65,15 +65,15 @@ public sealed class FleetRepository
         return odometer ?? 0;
     }
 
-    public IEnumerable<DropdownItem<int>> GetActionTypes()
+    public IEnumerable<DropdownItem<ActionType>> GetActionTypes()
     {
         return EnumExtensions.ToList<ActionType>()
-            .Select(e => new DropdownItem<int>(e.Value, e.Code, e.Description));
+            .Select(e => new DropdownItem<ActionType>((ActionType)e.Value, e.Code, e.Description));
     }
 
-    public IEnumerable<DropdownItem<int>> GetAssignmentPlanTypes()
+    public IEnumerable<DropdownItem<AssignmentPlanType>> GetAssignmentPlanTypes()
     {
         return EnumExtensions.ToList<AssignmentPlanType>()
-            .Select(e => new DropdownItem<int>(e.Value, e.Code, e.Description));
+            .Select(e => new DropdownItem<AssignmentPlanType>((AssignmentPlanType)e.Value, e.Code, e.Description));
     }
 }
