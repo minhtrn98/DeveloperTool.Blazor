@@ -1,13 +1,13 @@
 @page "/pairing"
 @using System.Net.Http.Headers
-@using TMS.DeveloperTool.Blazor.Contracts
 @using TMS.DeveloperTool.Blazor.Domain.Enums
 @using TMS.DeveloperTool.Blazor.Features.Pairing.Models
 @using TMS.DeveloperTool.Blazor.Features.Routing.Models
-@using TMS.DeveloperTool.Blazor.Infrastructure.Repositories
+@using TMS.DeveloperTool.Blazor.Services
 @inject FleetRepository FleetRepository
 @inject RouteRepository RouteRepository
 @inject PlanningRepository PlanningRepository
+@inject MyDriverService MyDriverService
 @inject IHttpClientFactory HttpClientFactory
 @inject ISnackbar Snackbar
 
@@ -33,7 +33,7 @@
                         <MudSelectItem Value="@host">@host</MudSelectItem>
                     }
                 </MudSelect>
-                <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true"
+                <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="4"
                               Class="mb-3" />
 
                 <MudGrid>
@@ -46,6 +46,10 @@
                                       FullWidth="true" Class="mb-3" />
                     </MudItem>
                 </MudGrid>
+
+                <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged"
+                                 SearchFunc="SearchDrivers" ToStringFunc="GetDriverLabel" Label="Tài xế"
+                                 Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
 
                 <MudAutocomplete T="DropdownItem<Guid>" Value="SelectedVehicleOption" ValueChanged="OnVehicleChanged"
                                  SearchFunc="SearchVehicleOptions" ToStringFunc="GetVehicleDropdownLabel" Label="Xe"
@@ -142,10 +146,12 @@
     private List<DropdownItem<int>> planningTypes = [];
     private List<DropdownItem<Guid>> dailyPlans = [];
     private List<PostOffice> postOffices = [];
+    private List<Driver> drivers = [];
 
     private DropdownItem<Guid>? selectedVehicleOption;
     private DropdownItem<Guid>? selectedPlanningOption;
     private PostOffice? selectedPostOffice;
+    private Driver? selectedDriver;
     private string address = string.Empty;
     private string postOfficeCode = string.Empty;
 
@@ -177,13 +183,18 @@
             postOffices = (await RouteRepository.GetPostOfficesAsync(cancellationToken))
                 .OrderBy(x => x.PostOfficeCode)
                 .ToList();
+            drivers = (await MyDriverService.GetAllDriversAsync(cancellationToken))
+                .OrderBy(x => x.Code)
+                .ThenBy(x => x.Name)
+                .ToList();
 
             SelectedVehicleOption = null;
             pairingReasonTypeId = pairingReasonTypes.FirstOrDefault()?.Id ?? Guid.Empty;
-            actionType = actionTypes.FirstOrDefault()?.Id ?? (int)ActionType.Pairing;
-            planningType = planningTypes.FirstOrDefault()?.Id ?? (int)AssignmentPlanType.DailyPlan;
+            actionType = (int)ActionType.Pairing;
+            planningType = (int)AssignmentPlanType.DailyPlan;
             SelectedPlanningOption = null;
             SelectedPostOffice = null;
+            SelectedDriver = null;
         }
         finally
         {
@@ -242,6 +253,16 @@
         }
     }
 
+    private Driver? SelectedDriver
+    {
+        get => selectedDriver;
+        set
+        {
+            selectedDriver = value;
+            accessToken = value?.BearerToken ?? string.Empty;
+        }
+    }
+
     private string GetPostOfficeLabel(PostOffice? postOffice)
     {
         if (postOffice == null)
@@ -260,6 +281,11 @@
     private string GetVehicleDropdownLabel(DropdownItem<Guid>? item)
     {
         return item == null ? string.Empty : item.Code;
+    }
+
+    private string GetDriverLabel(Driver? driver)
+    {
+        return driver == null ? string.Empty : $"{driver.Code} - {driver.Name}";
     }
 
     private Task<IEnumerable<DropdownItem<Guid>>> SearchVehicleOptions(string value, CancellationToken cancellationToken)
@@ -302,6 +328,27 @@
             || postOffice.PostOfficeName.Contains(value, StringComparison.OrdinalIgnoreCase));
 
         return Task.FromResult(results);
+    }
+
+    private Task<IEnumerable<Driver>> SearchDrivers(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return Task.FromResult<IEnumerable<Driver>>(drivers);
+        }
+
+        IEnumerable<Driver> results = drivers.Where(driver =>
+            driver.Name.Contains(value, StringComparison.OrdinalIgnoreCase)
+            || driver.Code.Contains(value, StringComparison.OrdinalIgnoreCase)
+            || driver.Email.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(results);
+    }
+
+    private Task OnDriverChanged(Driver? driver)
+    {
+        SelectedDriver = driver;
+        return Task.CompletedTask;
     }
 
     private async Task SubmitAsync()
