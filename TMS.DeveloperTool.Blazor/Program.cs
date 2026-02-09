@@ -20,7 +20,7 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .Enrich.FromLogContext();
 });
 
-builder.Services.Configure<RabbitMqConfig>(builder.Configuration.GetSection("RabbitMq"));
+builder.Services.Configure<RabbitMqConfig>(builder.Configuration.GetSection("MyRabbitMq"));
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Identity"));
 
 builder.Services.AddMudServices();
@@ -33,16 +33,16 @@ builder.Services
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
-    string cnnStr = builder.Configuration.GetValue<string>("Redis:ConnectionString") ?? throw new Exception("Missing redis connection string!!!");
+    string cnnStr = builder.Configuration.GetValue<string>("MyRedis:ConnectionString") ?? throw new Exception("Missing redis connection string!!!");
     ConfigurationOptions configuration = ConfigurationOptions.Parse(cnnStr, true);
-    configuration.Password = builder.Configuration.GetValue<string>("Redis:Password");
+    configuration.Password = builder.Configuration.GetValue<string>("MyRedis:Password");
 
-    configuration.AbortOnConnectFail = builder.Configuration.GetValue<bool>("Redis:AbortOnConnectFail");
-    configuration.ConnectRetry = builder.Configuration.GetValue<int>("Redis:ConnectRetry");
-    configuration.ConnectTimeout = builder.Configuration.GetValue<int>("Redis:ConnectTimeout");
-    configuration.SyncTimeout = builder.Configuration.GetValue<int>("Redis:SyncTimeout");
-    configuration.AsyncTimeout = builder.Configuration.GetValue<int>("Redis:AsyncTimeout");
-    configuration.DefaultDatabase = builder.Configuration.GetValue<int>("Redis:Database");
+    configuration.AbortOnConnectFail = builder.Configuration.GetValue<bool>("MyRedis:AbortOnConnectFail");
+    configuration.ConnectRetry = builder.Configuration.GetValue<int>("MyRedis:ConnectRetry");
+    configuration.ConnectTimeout = builder.Configuration.GetValue<int>("MyRedis:ConnectTimeout");
+    configuration.SyncTimeout = builder.Configuration.GetValue<int>("MyRedis:SyncTimeout");
+    configuration.AsyncTimeout = builder.Configuration.GetValue<int>("MyRedis:AsyncTimeout");
+    configuration.DefaultDatabase = builder.Configuration.GetValue<int>("MyRedis:Database");
 
     return ConnectionMultiplexer.Connect(configuration);
 });
