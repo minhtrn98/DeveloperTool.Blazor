@@ -78,11 +78,15 @@ INSERT INTO
         email
     )
 VALUES
-    (
-        '6a3994cf-1696-4d6f-ab45-10bde5f3dec9',
-        'EMP_00202',
-        'Phạm Phan Minh Đức',
-        '',
-        NULL,
-        'duc.pham.phan.minh@example.com'
-    );
+    ('6a3994cf-1696-4d6f-ab45-10bde5f3dec9', 'EMP_00202', 'Phạm Phan Minh Đức', '', NULL, 'duc.pham.phan.minh@example.com'),
+    ('6d80b6dc-071c-49c4-8fff-3d34370b08aa', 'EMP_00142', 'Trần Minh Phan A', '', NULL, 'a.tran.minh.phan@example.com'),
+    ('1624aa75-b5bd-4ca0-8272-0b0136c8d7ac', 'EMP_00143', 'Trần Minh Phan B', '', NULL, 'b.tran.minh.phan@example.com'),
+    ('0bdab8a4-a707-4c02-8b40-0a45e5fb4dc3', 'EMP_00144', 'Trần Minh Phan C', '', NULL, 'c.tran.minh.phan@example.com'),
+    ('0f512db8-59cf-45e4-a82e-d5602b08ce71', 'EMP_00145', 'Trần Minh Phan D', '', NULL, 'd.tran.minh.phan@example.com'),
+    ('cf720dfd-28f9-4e42-93bc-3630a848e374', 'EMP_00146', 'Trần Minh Phan E', '', NULL, 'e.tran.minh.phan@example.com'),
+    ('eed9b41b-bb68-4338-8d60-186b4cf5e7fa', 'EMP_00147', 'Trần Minh Phan F', '', NULL, 'f.tran.minh.phan@example.com'),
+    ('61d023a1-6213-4945-8664-acaa1ef771b5', 'EMP_00148', 'Trần Minh Phan G', '', NULL, 'g.tran.minh.phan@example.com'),
+    ('8a717ed6-b80c-48ed-a3f9-fa8d813a4392', 'EMP_00149', 'Trần Minh Phan H', '', NULL, 'h.tran.minh.phan@example.com'),
+    ('92808f66-d1fa-49c6-b74e-b8d1b62fd93c', 'EMP_00150', 'Trần Minh Phan I', '', NULL, 'i.tran.minh.phan@example.com'),
+    ('7567587d-3240-4f42-84ab-54ab50edac80', 'EMP_00151', 'Trần Minh Phan Q', '', NULL, 'q.tran.minh.phan@example.com')
+    ;
