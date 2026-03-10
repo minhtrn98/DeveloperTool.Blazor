@@ -36,7 +36,7 @@
                 <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="4"
                               Class="mb-3" />
 
-                <MudGrid>
+                @* <MudGrid>
                     <MudItem xs="12" md="6">
                         <MudTextField @bind-Value="companyId" Label="CompanyId" Variant="Variant.Outlined" FullWidth="true"
                                       Class="mb-3" />
@@ -45,7 +45,7 @@
                         <MudTextField @bind-Value="departmentId" Label="DepartmentId" Variant="Variant.Outlined"
                                       FullWidth="true" Class="mb-3" />
                     </MudItem>
-                </MudGrid>
+                </MudGrid> *@
 
                 <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged"
                                  SearchFunc="SearchDrivers" ToStringFunc="GetDriverLabel" Label="Tài xế"

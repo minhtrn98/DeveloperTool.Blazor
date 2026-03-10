@@ -1,0 +1,288 @@
+@page "/pairing/confirm-swap"
+@using System.Text.Json
+@using StackExchange.Redis
+@using TMS.DeveloperTool.Blazor.Features.Pairing.Services
+@using TMS.DeveloperTool.Blazor.Services
+@inject IConnectionMultiplexer Redis
+@inject MyDriverService MyDriverService
+@inject PairingService PairingService
+@inject ISnackbar Snackbar
+
+<PageTitle>Yêu cầu đổi tài xế</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4">
+        <MudText Typo="Typo.h5" Class="mb-4">Yêu cầu đổi tài xế</MudText>
+        <MudSelect T="string" @bind-Value="apiHost" Label="Host API" Variant="Variant.Outlined" FullWidth="true"
+                   Adornment="Adornment.End" AdornmentText="@GetApiPath()" Class="mb-3">
+            @foreach (string host in apiHostOptions)
+            {
+                <MudSelectItem Value="@host">@host</MudSelectItem>
+            }
+        </MudSelect>
+        <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="4"
+                      Class="mb-3" />
+
+        <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged"
+                         SearchFunc="SearchDrivers" ToStringFunc="GetDriverLabel" Label="Tài xế"
+                         Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@isLoading" OnClick="RefreshAsync" Class="mb-3">
+            @if (isLoading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                <MudText>Đang tải...</MudText>
+            }
+            else
+            {
+                <MudText>Tải danh sách</MudText>
+            }
+        </MudButton>
+
+        @if (cacheItems.Count == 0)
+        {
+            <MudText>Không có yêu cầu nào.</MudText>
+        }
+        else
+        {
+            <MudTable Items="cacheItems" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>Key</MudTh>
+                    <MudTh>VehicleId</MudTh>
+                    <MudTh>TTL</MudTh>
+                    <MudTh></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Key">@context.Key</MudTd>
+                    <MudTd DataLabel="VehicleId">@context.VehicleId</MudTd>
+                    <MudTd DataLabel="TTL">@FormatTtl(context.Ttl)</MudTd>
+                    <MudTd>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Success" Disabled="@isSubmitting"
+                                   OnClick="() => ConfirmAsync(context)">Xác nhận</MudButton>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private const string ConfirmApiPath = "/api/v1/assignments/confirm";
+    private static readonly List<string> apiHostOptions =
+    [
+        "http://localhost:10000",
+        "http://247tech.vn:25020"
+    ];
+
+    private string apiHost = apiHostOptions[0];
+    private string accessToken = string.Empty;
+    private List<Driver> drivers = [];
+    private Driver? selectedDriver;
+    private readonly List<PairingCacheItem> cacheItems = [];
+    private bool isLoading;
+    private bool isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDriversAsync();
+        await RefreshAsync();
+    }
+
+    private async Task LoadDriversAsync()
+    {
+        try
+        {
+            drivers = (await MyDriverService.GetAllDriversAsync(CancellationToken.None))
+                .OrderBy(x => x.Code)
+                .ThenBy(x => x.Name)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không tải được tài xế: {ex.Message}", Severity.Warning);
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        isLoading = true;
+        try
+        {
+            cacheItems.Clear();
+            IDatabase db = Redis.GetDatabase();
+            IServer server = Redis.GetServer(Redis.GetEndPoints()[0]);
+            IEnumerable<RedisKey> keys = server.Keys(pattern: "Pairing:*", pageSize: 1000);
+
+            foreach (RedisKey key in keys)
+            {
+                string keyStr = key.ToString();
+                string value = db.StringGet(key).ToString();
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    continue;
+                }
+
+                PairingCachePayload? payload = TryParsePayload(value);
+                if (payload == null)
+                {
+                    payload = TryParsePayloadFromKey(keyStr);
+                }
+
+                if (payload == null)
+                {
+                    continue;
+                }
+
+                cacheItems.Add(new PairingCacheItem
+                {
+                    Key = keyStr,
+                    VehicleId = payload.VehicleId,
+                    RawValue = value,
+                    Ttl = db.KeyTimeToLive(key)
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không tải được cache: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ConfirmAsync(PairingCacheItem item)
+    {
+        if (isSubmitting)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            Snackbar.Add("Vui lòng nhập bearer token.", Severity.Warning);
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            ApiCallResult result = await PairingService.SendConfirmAsync(
+                apiHost,
+                ConfirmApiPath,
+                accessToken,
+                companyId: null,
+                departmentId: null,
+                item.VehicleId);
+
+            if (result.IsSuccess)
+            {
+                Snackbar.Add("Xác nhận thành công.", Severity.Success);
+                await RefreshAsync();
+                return;
+            }
+
+            Snackbar.Add($"Xác nhận thất bại: {result.ErrorMessage}", Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Xác nhận thất bại: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private Driver? SelectedDriver
+    {
+        get => selectedDriver;
+        set
+        {
+            selectedDriver = value;
+            accessToken = value?.BearerToken ?? string.Empty;
+        }
+    }
+
+    private Task<IEnumerable<Driver>> SearchDrivers(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return Task.FromResult<IEnumerable<Driver>>(drivers);
+        }
+
+        IEnumerable<Driver> results = drivers
+            .OrderByDescending(driver =>
+                driver.Name.Contains(value, StringComparison.OrdinalIgnoreCase)
+                || driver.Code.Contains(value, StringComparison.OrdinalIgnoreCase)
+                || driver.Email.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(results);
+    }
+
+    private Task OnDriverChanged(Driver? driver)
+    {
+        SelectedDriver = driver;
+        return Task.CompletedTask;
+    }
+
+    private static string GetDriverLabel(Driver? driver)
+    {
+        return driver == null ? string.Empty : $"{driver.Code} - {driver.Name}";
+    }
+
+    private static PairingCachePayload? TryParsePayload(string rawValue)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<PairingCachePayload>(rawValue);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static PairingCachePayload? TryParsePayloadFromKey(string key)
+    {
+        const string prefix = "Pairing:";
+        if (!key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        string suffix = key[prefix.Length..];
+        return Guid.TryParse(suffix, out Guid vehicleId)
+            ? new PairingCachePayload { VehicleId = vehicleId }
+            : null;
+    }
+
+    private static string FormatTtl(TimeSpan? ttl)
+    {
+        if (ttl == null)
+        {
+            return "-";
+        }
+
+        return ttl.Value.ToString("g");
+    }
+
+    private static string GetApiPath()
+    {
+        return ConfirmApiPath;
+    }
+
+    private sealed class PairingCachePayload
+    {
+        public Guid VehicleId { get; set; }
+    }
+
+    private sealed class PairingCacheItem
+    {
+        public string Key { get; set; } = string.Empty;
+        public Guid VehicleId { get; set; }
+        public string RawValue { get; set; } = string.Empty;
+        public TimeSpan? Ttl { get; set; }
+    }
+}

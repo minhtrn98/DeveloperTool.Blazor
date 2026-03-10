@@ -37,6 +37,23 @@ public sealed class PairingService
         return SendRequestAsync(apiHost, apiPath, accessToken, companyId, departmentId, request, cancellationToken);
     }
 
+    public Task<ApiCallResult> SendConfirmAsync(
+        string apiHost,
+        string apiPath,
+        string accessToken,
+        string? companyId,
+        string? departmentId,
+        Guid vehicleId,
+        CancellationToken cancellationToken = default)
+    {
+        ConfirmRequest request = new()
+        {
+            VehicleId = vehicleId
+        };
+
+        return SendRequestAsync(apiHost, apiPath, accessToken, companyId, departmentId, request, cancellationToken);
+    }
+
     private async Task<ApiCallResult> SendRequestAsync<T>(
         string apiHost,
         string apiPath,

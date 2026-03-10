@@ -25,6 +25,11 @@ public sealed record SwapDriverRequest
     public required Guid DriverRequest { get; init; }
 }
 
+public sealed class ConfirmRequest
+{
+    public required Guid VehicleId { get; init; }
+}
+
 public sealed class PairingAssignmentImage
 {
     public Guid ImageId { get; set; }
