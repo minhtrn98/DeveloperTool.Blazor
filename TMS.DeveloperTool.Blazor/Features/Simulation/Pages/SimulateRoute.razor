@@ -119,7 +119,10 @@
             return Task.FromResult<IEnumerable<string>>(Vehicles);
         }
 
-        return Task.FromResult(Vehicles.OrderByDescending(x => x.Contains(value, StringComparison.OrdinalIgnoreCase)));
+        var results = Vehicles.Where(x => x.Contains(value, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(x => x.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult<IEnumerable<string>>(results);
     }
 
     private async Task StartAsync()
