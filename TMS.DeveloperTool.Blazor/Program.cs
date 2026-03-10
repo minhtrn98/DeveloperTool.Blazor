@@ -4,6 +4,7 @@ using Serilog;
 using StackExchange.Redis;
 using TMS.DeveloperTool.Blazor.Components;
 using TMS.DeveloperTool.Blazor.Features.DriverChange.Services;
+using TMS.DeveloperTool.Blazor.Features.Pairing.Services;
 using TMS.DeveloperTool.Blazor.Features.Routing.Services;
 using TMS.DeveloperTool.Blazor.Features.Simulation.Services;
 using TMS.DeveloperTool.Blazor.Infrastructure.Security;
@@ -70,6 +71,7 @@ builder.Services.AddScoped<PlanningRepository>();
 
 builder.Services.AddScoped<FakeVehicleTransportService>();
 builder.Services.AddScoped<RouteCheckPointTemplateService>();
+builder.Services.AddScoped<PairingService>();
 
 builder.Services.AddSingleton<EventService>();
 builder.Services.AddSingleton<JwtTokenService>();

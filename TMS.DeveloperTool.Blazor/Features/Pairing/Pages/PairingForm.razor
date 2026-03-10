@@ -1,14 +1,14 @@
 @page "/pairing"
-@using System.Net.Http.Headers
 @using TMS.DeveloperTool.Blazor.Domain.Enums
 @using TMS.DeveloperTool.Blazor.Features.Pairing.Models
+@using TMS.DeveloperTool.Blazor.Features.Pairing.Services
 @using TMS.DeveloperTool.Blazor.Features.Routing.Models
 @using TMS.DeveloperTool.Blazor.Services
 @inject FleetRepository FleetRepository
 @inject RouteRepository RouteRepository
 @inject PlanningRepository PlanningRepository
 @inject MyDriverService MyDriverService
-@inject IHttpClientFactory HttpClientFactory
+@inject PairingService PairingService
 @inject ISnackbar Snackbar
 
 <PageTitle>Ghép xe</PageTitle>
@@ -477,36 +477,20 @@
             AssignmentImages = BuildAssignmentImages()
         };
 
-        using HttpClient client = HttpClientFactory.CreateClient();
-        using HttpRequestMessage httpRequest = new(HttpMethod.Post, BuildApiUrl(apiPath))
-        {
-            Content = JsonContent.Create(request)
-        };
-
-        if (!string.IsNullOrWhiteSpace(accessToken))
-        {
-            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Trim());
-        }
-
-        if (Guid.TryParse(companyId, out Guid companyGuid))
-        {
-            httpRequest.Headers.Add("CompanyId", companyGuid.ToString());
-        }
-
-        if (Guid.TryParse(departmentId, out Guid departmentGuid))
-        {
-            httpRequest.Headers.Add("DepartmentId", departmentGuid.ToString());
-        }
-
-        using HttpResponseMessage response = await client.SendAsync(httpRequest);
-        if (response.IsSuccessStatusCode)
+        ApiCallResult result = await PairingService.SendPairingAsync(
+            apiHost,
+            apiPath,
+            accessToken,
+            companyId,
+            departmentId,
+            request);
+        if (result.IsSuccess)
         {
             Snackbar.Add("Gửi yêu cầu ghép xe thành công.", Severity.Success);
             return;
         }
 
-        string error = await response.Content.ReadAsStringAsync();
-        Snackbar.Add($"Gửi yêu cầu thất bại: {(int)response.StatusCode} {response.ReasonPhrase}. {error}", Severity.Error);
+        Snackbar.Add($"Gửi yêu cầu thất bại: {result.ErrorMessage}", Severity.Error);
     }
 
     private async Task SendRequestSwapDriverAsync(string apiPath)
@@ -524,31 +508,21 @@
             ActionType = actionType,
             DriverRequest = selectedSwapDriver.DriverId
         };
-        using HttpClient client = HttpClientFactory.CreateClient();
-        using HttpRequestMessage httpRequest = new(HttpMethod.Post, BuildApiUrl(apiPath))
-        {
-            Content = JsonContent.Create(request)
-        };
-        if (!string.IsNullOrWhiteSpace(accessToken))
-        {
-            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Trim());
-        }
-        if (Guid.TryParse(companyId, out Guid companyGuid))
-        {
-            httpRequest.Headers.Add("CompanyId", companyGuid.ToString());
-        }
-        if (Guid.TryParse(departmentId, out Guid departmentGuid))
-        {
-            httpRequest.Headers.Add("DepartmentId", departmentGuid.ToString());
-        }
-        using HttpResponseMessage response = await client.SendAsync(httpRequest);
-        if (response.IsSuccessStatusCode)
+
+        ApiCallResult result = await PairingService.SendSwapDriverAsync(
+            apiHost,
+            apiPath,
+            accessToken,
+            companyId,
+            departmentId,
+            request);
+        if (result.IsSuccess)
         {
             Snackbar.Add("Gửi yêu cầu đổi tài xế thành công.", Severity.Success);
             return;
         }
-        string error = await response.Content.ReadAsStringAsync();
-        Snackbar.Add($"Gửi yêu cầu thất bại: {(int)response.StatusCode} {response.ReasonPhrase}. {error}", Severity.Error);
+
+        Snackbar.Add($"Gửi yêu cầu thất bại: {result.ErrorMessage}", Severity.Error);
     }
 
     private static List<PairingAssignmentImage> BuildAssignmentImages()
@@ -556,17 +530,6 @@
         return Enumerable.Range(1, 6)
             .Select(type => new PairingAssignmentImage { ImageId = Guid.Empty, Type = type })
             .ToList();
-    }
-
-    private string BuildApiUrl(string apiPath)
-    {
-        if (string.IsNullOrWhiteSpace(apiHost))
-        {
-            return apiPath;
-        }
-
-        string trimmedHost = apiHost.Trim().TrimEnd('/');
-        return $"{trimmedHost}{apiPath}";
     }
 
     private string GetApiPath()
