@@ -8,12 +8,14 @@ public sealed class FakeVehicleTransportService
     private readonly ApplicationDbContext _dbContext;
     private readonly EventService _eventService;
     private readonly ILogger<FakeVehicleTransportService> _logger;
+    private readonly FleetRepository _fleetRepository;
 
-    public FakeVehicleTransportService(ApplicationDbContext dbContext, ILogger<FakeVehicleTransportService> logger, EventService eventService)
+    public FakeVehicleTransportService(ApplicationDbContext dbContext, ILogger<FakeVehicleTransportService> logger, EventService eventService, FleetRepository fleetRepository)
     {
         _dbContext = dbContext;
         _logger = logger;
         _eventService = eventService;
+        _fleetRepository = fleetRepository;
     }
 
     public async Task StartAsync(string licensePlate, Guid templateId, CancellationToken cancellationToken = default)
@@ -28,18 +30,22 @@ public sealed class FakeVehicleTransportService
             throw new InvalidOperationException("Vehicle is already moving.");
         }
 
+        // get last odo from fleet service
+        double lastOdo = await _fleetRepository.GetVehicleOdometerAsync(licensePlate, cancellationToken);
+
         if (vehicle is null)
         {
             vehicle = new Vehicle
             {
                 LicensePlate = actualPlate,
-                LastOdo = 0,
+                LastOdo = lastOdo,
                 IsMoving = true
             };
             _dbContext.Vehicles.Add(vehicle);
         }
         else
         {
+            vehicle.LastOdo = lastOdo;
             vehicle.IsMoving = true;
         }
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -74,7 +80,7 @@ public sealed class FakeVehicleTransportService
                         Speed = 1
                     }
                 };
-                await _eventService.PublishTeckingEvent(vehicleTrackingData, cancellationToken);
+                await _eventService.PublishTrackingEvent(vehicleTrackingData, cancellationToken);
                 await _dbContext.SaveChangesAsync(cancellationToken);
 
                 await Task.Delay(TimeSpan.FromSeconds(template.JumpSeconds), cancellationToken);

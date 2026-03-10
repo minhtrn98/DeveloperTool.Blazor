@@ -65,6 +65,17 @@ public sealed class FleetRepository
         return odometer ?? 0;
     }
 
+    public async Task<double> GetVehicleOdometerAsync(string licensePlate, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT "LastOdo"
+            FROM public."Vehicles"
+            WHERE "ActualPlate" = @LicensePlate or "LicensePlate" = @LicensePlate
+        """;
+        double? odometer = await _dbQuery.SingleOrDefaultAsync<double?>(sql, new { LicensePlate = licensePlate }, cancellationToken);
+        return odometer ?? 0;
+    }
+
     public static IEnumerable<DropdownItem<ActionType>> GetActionTypes()
     {
         return EnumExtensions.ToList<ActionType>()

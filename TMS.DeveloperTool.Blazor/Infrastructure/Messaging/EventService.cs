@@ -18,7 +18,7 @@ public sealed class EventService
         _logger = logger;
     }
 
-    public async Task PublishTeckingEvent(VehicleTrackingEvent trackingEvent, CancellationToken cancellationToken = default)
+    public async Task PublishTrackingEvent(VehicleTrackingEvent trackingEvent, CancellationToken cancellationToken = default)
     {
         if (_connection == null || !_connection.IsOpen)
         {
