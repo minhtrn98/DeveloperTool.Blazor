@@ -255,7 +255,7 @@
             return Task.FromResult<IEnumerable<PostOffice>>(postOffices);
         }
 
-        IEnumerable<PostOffice> results = postOffices.Where(postOffice =>
+        IEnumerable<PostOffice> results = postOffices.OrderByDescending(postOffice =>
             (!string.IsNullOrWhiteSpace(postOffice.PostOfficeCode)
                 && postOffice.PostOfficeCode.Contains(value, StringComparison.OrdinalIgnoreCase))
             || (!string.IsNullOrWhiteSpace(postOffice.PostOfficeName)
