@@ -264,7 +264,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Không lấy được odometer: {ex.Message}", Severity.Warning);
+            Snackbar.Add($"Có lỗi xảy ra: {ex.Message}", Severity.Warning);
         }
     }
 
@@ -331,7 +331,7 @@
             return Task.FromResult<IEnumerable<DropdownItem<Guid>>>(vehicleOptions);
         }
 
-        IEnumerable<DropdownItem<Guid>> results = vehicleOptions.Where(item =>
+        IEnumerable<DropdownItem<Guid>> results = vehicleOptions.OrderByDescending(item =>
             item.Name.Contains(value, StringComparison.OrdinalIgnoreCase)
             || item.Code.Contains(value, StringComparison.OrdinalIgnoreCase));
 
@@ -345,7 +345,7 @@
             return Task.FromResult<IEnumerable<DropdownItem<Guid>>>(planningOptions);
         }
 
-        IEnumerable<DropdownItem<Guid>> results = planningOptions.Where(item =>
+        IEnumerable<DropdownItem<Guid>> results = planningOptions.OrderByDescending(item =>
             item.Name.Contains(value, StringComparison.OrdinalIgnoreCase)
             || item.Code.Contains(value, StringComparison.OrdinalIgnoreCase));
 
@@ -399,10 +399,11 @@
             return Task.FromResult<IEnumerable<Driver>>(drivers);
         }
 
-        IEnumerable<Driver> results = drivers.Where(driver =>
-            driver.Name.Contains(value, StringComparison.OrdinalIgnoreCase)
-            || driver.Code.Contains(value, StringComparison.OrdinalIgnoreCase)
-            || driver.Email.Contains(value, StringComparison.OrdinalIgnoreCase));
+        IEnumerable<Driver> results = drivers
+            .OrderByDescending(driver =>
+                    driver.Name.Contains(value, StringComparison.OrdinalIgnoreCase)
+                    || driver.Code.Contains(value, StringComparison.OrdinalIgnoreCase)
+                    || driver.Email.Contains(value, StringComparison.OrdinalIgnoreCase));
 
         return Task.FromResult(results);
     }
