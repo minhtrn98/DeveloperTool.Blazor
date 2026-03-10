@@ -14,5 +14,8 @@ public enum ActionType
     SwapMainDriver = 3,
 
     [Description("Đổi tài chờ")]
-    SwapSubDriver = 4
+    SwapSubDriver = 4,
+
+    [Description("Ghép xe đột xuất")]
+    UnexpectedPairing = 5
 }

@@ -123,6 +123,7 @@
 @code {
     private const string PairingApiPath = "/api/v1/assignments/pairing";
     private const string UnpairingApiPath = "/api/v1/assignments/unpairing";
+    private const string UnexpectedApiPath = "/api/v1/assignments/unexpected";
     private static readonly List<string> apiHostOptions =
     [
         "http://localhost:10000",
@@ -510,6 +511,7 @@
         {
             ActionType.Pairing => PairingApiPath,
             ActionType.Unpairing => UnpairingApiPath,
+            ActionType.UnexpectedPairing => UnexpectedApiPath,
             _ => string.Empty
         };
     }
