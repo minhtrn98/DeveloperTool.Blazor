@@ -79,6 +79,13 @@
                     </MudItem>
                 </MudGrid>
 
+                @if (actionType is ActionType.SwapMainDriver or ActionType.SwapSubDriver)
+                {
+                    <MudAutocomplete T="Driver" @bind-Value="selectedSwapDriver" SearchFunc="SearchDrivers"
+                                     ToStringFunc="GetDriverLabel" Label="Tài xế cần đổi" Variant="Variant.Outlined"
+                                     FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
+                }
+
                 <MudGrid>
                     <MudItem xs="12" md="6">
                         <MudSelect T="AssignmentPlanType" @bind-Value="planningType" @bind-Value:after="OnPlanningTypeChanged"
@@ -123,6 +130,7 @@
 @code {
     private const string PairingApiPath = "/api/v1/assignments/pairing";
     private const string UnpairingApiPath = "/api/v1/assignments/unpairing";
+    private const string SwapDriverApiPath = "/api/v1/assignments/request";
     private const string UnexpectedApiPath = "/api/v1/assignments/unexpected";
     private static readonly List<string> apiHostOptions =
     [
@@ -155,6 +163,7 @@
     private DropdownItem<Guid>? selectedPlanningOption;
     private PostOffice? selectedPostOffice;
     private Driver? selectedDriver;
+    private Driver? selectedSwapDriver;
     private string address = string.Empty;
     private string postOfficeCode = string.Empty;
 
@@ -432,51 +441,14 @@
         isSubmitting = true;
         try
         {
-            PairingRequest request = new()
+            if (actionType is ActionType.Pairing or ActionType.Unpairing or ActionType.UnexpectedPairing)
             {
-                VehicleId = vehicleId,
-                PairingReasonTypeId = pairingReasonTypeId,
-                Odometer = odometer,
-                Address = address,
-                ActionType = actionType,
-                CheckStatus = 2,
-                PlanningType = planningType,
-                PlanningId = planningId,
-                AutoCreateMaintenancePlan = autoCreateMaintenancePlan,
-                PostOfficeCode = postOfficeCode,
-                AssignmentImages = BuildAssignmentImages()
-            };
-
-            using HttpClient client = HttpClientFactory.CreateClient();
-            using HttpRequestMessage httpRequest = new(HttpMethod.Post, BuildApiUrl(apiPath))
-            {
-                Content = JsonContent.Create(request)
-            };
-
-            if (!string.IsNullOrWhiteSpace(accessToken))
-            {
-                httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Trim());
+                await SendPairingAsync(apiPath);
             }
-
-            if (Guid.TryParse(companyId, out Guid companyGuid))
+            else if (actionType is ActionType.SwapMainDriver or ActionType.SwapSubDriver)
             {
-                httpRequest.Headers.Add("CompanyId", companyGuid.ToString());
+                await SendRequestSwapDriverAsync(apiPath);
             }
-
-            if (Guid.TryParse(departmentId, out Guid departmentGuid))
-            {
-                httpRequest.Headers.Add("DepartmentId", departmentGuid.ToString());
-            }
-
-            HttpResponseMessage response = await client.SendAsync(httpRequest);
-            if (response.IsSuccessStatusCode)
-            {
-                Snackbar.Add("Gửi yêu cầu ghép xe thành công.", Severity.Success);
-                return;
-            }
-
-            string error = await response.Content.ReadAsStringAsync();
-            Snackbar.Add($"Gửi yêu cầu thất bại: {(int)response.StatusCode} {response.ReasonPhrase}. {error}", Severity.Error);
         }
         catch (Exception ex)
         {
@@ -486,6 +458,97 @@
         {
             isSubmitting = false;
         }
+    }
+
+    private async Task SendPairingAsync(string apiPath)
+    {
+        PairingRequest request = new()
+        {
+            VehicleId = vehicleId,
+            PairingReasonTypeId = pairingReasonTypeId,
+            Odometer = odometer,
+            Address = address,
+            ActionType = actionType,
+            CheckStatus = 2,
+            PlanningType = planningType,
+            PlanningId = planningId,
+            AutoCreateMaintenancePlan = autoCreateMaintenancePlan,
+            PostOfficeCode = postOfficeCode,
+            AssignmentImages = BuildAssignmentImages()
+        };
+
+        using HttpClient client = HttpClientFactory.CreateClient();
+        using HttpRequestMessage httpRequest = new(HttpMethod.Post, BuildApiUrl(apiPath))
+        {
+            Content = JsonContent.Create(request)
+        };
+
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Trim());
+        }
+
+        if (Guid.TryParse(companyId, out Guid companyGuid))
+        {
+            httpRequest.Headers.Add("CompanyId", companyGuid.ToString());
+        }
+
+        if (Guid.TryParse(departmentId, out Guid departmentGuid))
+        {
+            httpRequest.Headers.Add("DepartmentId", departmentGuid.ToString());
+        }
+
+        using HttpResponseMessage response = await client.SendAsync(httpRequest);
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Gửi yêu cầu ghép xe thành công.", Severity.Success);
+            return;
+        }
+
+        string error = await response.Content.ReadAsStringAsync();
+        Snackbar.Add($"Gửi yêu cầu thất bại: {(int)response.StatusCode} {response.ReasonPhrase}. {error}", Severity.Error);
+    }
+
+    private async Task SendRequestSwapDriverAsync(string apiPath)
+    {
+        if (selectedSwapDriver == null)
+        {
+            Snackbar.Add("Vui lòng chọn tài xế cần đổi.", Severity.Warning);
+            return;
+        }
+
+        SwapDriverRequest request = new()
+        {
+            VehicleId = vehicleId,
+            Odometer = odometer,
+            ActionType = actionType,
+            DriverRequest = selectedSwapDriver.DriverId
+        };
+        using HttpClient client = HttpClientFactory.CreateClient();
+        using HttpRequestMessage httpRequest = new(HttpMethod.Post, BuildApiUrl(apiPath))
+        {
+            Content = JsonContent.Create(request)
+        };
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Trim());
+        }
+        if (Guid.TryParse(companyId, out Guid companyGuid))
+        {
+            httpRequest.Headers.Add("CompanyId", companyGuid.ToString());
+        }
+        if (Guid.TryParse(departmentId, out Guid departmentGuid))
+        {
+            httpRequest.Headers.Add("DepartmentId", departmentGuid.ToString());
+        }
+        using HttpResponseMessage response = await client.SendAsync(httpRequest);
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Gửi yêu cầu đổi tài xế thành công.", Severity.Success);
+            return;
+        }
+        string error = await response.Content.ReadAsStringAsync();
+        Snackbar.Add($"Gửi yêu cầu thất bại: {(int)response.StatusCode} {response.ReasonPhrase}. {error}", Severity.Error);
     }
 
     private static List<PairingAssignmentImage> BuildAssignmentImages()
@@ -513,6 +576,7 @@
             ActionType.Pairing => PairingApiPath,
             ActionType.Unpairing => UnpairingApiPath,
             ActionType.UnexpectedPairing => UnexpectedApiPath,
+            ActionType.SwapMainDriver or ActionType.SwapSubDriver => SwapDriverApiPath,
             _ => string.Empty
         };
     }
