@@ -1,5 +1,4 @@
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using TMS.DeveloperTool.Blazor.Features.Pairing.Models;
 
 namespace TMS.DeveloperTool.Blazor.Features.Pairing.Services;

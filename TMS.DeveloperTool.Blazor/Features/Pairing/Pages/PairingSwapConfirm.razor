@@ -7,19 +7,13 @@
 @inject MyDriverService MyDriverService
 @inject PairingService PairingService
 @inject ISnackbar Snackbar
+@inject ApiUrlsOptions ApiUrlsOptions
 
 <PageTitle>Yêu cầu đổi tài xế</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudPaper Elevation="2" Class="pa-4">
         <MudText Typo="Typo.h5" Class="mb-4">Yêu cầu đổi tài xế</MudText>
-        <MudSelect T="string" @bind-Value="apiHost" Label="Host API" Variant="Variant.Outlined" FullWidth="true"
-                   Adornment="Adornment.End" AdornmentText="@GetApiPath()" Class="mb-3">
-            @foreach (string host in apiHostOptions)
-            {
-                <MudSelectItem Value="@host">@host</MudSelectItem>
-            }
-        </MudSelect>
         <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="4"
                       Class="mb-3" />
 
@@ -68,19 +62,14 @@
 
 @code {
     private const string ConfirmApiPath = "/api/v1/assignments/confirm";
-    private static readonly List<string> apiHostOptions =
-    [
-        "http://localhost:10000",
-        "http://247tech.vn:25020"
-    ];
-
-    private string apiHost = apiHostOptions[0];
     private string accessToken = string.Empty;
     private List<Driver> drivers = [];
     private Driver? selectedDriver;
     private readonly List<PairingCacheItem> cacheItems = [];
     private bool isLoading;
     private bool isSubmitting;
+
+    private string ApiHost => ApiUrlsOptions.Fleet.Trim().TrimEnd('/');
 
     protected override async Task OnInitializedAsync()
     {
@@ -169,7 +158,7 @@
         try
         {
             ApiCallResult result = await PairingService.SendConfirmAsync(
-                apiHost,
+                ApiHost,
                 ConfirmApiPath,
                 accessToken,
                 companyId: null,
@@ -266,11 +255,6 @@
         }
 
         return ttl.Value.ToString("g");
-    }
-
-    private static string GetApiPath()
-    {
-        return ConfirmApiPath;
     }
 
     private sealed class PairingCachePayload

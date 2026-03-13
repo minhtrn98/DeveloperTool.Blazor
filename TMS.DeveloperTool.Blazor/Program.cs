@@ -23,6 +23,8 @@ builder.Host.UseSerilog((context, services, configuration) =>
 
 builder.Services.Configure<RabbitMqConfig>(builder.Configuration.GetSection("MyRabbitMq"));
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Identity"));
+builder.Services.Configure<ApiUrlsOptions>(builder.Configuration.GetSection(ApiUrlsOptions.SectionName));
+builder.Services.AddSingleton(sp => sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ApiUrlsOptions>>().Value);
 
 builder.Services.AddMudServices();
 

@@ -2,6 +2,7 @@
 @using System.Net.Http.Headers
 @inject IHttpClientFactory HttpClientFactory
 @inject ISnackbar Snackbar
+@inject ApiUrlsOptions ApiUrlsOptions
 
 <PageTitle>Kích hoạt job</PageTitle>
 
@@ -10,14 +11,6 @@
         <MudText Typo="Typo.h5" Class="mb-4">Kích hoạt job</MudText>
 
         <MudForm>
-            <MudSelect T="string" @bind-Value="apiHost" Label="Host API" Variant="Variant.Outlined" FullWidth="true"
-                       Adornment="Adornment.End" AdornmentText="@ApiPath" Class="mb-3">
-                @foreach (string host in apiHostOptions)
-                {
-                    <MudSelectItem Value="@host">@host</MudSelectItem>
-                }
-            </MudSelect>
-
             <MudSelect T="string" @bind-Value="jobName" Label="Job" Variant="Variant.Outlined" FullWidth="true" Class="mb-3">
                 @foreach (string name in jobNames)
                 {
@@ -46,12 +39,6 @@
 @code {
     private const string ApiPath = "/api/v1/operational/maintain/jobs";
     private const string DefaultGroup = "DEFAULT";
-    private static readonly string[] apiHostOptions =
-    [
-        "http://localhost:10000",
-        "http://247tech.vn:25020"
-    ];
-
     private static readonly List<string> jobNames =
     [
         "InsurancePlanCreator",
@@ -59,22 +46,17 @@
         "MaintenancePlanCreator"
     ];
 
-    private string apiHost = apiHostOptions[0];
     private string jobName = jobNames[0];
     private string externalAuthToken = string.Empty;
     private bool isSubmitting;
+
+    private string ApiHost => ApiUrlsOptions.Fleet.Trim().TrimEnd('/');
 
     private async Task TriggerJobAsync()
     {
         if (string.IsNullOrWhiteSpace(jobName))
         {
             Snackbar.Add("Vui long chon job.", Severity.Warning);
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(apiHost))
-        {
-            Snackbar.Add("Vui long chon host API.", Severity.Warning);
             return;
         }
 
@@ -115,7 +97,6 @@
 
     private string BuildApiUrl()
     {
-        string trimmedHost = apiHost.Trim().TrimEnd('/');
-        return $"{trimmedHost}{ApiPath}/{jobName}/trigger?group={DefaultGroup}";
+        return $"{ApiHost}{ApiPath}/{jobName}/trigger?group={DefaultGroup}";
     }
 }

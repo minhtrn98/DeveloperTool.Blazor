@@ -3,6 +3,7 @@
 @inherits LayoutComponentBase
 @inject MyDriverService MyDriverService
 @inject ISnackbar Snackbar
+@inject IWebHostEnvironment WebHostEnvironment
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
@@ -15,6 +16,7 @@
                        OnClick="@((e) => DrawerToggle())" />
         <MudText Typo="Typo.h5" Class="ml-3">TMS DeveloperTools</MudText>
         <MudSpacer />
+        <MudText Typo="Typo.subtitle2" Class="me-3">ENV: @CurrentEnvironment</MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@_isGeneratingTokens"
                    StartIcon="@Icons.Material.Filled.VpnKey" OnClick="GenerateDriverTokensAsync">
             @if (_isGeneratingTokens)
@@ -50,6 +52,7 @@
     private bool _isDarkMode = true;
     private bool _isGeneratingTokens;
     private MudTheme? _theme = null;
+    private string CurrentEnvironment => WebHostEnvironment.EnvironmentName;
 
     protected override void OnInitialized()
     {
