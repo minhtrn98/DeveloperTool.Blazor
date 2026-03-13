@@ -14,9 +14,8 @@
     <MudAppBar Elevation="1">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
                        OnClick="@((e) => DrawerToggle())" />
-        <MudText Typo="Typo.h5" Class="ml-3">TMS DeveloperTools</MudText>
+        <MudText Typo="Typo.h5" Class="ml-3">TMS DeveloperTools [@CurrentEnvironment]</MudText>
         <MudSpacer />
-        <MudText Typo="Typo.subtitle2" Class="me-3">ENV: @CurrentEnvironment</MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@_isGeneratingTokens"
                    StartIcon="@Icons.Material.Filled.VpnKey" OnClick="GenerateDriverTokensAsync">
             @if (_isGeneratingTokens)
