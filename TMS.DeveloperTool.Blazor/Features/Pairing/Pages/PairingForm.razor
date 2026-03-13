@@ -27,6 +27,10 @@
         else
         {
             <MudForm>
+                <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged"
+                                 SearchFunc="SearchDrivers" ToStringFunc="GetDriverLabel" Label="Tài xế"
+                                 Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
+
                 <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="4"
                               Class="mb-3" />
 
@@ -40,10 +44,6 @@
                                       FullWidth="true" Class="mb-3" />
                     </MudItem>
                 </MudGrid> *@
-
-                <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged"
-                                 SearchFunc="SearchDrivers" ToStringFunc="GetDriverLabel" Label="Tài xế"
-                                 Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
 
                 <MudAutocomplete T="DropdownItem<Guid>" Value="SelectedVehicleOption" ValueChanged="OnVehicleChanged"
                                  SearchFunc="SearchVehicleOptions" ToStringFunc="GetVehicleDropdownLabel" Label="Xe"
@@ -174,7 +174,7 @@
             Dictionary<Guid, string> vehicleMap = await FleetRepository.GetAllVehiclePlateAsync(cancellationToken);
             vehicleOptions = vehicleMap
                 .OrderBy(kvp => kvp.Value)
-                .Select(kvp => new DropdownItem<Guid>(kvp.Key, kvp.Value, kvp.Value))
+                .Select(kvp => new DropdownItem<Guid>(kvp.Key, kvp.Value.Replace(".", "").Replace("-", "").ToLowerInvariant(), kvp.Value))
                 .ToList();
 
             pairingReasonTypes = (await FleetRepository.GetPairingReasonTypes(cancellationToken)).ToList();
@@ -314,7 +314,7 @@
 
     private string GetVehicleDropdownLabel(DropdownItem<Guid>? item)
     {
-        return item == null ? string.Empty : item.Code;
+        return item == null ? string.Empty : item.Name;
     }
 
     private string GetDriverLabel(Driver? driver)
@@ -329,9 +329,10 @@
             return Task.FromResult<IEnumerable<DropdownItem<Guid>>>(vehicleOptions);
         }
 
-        IEnumerable<DropdownItem<Guid>> results = vehicleOptions.OrderByDescending(item =>
-            item.Name.Contains(value, StringComparison.OrdinalIgnoreCase)
-            || item.Code.Contains(value, StringComparison.OrdinalIgnoreCase));
+        string formatValue = value.Replace(".", "").Replace("-", "");
+
+        IEnumerable<DropdownItem<Guid>> results = vehicleOptions
+            .OrderByDescending(item => item.Code.Contains(formatValue, StringComparison.OrdinalIgnoreCase));
 
         return Task.FromResult(results);
     }

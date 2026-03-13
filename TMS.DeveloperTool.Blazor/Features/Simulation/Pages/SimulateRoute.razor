@@ -119,7 +119,9 @@
             return Task.FromResult<IEnumerable<string>>(Vehicles);
         }
 
-        var results = Vehicles.OrderByDescending(x => x.Contains(value, StringComparison.OrdinalIgnoreCase));
+        string formatValue = value.Replace(".", "").Replace("-", "");
+
+        var results = Vehicles.OrderByDescending(x => x.Contains(formatValue, StringComparison.OrdinalIgnoreCase));
 
         return Task.FromResult<IEnumerable<string>>(results);
     }

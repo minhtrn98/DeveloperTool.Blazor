@@ -14,12 +14,13 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudPaper Elevation="2" Class="pa-4">
         <MudText Typo="Typo.h5" Class="mb-4">Yêu cầu đổi tài xế</MudText>
-        <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="4"
-                      Class="mb-3" />
 
         <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged"
                          SearchFunc="SearchDrivers" ToStringFunc="GetDriverLabel" Label="Tài xế"
                          Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
+
+        <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="4"
+                      Class="mb-3" />
 
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@isLoading" OnClick="RefreshAsync" Class="mb-3">
             @if (isLoading)
