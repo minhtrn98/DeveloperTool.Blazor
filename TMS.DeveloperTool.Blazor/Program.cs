@@ -11,6 +11,11 @@ using TMS.DeveloperTool.Blazor.Infrastructure.Security;
 using TMS.DeveloperTool.Blazor.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Local"))
+{
+    builder.WebHost.UseStaticWebAssets();
+}
+
 builder.Logging.ClearProviders();
 
 builder.Host.UseSerilog((context, services, configuration) =>
@@ -85,7 +90,7 @@ WebApplication app = builder.Build();
 // ==================================================
 
 
-if (!app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Local"))
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
