@@ -20,4 +20,10 @@
     <PackageReference Include="StackExchange.Redis" Version="2.10.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="appsettings.Local.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
