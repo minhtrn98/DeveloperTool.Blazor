@@ -1,0 +1,16 @@
+@if (IsHomePage)
+{
+    <PageTitle>TMS Developer Tools</PageTitle>
+}
+else
+{
+    <PageTitle>TMS Tools - @MenuName</PageTitle>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public string MenuName { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsHomePage { get; set; } = false;
+}
