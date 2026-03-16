@@ -171,7 +171,7 @@
         {
             CancellationToken cancellationToken = CancellationToken.None;
 
-            Dictionary<Guid, string> vehicleMap = await FleetRepository.GetAllVehiclePlateAsync(cancellationToken);
+            Dictionary<Guid, string> vehicleMap = await FleetRepository.GetAllVehiclePlateAsync(isPairingAllowed: true, cancellationToken);
             vehicleOptions = vehicleMap
                 .OrderBy(kvp => kvp.Value)
                 .Select(kvp => new DropdownItem<Guid>(kvp.Key, kvp.Value.Replace(".", "").Replace("-", "").ToLowerInvariant(), kvp.Value))

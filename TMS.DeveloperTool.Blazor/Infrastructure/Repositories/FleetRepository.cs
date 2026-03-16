@@ -24,13 +24,21 @@ public sealed class FleetRepository
         return vehicles.ToDictionary(d => d.Id, d => d.LicensePlate);
     }
 
-    public async Task<Dictionary<Guid, string>> GetAllVehiclePlateAsync(CancellationToken cancellationToken = default)
+    public async Task<Dictionary<Guid, string>> GetAllVehiclePlateAsync(bool? isPairingAllowed, CancellationToken cancellationToken = default)
     {
-        const string sql = """
+        string sql = isPairingAllowed.HasValue ? """
             SELECT "Id", "LicensePlate"
-            FROM public."Vehicles"
+            FROM public.mv_vehicles_with_status
+            WHERE "IsPairingAllowed" = @IsPairingAllowed
+        """ : """
+            SELECT "Id", "LicensePlate"
+            FROM public.mv_vehicles_with_status
         """;
-        IEnumerable<VehicleRecord> vehicles = await _dbQuery.QueryAsync<VehicleRecord>(sql, null, cancellationToken);
+        
+        IEnumerable<VehicleRecord> vehicles = isPairingAllowed.HasValue
+            ? await _dbQuery.QueryAsync<VehicleRecord>(sql, new { IsPairingAllowed = isPairingAllowed }, cancellationToken)
+            : await _dbQuery.QueryAsync<VehicleRecord>(sql, null, cancellationToken);
+
         return vehicles.ToDictionary(d => d.Id, d => d.LicensePlate);
     }
 
