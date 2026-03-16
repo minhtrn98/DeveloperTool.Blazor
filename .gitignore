@@ -489,3 +489,5 @@ appsettings.Local.json
 
 # Documentation (generated/local)
 /docs/
+
+private.pem
