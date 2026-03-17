@@ -117,28 +117,28 @@ public sealed class FleetRepository
         return await _dbQuery.SingleOrDefaultAsync<LatestAssignmentResponse>(sql, new { VehicleId = vehicleId }, cancellationToken);
     }
 
-    public async Task<IEnumerable<DropdownItem<Guid>>> GetInspectionPlansByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<DropdownItemPlanning>> GetInspectionPlansByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT "Id", "Code", "Name"
+            SELECT "Id", "Code", "Name", "Status"
             FROM public."InspectionPlans"
             WHERE "VehicleId" = @VehicleId and "Status" = Any(@Statuses)
         """;
-        IEnumerable<DropdownItem<Guid>> records = await _dbQuery.QueryAsync<DropdownItem<Guid>>(
+        IEnumerable<DropdownItemPlanning> records = await _dbQuery.QueryAsync<DropdownItemPlanning>(
             sql,
             new { VehicleId = vehicleId, Statuses = new[] { (int)InspectionPlanStatus.WaitingForInspection, (int)InspectionPlanStatus.InProgress } },
             cancellationToken);
         return records;
     }
 
-    public async Task<IEnumerable<DropdownItem<Guid>>> GetMaintenancePlanByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<DropdownItemPlanning>> GetMaintenancePlanByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT "Id", "Code", "Name"
+            SELECT "Id", "Code", "Name", "Status"
             FROM public."MaintenancePlans"
             WHERE "VehicleId" = @VehicleId and "Status" = Any(@Statuses)
         """;
-        IEnumerable<DropdownItem<Guid>> records = await _dbQuery.QueryAsync<DropdownItem<Guid>>(
+        IEnumerable<DropdownItemPlanning> records = await _dbQuery.QueryAsync<DropdownItemPlanning>(
             sql,
             new { VehicleId = vehicleId, Statuses = new[] { (int)MaintenancePlanStatus.Pending, (int)MaintenancePlanStatus.InTransit, (int)MaintenancePlanStatus.InProgress } },
             cancellationToken);

@@ -92,7 +92,7 @@
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" md="6">
-                        <MudAutocomplete T="DropdownItem<Guid>" @bind-Value="SelectedPlanningOption"
+                        <MudAutocomplete T="DropdownItemPlanning" @bind-Value="SelectedPlanningOption"
                                          SearchFunc="SearchPlanningOptions" ToStringFunc="GetDropdownLabel" Label="Kế hoạch"
                                          Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
                     </MudItem>
@@ -142,12 +142,12 @@
     private List<DropdownItem<Guid>> pairingReasonTypes = [];
     private List<DropdownItem<ActionType>> actionTypes = [];
     private List<DropdownItem<AssignmentPlanType>> planningTypes = [];
-    private List<DropdownItem<Guid>> planningOptions = [];
+    private List<DropdownItemPlanning> planningOptions = [];
     private List<PostOffice> postOffices = [];
     private List<Driver> drivers = [];
 
     private DropdownItem<Guid>? selectedVehicleOption;
-    private DropdownItem<Guid>? selectedPlanningOption;
+    private DropdownItemPlanning? selectedPlanningOption;
     private PostOffice? selectedPostOffice;
     private Driver? selectedDriver;
     private Driver? selectedSwapDriver;
@@ -266,7 +266,7 @@
         }
     }
 
-    private DropdownItem<Guid>? SelectedPlanningOption
+    private DropdownItemPlanning? SelectedPlanningOption
     {
         get => selectedPlanningOption;
         set
@@ -307,9 +307,9 @@
         return $"{postOffice.PostOfficeCode} - {postOffice.PostOfficeName}";
     }
 
-    private string GetDropdownLabel(DropdownItem<Guid>? item)
+    private string GetDropdownLabel(DropdownItemPlanning? item)
     {
-        return item == null ? string.Empty : $"{item.Code} - {item.Name}";
+        return item == null ? string.Empty : $"[{item.Status}] {item.Code} - {item.Name}";
     }
 
     private string GetVehicleDropdownLabel(DropdownItem<Guid>? item)
@@ -337,14 +337,14 @@
         return Task.FromResult(results);
     }
 
-    private Task<IEnumerable<DropdownItem<Guid>>> SearchPlanningOptions(string value, CancellationToken cancellationToken)
+    private Task<IEnumerable<DropdownItemPlanning>> SearchPlanningOptions(string value, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return Task.FromResult<IEnumerable<DropdownItem<Guid>>>(planningOptions);
+            return Task.FromResult<IEnumerable<DropdownItemPlanning>>(planningOptions);
         }
 
-        IEnumerable<DropdownItem<Guid>> results = planningOptions.OrderByDescending(item =>
+        IEnumerable<DropdownItemPlanning> results = planningOptions.OrderByDescending(item =>
             item.Name.Contains(value, StringComparison.OrdinalIgnoreCase)
             || item.Code.Contains(value, StringComparison.OrdinalIgnoreCase));
 
