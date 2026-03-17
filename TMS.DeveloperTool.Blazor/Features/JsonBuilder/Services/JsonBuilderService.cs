@@ -111,8 +111,8 @@ public sealed class JsonBuilderService
             string valueStr = newValue?.ToString() ?? "";
             // Escape quotes in value if any
             valueStr = valueStr.Replace("\"", "\\\"");
-            string pattern = $"\"{Regex.Escape(key)}\": \"[^\"]*\"";
-            string replacement = $"\"{key}\": \"{valueStr}\"";
+            string pattern = $"\"{Regex.Escape(key)}\": (null|\"[^\"]*\")";
+            string replacement = string.IsNullOrEmpty(valueStr) ? $"\"{key}\": null" : $"\"{key}\": \"{valueStr}\"";
             return Regex.Replace(originalJson, pattern, replacement);
         }
         else
