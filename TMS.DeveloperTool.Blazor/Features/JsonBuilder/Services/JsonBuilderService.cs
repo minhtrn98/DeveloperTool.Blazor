@@ -17,12 +17,23 @@ public sealed class JsonBuilderService
             "pickupPostOfficeCode", async () =>
             {
                 // Simulate fetching driver IDs from a repository
-                await Task.Delay(100); // Simulate async work
                 return
                 [
                     "HBH",
                     "K3B",
                     "K3C"
+                ];
+            }
+        },
+        {
+            "OrderId", async () =>
+            {
+                // Simulate fetching order IDs from a repository
+                return
+                [
+                    "NTI2600078",
+                    "ORD456",
+                    "ORD789"
                 ];
             }
         }
