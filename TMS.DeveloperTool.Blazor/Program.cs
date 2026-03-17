@@ -9,6 +9,7 @@ using TMS.DeveloperTool.Blazor.Features.Routing.Services;
 using TMS.DeveloperTool.Blazor.Features.Simulation.Services;
 using TMS.DeveloperTool.Blazor.Infrastructure.Security;
 using TMS.DeveloperTool.Blazor.Services;
+using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Local"))
@@ -79,6 +80,7 @@ builder.Services.AddScoped<PlanningRepository>();
 builder.Services.AddScoped<FakeVehicleTransportService>();
 builder.Services.AddScoped<RouteCheckPointTemplateService>();
 builder.Services.AddScoped<PairingService>();
+builder.Services.AddScoped<JsonBuilderService>();
 
 builder.Services.AddSingleton<EventService>();
 builder.Services.AddSingleton<JwtTokenService>();

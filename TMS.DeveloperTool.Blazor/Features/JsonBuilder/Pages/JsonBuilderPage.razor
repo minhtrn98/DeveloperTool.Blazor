@@ -1,0 +1,74 @@
+@page "/json-builder"
+@using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services
+@using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Models
+@using MudBlazor
+@inject JsonBuilderService JsonBuilderService
+
+<AppPageTitle MenuName="JSON Builder" />
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+    <MudPaper Elevation="2" Class="pa-6">
+        <MudText Typo="Typo.h4" Class="mb-4">JSON Builder</MudText>
+
+        <MudTextField @bind-Value="JsonInput" Label="Nhập JSON" Lines="10" Variant="Variant.Outlined" />
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ParseJson" Class="mt-4">Parse JSON</MudButton>
+
+        @if (JsonKeys.Count > 0)
+        {
+            <MudText Typo="Typo.h6" Class="mt-6 mb-2">Extracted Keys</MudText>
+            <MudList T="JsonKey">
+                @foreach (var key in JsonKeys.Where(k => k.IsSupported))
+                {
+                    <MudListItem T="JsonKey">
+                        <MudText><strong>@key.Path:</strong> @key.CurrentValue</MudText>
+                        @if (key.IsSupported && key.Options != null)
+                        {
+                            <MudSelect T="string" Value="@(key.CurrentValue?.ToString())" ValueChanged="v => OnValueChanged(key, v)" Label="@key.KeyName" Variant="Variant.Outlined" Class="ml-4" Style="width: 200px;">
+                                @foreach (var option in key.Options)
+                                {
+                                    <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                                }
+                            </MudSelect>
+                        }
+                    </MudListItem>
+                }
+            </MudList>
+
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="UpdateJson" Class="mt-4">Update JSON</MudButton>
+        }
+
+        @if (!string.IsNullOrEmpty(JsonOutput))
+        {
+            <MudText Typo="Typo.h6" Class="mt-6 mb-2">Updated JSON</MudText>
+            <MudTextField @bind-Value="JsonOutput" ReadOnly="true" Lines="10" Variant="Variant.Outlined" />
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string JsonInput { get; set; } = "";
+    private string JsonOutput { get; set; } = "";
+    private List<JsonKey> JsonKeys { get; set; } = new();
+
+    private async Task ParseJson()
+    {
+        JsonKeys = JsonBuilderService.ParseJsonAndExtractKeys(JsonInput);
+        await JsonBuilderService.LoadDropdownOptionsAsync(JsonKeys);
+        JsonOutput = JsonInput; // Initial output
+    }
+
+    private void OnValueChanged(JsonKey key, string newValue)
+    {
+        key.CurrentValue = newValue;
+        UpdateJson();
+    }
+
+    private void UpdateJson()
+    {
+        foreach (var key in JsonKeys.Where(k => k.IsSupported && k.CurrentValue != null))
+        {
+            JsonOutput = JsonBuilderService.UpdateJsonValue(JsonOutput, key.Path, key.CurrentValue);
+        }
+    }
+}
