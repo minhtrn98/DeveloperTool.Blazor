@@ -10,7 +10,6 @@ namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 public sealed class JsonBuilderService
 {
     // Add other repositories as needed
-
     private readonly Dictionary<string, Func<Task<List<string>>>> _keyMappings = new()
     {
         {
@@ -37,6 +36,12 @@ public sealed class JsonBuilderService
                 ];
             }
         }
+    };
+    private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        WriteIndented = true,
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
     public List<JsonKey> ParseJsonAndExtractKeys(string jsonString)
@@ -81,7 +86,7 @@ public sealed class JsonBuilderService
             for (int i = 0; i < array.Count; i++)
             {
                 string path = $"{currentPath}[{i}]";
-                ExtractKeysRecursive(array[i], path, keys);
+                ExtractKeysRecursive(array[i]!, path, keys);
             }
         }
     }
@@ -97,7 +102,7 @@ public sealed class JsonBuilderService
         }
     }
 
-    public string UpdateJsonValue(string originalJson, string path, object newValue)
+    public static string UpdateJsonValue(string originalJson, string path, object newValue)
     {
         // For simple top-level keys, use string replacement to preserve formatting
         if (!path.Contains('.') && !path.Contains('['))
@@ -119,7 +124,7 @@ public sealed class JsonBuilderService
                 if (jsonNode != null)
                 {
                     SetValueByPath(jsonNode, path, newValue);
-                    return jsonNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true, TypeInfoResolver = new DefaultJsonTypeInfoResolver(), Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+                    return jsonNode.ToJsonString(_jsonOptions);
                 }
             }
             catch (JsonException)
@@ -140,11 +145,11 @@ public sealed class JsonBuilderService
             string part = parts[i];
             if (int.TryParse(part, out int index) && current is JsonArray array)
             {
-                current = array[index];
+                current = array[index]!;
             }
             else if (current is JsonObject obj)
             {
-                current = obj[part];
+                current = obj[part]!;
             }
         }
 

@@ -34,7 +34,7 @@ public sealed class FleetRepository
             SELECT "Id", "LicensePlate"
             FROM public.mv_vehicles_with_status
         """;
-        
+
         IEnumerable<VehicleRecord> vehicles = isPairingAllowed.HasValue
             ? await _dbQuery.QueryAsync<VehicleRecord>(sql, new { IsPairingAllowed = isPairingAllowed }, cancellationToken)
             : await _dbQuery.QueryAsync<VehicleRecord>(sql, null, cancellationToken);

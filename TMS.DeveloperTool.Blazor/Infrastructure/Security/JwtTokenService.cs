@@ -63,8 +63,8 @@ public sealed class JwtTokenService
         string privateKeyXml = File.ReadAllText("private.pem");
         RSA rsa = RSA.Create();
         rsa.FromXmlString(privateKeyXml);
-        RsaSecurityKey key = new (rsa);
-        SigningCredentials credentials = new (
+        RsaSecurityKey key = new(rsa);
+        SigningCredentials credentials = new(
             key,
             SecurityAlgorithms.RsaSha256
         );

@@ -4,12 +4,12 @@ using Serilog;
 using StackExchange.Redis;
 using TMS.DeveloperTool.Blazor.Components;
 using TMS.DeveloperTool.Blazor.Features.DriverChange.Services;
+using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 using TMS.DeveloperTool.Blazor.Features.Pairing.Services;
 using TMS.DeveloperTool.Blazor.Features.Routing.Services;
 using TMS.DeveloperTool.Blazor.Features.Simulation.Services;
 using TMS.DeveloperTool.Blazor.Infrastructure.Security;
 using TMS.DeveloperTool.Blazor.Services;
-using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Local"))

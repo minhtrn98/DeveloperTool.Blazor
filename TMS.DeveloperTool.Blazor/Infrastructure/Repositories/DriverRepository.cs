@@ -1,5 +1,4 @@
 ﻿using DriverRecord = (System.Guid Id, string Name);
-using TMS.DeveloperTool.Blazor.Contracts;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 
