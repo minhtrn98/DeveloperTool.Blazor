@@ -1,8 +1,8 @@
 namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Models;
 
-public sealed class JsonKeyMapping(List<string> optionLoader, List<DependentValueMapping>? dependentMappings = null)
+public sealed class JsonKeyMapping(List<string> options, List<DependentValueMapping>? dependentMappings = null)
 {
-    public List<string> OptionLoader { get; } = optionLoader;
+    public List<string> Options { get; } = options;
     public List<DependentValueMapping> DependentMappings { get; } = dependentMappings ?? [];
 }
 

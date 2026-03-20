@@ -3,6 +3,7 @@
 @using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Models
 @using MudBlazor
 @inject JsonBuilderService JsonBuilderService
+@inject IJSRuntime JSRuntime
 
 <AppPageTitle MenuName="JSON Builder" />
 
@@ -19,8 +20,11 @@
 
         <MudGrid>
             <MudItem xs="12" md="6">
-                <MudTextField @bind-Value="JsonInput" Label="Nhập JSON" Lines="20" Variant="Variant.Outlined" />
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ParseJson" Class="mt-4">Parse JSON</MudButton>
+                <MudTextField @bind-Value="JsonInput" Label="Nhập JSON" Lines="38" Variant="Variant.Outlined" />
+                <MudStack Row="true" Spacing="2" Class="mt-4">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ParseJson">Parse JSON</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="CopyJsonToClipboard" Disabled="@string.IsNullOrWhiteSpace(JsonInput)">Copy JSON</MudButton>
+                </MudStack>
             </MudItem>
             <MudItem xs="12" md="6">
                 @if (JsonKeys.Count > 0)
@@ -70,6 +74,11 @@
     private async Task OnValueChanged(JsonKey key, string newValue)
     {
         JsonInput = await JsonBuilderService.ApplyValueChange(JsonInput, SelectedJsonType, JsonKeys, key, newValue);
+    }
+
+    private async Task CopyJsonToClipboard()
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", JsonInput);
     }
 
     private void OnJsonTypeChanged(string jsonType)

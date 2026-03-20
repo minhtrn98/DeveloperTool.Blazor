@@ -9,7 +9,9 @@ namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 
 public sealed class JsonBuilderService
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly Dictionary<string, IJsonTypeMappingStrategy> _strategiesByType;
+    private readonly Dictionary<string, Task<Dictionary<string, JsonKeyMapping>>> _mappingsCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Lock _cacheLock = new();
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true,
@@ -17,18 +19,14 @@ public sealed class JsonBuilderService
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
-    public JsonBuilderService(IServiceProvider serviceProvider)
+    public JsonBuilderService(IEnumerable<IJsonTypeMappingStrategy> strategies)
     {
-        _serviceProvider = serviceProvider;
+        _strategiesByType = strategies.ToDictionary(s => s.JsonType, s => s, StringComparer.OrdinalIgnoreCase);
     }
 
     public IReadOnlyList<string> GetJsonTypes()
     {
-        IEnumerable<IJsonTypeMappingStrategy> jsonTypeMappingFactory = _serviceProvider.GetServices<IJsonTypeMappingStrategy>();
-        return jsonTypeMappingFactory
-            .Select(s => s.JsonType)
-            .OrderBy(x => x)
-            .ToList();
+        return _strategiesByType.Keys.OrderBy(x => x).ToList();
     }
 
     public async Task<List<JsonKey>> ParseJsonAndExtractKeys(string jsonString, string jsonType)
@@ -88,7 +86,7 @@ public sealed class JsonBuilderService
         {
             if (mappings.TryGetValue(key.KeyName, out JsonKeyMapping? mapping))
             {
-                key.Options = mapping.OptionLoader;
+                key.Options = [.. mapping.Options];
             }
         }
     }
@@ -124,9 +122,22 @@ public sealed class JsonBuilderService
 
     private async Task<Dictionary<string, JsonKeyMapping>> GetMappingsByType(string jsonType)
     {
-        IEnumerable<IJsonTypeMappingStrategy> services = _serviceProvider.GetServices<IJsonTypeMappingStrategy>();
-        IJsonTypeMappingStrategy jsonTypeMappingFactory = services.First(s => string.Equals(s.JsonType, jsonType, StringComparison.OrdinalIgnoreCase));
-        return await jsonTypeMappingFactory.BuildMappings();
+        if (!_strategiesByType.TryGetValue(jsonType, out IJsonTypeMappingStrategy? strategy))
+        {
+            return [];
+        }
+
+        Task<Dictionary<string, JsonKeyMapping>> buildTask;
+        lock (_cacheLock)
+        {
+            if (!_mappingsCache.TryGetValue(jsonType, out buildTask!))
+            {
+                buildTask = strategy.BuildMappings();
+                _mappingsCache[jsonType] = buildTask;
+            }
+        }
+
+        return await buildTask;
     }
 
     public static string UpdateJsonValue(string originalJson, string path, object newValue)
