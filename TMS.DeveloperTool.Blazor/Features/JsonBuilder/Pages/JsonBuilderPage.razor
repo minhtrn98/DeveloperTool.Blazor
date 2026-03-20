@@ -10,6 +10,13 @@
     <MudPaper Elevation="2" Class="pa-6">
         <MudText Typo="Typo.h4" Class="mb-4">JSON Builder</MudText>
 
+        <MudSelect T="string" Value="SelectedJsonType" ValueChanged="OnJsonTypeChanged" Label="JSON Type" Variant="Variant.Outlined" Class="mb-4">
+            @foreach (var jsonType in JsonTypes)
+            {
+                <MudSelectItem T="string" Value="@jsonType">@jsonType</MudSelectItem>
+            }
+        </MudSelect>
+
         <MudGrid>
             <MudItem xs="12" md="6">
                 <MudTextField @bind-Value="JsonInput" Label="Nhập JSON" Lines="20" Variant="Variant.Outlined" />
@@ -24,7 +31,7 @@
                         {
                             <MudListItem T="JsonKey">
                                 <MudText><strong>@key.Path:</strong> @key.CurrentValue</MudText>
-                                @if (key.Options != null)
+                                @if (key.Options.Count > 0)
                                 {
                                     <MudSelect T="string" Value="@(key.CurrentValue?.ToString())" ValueChanged="v => OnValueChanged(key, v)" Label="@key.KeyName" Variant="Variant.Outlined" Class="ml-4" Style="width: 200px;">
                                         @foreach (var option in key.Options)
@@ -43,18 +50,31 @@
 </MudContainer>
 
 @code {
+    private List<string> JsonTypes { get; set; } = new();
+    private string SelectedJsonType { get; set; } = string.Empty;
     private string JsonInput { get; set; } = "";
     private List<JsonKey> JsonKeys { get; set; } = new();
 
-    private async Task ParseJson()
+    protected override void OnInitialized()
     {
-        JsonKeys = JsonBuilderService.ParseJsonAndExtractKeys(JsonInput);
-        await JsonBuilderService.LoadDropdownOptionsAsync(JsonKeys);
+        JsonTypes = JsonBuilderService.GetJsonTypes().ToList();
+        SelectedJsonType = JsonTypes.FirstOrDefault() ?? string.Empty;
     }
 
-    private void OnValueChanged(JsonKey key, string newValue)
+    private async Task ParseJson()
     {
-        key.CurrentValue = newValue;
-        JsonInput = JsonBuilderService.UpdateJsonValue(JsonInput, key.Path, key.CurrentValue);
+        JsonKeys = await JsonBuilderService.ParseJsonAndExtractKeys(JsonInput, SelectedJsonType);
+        await JsonBuilderService.LoadDropdownOptionsAsync(JsonKeys, SelectedJsonType);
+    }
+
+    private async Task OnValueChanged(JsonKey key, string newValue)
+    {
+        JsonInput = await JsonBuilderService.ApplyValueChange(JsonInput, SelectedJsonType, JsonKeys, key, newValue);
+    }
+
+    private void OnJsonTypeChanged(string jsonType)
+    {
+        SelectedJsonType = jsonType;
+        JsonKeys.Clear();
     }
 }

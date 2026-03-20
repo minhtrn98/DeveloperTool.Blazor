@@ -71,15 +71,18 @@ builder.Services.AddTMSDbQuery("DriverDb");
 builder.Services.AddTMSDbQuery("FleetDb");
 builder.Services.AddTMSDbQuery("RouteDb");
 builder.Services.AddTMSDbQuery("PlanningDb");
+builder.Services.AddTMSDbQuery("OrderDb");
 
 builder.Services.AddScoped<DriverRepository>();
 builder.Services.AddScoped<FleetRepository>();
 builder.Services.AddScoped<RouteRepository>();
 builder.Services.AddScoped<PlanningRepository>();
+builder.Services.AddScoped<OrderRepository>();
 
 builder.Services.AddScoped<FakeVehicleTransportService>();
 builder.Services.AddScoped<RouteCheckPointTemplateService>();
 builder.Services.AddScoped<PairingService>();
+builder.Services.AddScoped<IJsonTypeMappingStrategy, PickupTaskEventJsonMappingStrategy>();
 builder.Services.AddScoped<JsonBuilderService>();
 
 builder.Services.AddSingleton<EventService>();

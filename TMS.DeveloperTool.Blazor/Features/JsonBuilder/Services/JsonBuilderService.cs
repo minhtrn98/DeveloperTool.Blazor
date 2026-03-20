@@ -9,34 +9,7 @@ namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 
 public sealed class JsonBuilderService
 {
-    // Add other repositories as needed
-    private readonly Dictionary<string, Func<Task<List<string>>>> _keyMappings = new()
-    {
-        {
-            "pickupPostOfficeCode", async () =>
-            {
-                // Simulate fetching driver IDs from a repository
-                return
-                [
-                    "HBH",
-                    "K3B",
-                    "K3C"
-                ];
-            }
-        },
-        {
-            "OrderId", async () =>
-            {
-                // Simulate fetching order IDs from a repository
-                return
-                [
-                    "NTI2600078",
-                    "ORD456",
-                    "ORD789"
-                ];
-            }
-        }
-    };
+    private readonly IServiceProvider _serviceProvider;
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true,
@@ -44,15 +17,31 @@ public sealed class JsonBuilderService
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
-    public List<JsonKey> ParseJsonAndExtractKeys(string jsonString)
+    public JsonBuilderService(IServiceProvider serviceProvider)
     {
-        var keys = new List<JsonKey>();
+        _serviceProvider = serviceProvider;
+    }
+
+    public IReadOnlyList<string> GetJsonTypes()
+    {
+        IEnumerable<IJsonTypeMappingStrategy> jsonTypeMappingFactory = _serviceProvider.GetServices<IJsonTypeMappingStrategy>();
+        return jsonTypeMappingFactory
+            .Select(s => s.JsonType)
+            .OrderBy(x => x)
+            .ToList();
+    }
+
+    public async Task<List<JsonKey>> ParseJsonAndExtractKeys(string jsonString, string jsonType)
+    {
+        List<JsonKey> keys = [];
+        Dictionary<string, JsonKeyMapping> mappings = await GetMappingsByType(jsonType);
+
         try
         {
-            var jsonNode = JsonNode.Parse(jsonString);
+            JsonNode? jsonNode = JsonNode.Parse(jsonString);
             if (jsonNode != null)
             {
-                ExtractKeysRecursive(jsonNode, "", keys);
+                ExtractKeysRecursive(jsonNode, "", keys, mappings);
             }
         }
         catch (JsonException)
@@ -62,7 +51,7 @@ public sealed class JsonBuilderService
         return keys;
     }
 
-    private void ExtractKeysRecursive(JsonNode node, string currentPath, List<JsonKey> keys)
+    private static void ExtractKeysRecursive(JsonNode node, string currentPath, List<JsonKey> keys, Dictionary<string, JsonKeyMapping> mappings)
     {
         if (node is JsonObject obj)
         {
@@ -71,11 +60,11 @@ public sealed class JsonBuilderService
                 string path = string.IsNullOrEmpty(currentPath) ? property.Key : $"{currentPath}.{property.Key}";
                 if (property.Value is JsonObject or JsonArray)
                 {
-                    ExtractKeysRecursive(property.Value, path, keys);
+                    ExtractKeysRecursive(property.Value, path, keys, mappings);
                 }
                 else
                 {
-                    bool isSupported = _keyMappings.ContainsKey(property.Key);
+                    bool isSupported = mappings.ContainsKey(property.Key);
                     var jsonKey = new JsonKey(path, property.Key, property.Value?.ToString(), isSupported);
                     keys.Add(jsonKey);
                 }
@@ -86,20 +75,58 @@ public sealed class JsonBuilderService
             for (int i = 0; i < array.Count; i++)
             {
                 string path = $"{currentPath}[{i}]";
-                ExtractKeysRecursive(array[i]!, path, keys);
+                ExtractKeysRecursive(array[i]!, path, keys, mappings);
             }
         }
     }
 
-    public async Task LoadDropdownOptionsAsync(List<JsonKey> keys)
+    public async Task LoadDropdownOptionsAsync(List<JsonKey> keys, string jsonType)
     {
-        foreach (var key in keys.Where(k => k.IsSupported))
+        Dictionary<string, JsonKeyMapping> mappings = await GetMappingsByType(jsonType);
+
+        foreach (JsonKey key in keys.Where(k => k.IsSupported))
         {
-            if (_keyMappings.TryGetValue(key.KeyName, out var func))
+            if (mappings.TryGetValue(key.KeyName, out JsonKeyMapping? mapping))
             {
-                key.Options = await func();
+                key.Options = mapping.OptionLoader;
             }
         }
+    }
+
+    public async Task<string> ApplyValueChange(string originalJson, string jsonType, List<JsonKey> keys, JsonKey changedKey, string newValue)
+    {
+        Dictionary<string, JsonKeyMapping> mappings = await GetMappingsByType(jsonType);
+        changedKey.CurrentValue = newValue;
+
+        string updatedJson = UpdateJsonValue(originalJson, changedKey.Path, newValue);
+        if (!mappings.TryGetValue(changedKey.KeyName, out JsonKeyMapping? mapping) || mapping.DependentMappings.Count == 0)
+        {
+            return updatedJson;
+        }
+
+        foreach (var dependent in mapping.DependentMappings)
+        {
+            if (!dependent.ValueMappings.TryGetValue(newValue, out var dependentValue))
+            {
+                continue;
+            }
+
+            string relatedPath = BuildRelatedPath(changedKey.Path, dependent.RelatedKeyName);
+            foreach (var relatedKey in keys.Where(k => string.Equals(k.Path, relatedPath, StringComparison.OrdinalIgnoreCase)))
+            {
+                relatedKey.CurrentValue = dependentValue;
+                updatedJson = UpdateJsonValue(updatedJson, relatedKey.Path, dependentValue);
+            }
+        }
+
+        return updatedJson;
+    }
+
+    private async Task<Dictionary<string, JsonKeyMapping>> GetMappingsByType(string jsonType)
+    {
+        IEnumerable<IJsonTypeMappingStrategy> services = _serviceProvider.GetServices<IJsonTypeMappingStrategy>();
+        IJsonTypeMappingStrategy jsonTypeMappingFactory = services.First(s => string.Equals(s.JsonType, jsonType, StringComparison.OrdinalIgnoreCase));
+        return await jsonTypeMappingFactory.BuildMappings();
     }
 
     public static string UpdateJsonValue(string originalJson, string path, object newValue)
@@ -163,4 +190,27 @@ public sealed class JsonBuilderService
             obj[lastPart] = JsonValue.Create(newValue);
         }
     }
+
+    private static string BuildRelatedPath(string sourcePath, string relatedKeyName)
+    {
+        string parentPath = GetParentPath(sourcePath);
+        if (string.IsNullOrEmpty(parentPath))
+        {
+            return relatedKeyName;
+        }
+
+        return $"{parentPath}.{relatedKeyName}";
+    }
+
+    private static string GetParentPath(string path)
+    {
+        int lastSeparatorIndex = path.LastIndexOf('.');
+        if (lastSeparatorIndex < 0)
+        {
+            return string.Empty;
+        }
+
+        return path[..lastSeparatorIndex];
+    }
+
 }
