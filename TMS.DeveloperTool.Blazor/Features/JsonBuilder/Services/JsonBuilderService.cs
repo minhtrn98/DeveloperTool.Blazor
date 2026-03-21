@@ -39,32 +39,12 @@ public sealed class JsonBuilderService
             return null;
         }
 
-        string fileName = $"{jsonType}.json";
-        string[] candidatePaths =
-        [
-            Path.Combine(_webHostEnvironment.ContentRootPath, "Templates", fileName),
-            Path.Combine(_webHostEnvironment.WebRootPath ?? string.Empty, "Templates", fileName)
-        ];
-
-        string? filePath = candidatePaths.FirstOrDefault(File.Exists);
-        if (string.IsNullOrWhiteSpace(filePath))
+        if (!_strategiesByType.TryGetValue(jsonType, out IJsonTypeMappingStrategy? strategy))
         {
             return null;
         }
 
-        string templateContent = await File.ReadAllTextAsync(filePath);
-        templateContent = ReplaceTemplateTokens(templateContent);
-        return templateContent;
-    }
-
-    private static string ReplaceTemplateTokens(string templateContent)
-    {
-        DateTimeOffset now = DateTimeOffset.Now;
-        DateTimeOffset localStartOfDay = new(now.Year, now.Month, now.Day, 0, 0, 0, now.Offset);
-
-        return templateContent
-            .Replace("{{datetime}}", localStartOfDay.ToString("O"), StringComparison.OrdinalIgnoreCase)
-            .Replace("{{yyyyMMdd}}", localStartOfDay.ToString("yyyyMMdd"), StringComparison.OrdinalIgnoreCase);
+        return await strategy.LoadTemplateAsync(_webHostEnvironment);
     }
 
     public async Task<List<JsonKey>> ParseJsonAndExtractKeys(string jsonString, string jsonType)

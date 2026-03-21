@@ -7,15 +7,15 @@ namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 
 public sealed class PickupTaskEventJsonMappingStrategy(
     OrderRepository orderRepository,
-    RouteRepository routeRepository) : IJsonTypeMappingStrategy
+    RouteRepository routeRepository) : JsonTypeMappingStrategyBase
 {
     public const string TypeName = "RabbitMqPickupTaskEvent";
-    public string JsonType => TypeName;
+    public override string JsonType => TypeName;
 
     private readonly Lazy<Task<Dictionary<string, JsonKeyMapping>>> _mappingsTask =
         new(() => BuildMappingsInternal(orderRepository, routeRepository), LazyThreadSafetyMode.ExecutionAndPublication);
 
-    public async Task<Dictionary<string, JsonKeyMapping>> BuildMappings()
+    public override async Task<Dictionary<string, JsonKeyMapping>> BuildMappings()
     {
         return await _mappingsTask.Value;
     }
