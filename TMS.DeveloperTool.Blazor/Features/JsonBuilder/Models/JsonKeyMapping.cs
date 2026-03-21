@@ -29,7 +29,7 @@ public sealed class DependentValueMapping
 
     public bool TryResolveValue(object? oldValue, object? oldParentValue, object? newParentValue, out object? resolvedValue)
     {
-        bool hasMappedValue = TryGetMappedValue(newParentValue, out object? mappedValue);
+        bool hasMappedValue = JsonValueMappingMatcher.TryGetMappedValue(ValueMappings, newParentValue, out object? mappedValue);
         if (!hasMappedValue && !_hasCustomValueResolver)
         {
             resolvedValue = null;
@@ -50,27 +50,5 @@ public sealed class DependentValueMapping
     private static object? DefaultValueResolver(DependentValueContext context)
     {
         return context.NewValue;
-    }
-
-    private bool TryGetMappedValue(object? sourceValue, out object? mappedValue)
-    {
-        if (sourceValue is not null && ValueMappings.TryGetValue(sourceValue, out object? directMappedValue))
-        {
-            mappedValue = directMappedValue;
-            return true;
-        }
-
-        string sourceText = sourceValue?.ToString() ?? string.Empty;
-        foreach ((object key, object value) in ValueMappings)
-        {
-            if (string.Equals(key?.ToString(), sourceText, StringComparison.OrdinalIgnoreCase))
-            {
-                mappedValue = value;
-                return true;
-            }
-        }
-
-        mappedValue = null;
-        return false;
     }
 }
