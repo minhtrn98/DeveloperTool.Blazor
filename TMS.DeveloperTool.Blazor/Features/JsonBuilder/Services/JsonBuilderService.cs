@@ -111,7 +111,7 @@ public sealed class JsonBuilderService
                 .FirstOrDefault(dm => string.Equals(dm.RelatedKeyName, changedKey.KeyName, StringComparison.OrdinalIgnoreCase));
             if (selfMapping != null && TryGetMappedValue(selfMapping.ValueMappings, newValue, out object? mappedSelfValue))
             {
-                valueToWrite = mappedSelfValue;
+                valueToWrite = mappedSelfValue!;
             }
         }
 
@@ -123,7 +123,7 @@ public sealed class JsonBuilderService
 
         foreach (var dependent in mapping.DependentMappings)
         {
-            if (!TryGetMappedValue(dependent.ValueMappings, newValue, out object? dependentValue))
+            if (!TryGetMappedValue(dependent.ValueMappings, newValue, out object? dependentValue) && dependentValue == null)
             {
                 continue;
             }
@@ -136,7 +136,7 @@ public sealed class JsonBuilderService
 
                 if (!isSelfMapping)
                 {
-                    updatedJson = UpdateJsonValue(updatedJson, relatedKey.Path, dependentValue);
+                    updatedJson = UpdateJsonValue(updatedJson, relatedKey.Path, dependentValue!);
                 }
             }
         }
@@ -238,7 +238,7 @@ public sealed class JsonBuilderService
 
     private static bool TryGetMappedValue(Dictionary<object, object> mappings, object sourceValue, out object? mappedValue)
     {
-        if (mappings.TryGetValue(sourceValue, out object directMappedValue))
+        if (mappings.TryGetValue(sourceValue, out object? directMappedValue))
         {
             mappedValue = directMappedValue;
             return true;
