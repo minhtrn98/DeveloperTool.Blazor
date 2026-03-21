@@ -149,7 +149,7 @@ public sealed class JsonBuilderService
                 // For self-mapped keys, convert the current raw value (e.g. numeric) back to display option.
                 DependentValueMapping? selfMapping = mapping.DependentMappings
                     .FirstOrDefault(dm => string.Equals(dm.RelatedKeyName, key.KeyName, StringComparison.OrdinalIgnoreCase));
-                if (selfMapping != null && JsonMappingValueResolver.TryGetMappedKeyByValue(selfMapping.ValueMappings, key.CurrentValue, out object? displayValue))
+                if (selfMapping != null && JsonValueMappingMatcher.TryGetMappedKeyByValue(selfMapping.ValueMappings, key.CurrentValue, out object? displayValue))
                 {
                     key.CurrentValue = displayValue;
                 }
