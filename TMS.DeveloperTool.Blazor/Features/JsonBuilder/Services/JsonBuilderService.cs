@@ -3,6 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using Microsoft.AspNetCore.Hosting;
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Models;
 
 namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
@@ -10,6 +11,7 @@ namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 public sealed class JsonBuilderService
 {
     private readonly IReadOnlyDictionary<string, IJsonTypeMappingStrategy> _strategiesByType;
+    private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly ConcurrentDictionary<string, Lazy<Task<IReadOnlyDictionary<string, JsonKeyMapping>>>> _mappingsCache =
         new(StringComparer.OrdinalIgnoreCase);
 
@@ -20,14 +22,38 @@ public sealed class JsonBuilderService
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
-    public JsonBuilderService(IEnumerable<IJsonTypeMappingStrategy> strategies)
+    public JsonBuilderService(IEnumerable<IJsonTypeMappingStrategy> strategies, IWebHostEnvironment webHostEnvironment)
     {
         _strategiesByType = strategies.ToDictionary(s => s.JsonType, s => s, StringComparer.OrdinalIgnoreCase);
+        _webHostEnvironment = webHostEnvironment;
     }
 
     public IReadOnlyList<string> GetJsonTypes()
     {
         return _strategiesByType.Keys.OrderBy(x => x).ToList();
+    }
+
+    public async Task<string?> LoadTemplateAsync(string jsonType)
+    {
+        if (string.IsNullOrWhiteSpace(jsonType))
+        {
+            return null;
+        }
+
+        string fileName = $"{jsonType}.json";
+        string[] candidatePaths =
+        [
+            Path.Combine(_webHostEnvironment.ContentRootPath, "Templates", fileName),
+            Path.Combine(_webHostEnvironment.WebRootPath ?? string.Empty, "Templates", fileName)
+        ];
+
+        string? filePath = candidatePaths.FirstOrDefault(File.Exists);
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            return null;
+        }
+
+        return await File.ReadAllTextAsync(filePath);
     }
 
     public async Task<List<JsonKey>> ParseJsonAndExtractKeys(string jsonString, string jsonType)

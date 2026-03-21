@@ -24,6 +24,8 @@
             <MudItem xs="12" md="6">
                 <MudTextField @bind-Value="JsonInput" Label="Nhập JSON" Lines="38" Variant="Variant.Outlined" />
                 <MudStack Row="true" Spacing="2" Class="mt-4">
+                    <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="LoadTemplate"
+                               Disabled="@string.IsNullOrWhiteSpace(SelectedJsonType)">Load Template</MudButton>
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ParseJson">Parse JSON</MudButton>
                     <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="CopyJsonToClipboard"
                                Disabled="@string.IsNullOrWhiteSpace(JsonInput)">Copy</MudButton>
@@ -85,6 +87,19 @@
         {
             Snackbar.Add("Unable to parse JSON or no keys were found.", Severity.Info);
         }
+    }
+
+    private async Task LoadTemplate()
+    {
+        string? templateContent = await JsonBuilderService.LoadTemplateAsync(SelectedJsonType);
+        if (string.IsNullOrWhiteSpace(templateContent))
+        {
+            Snackbar.Add($"Template not found for {SelectedJsonType}.", Severity.Warning);
+            return;
+        }
+
+        JsonInput = templateContent;
+        JsonKeys.Clear();
     }
 
     private async Task OnValueChanged(JsonKey key, object newValue)
