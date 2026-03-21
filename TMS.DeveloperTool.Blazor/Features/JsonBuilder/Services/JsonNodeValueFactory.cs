@@ -4,8 +4,25 @@ using System.Text.Json.Nodes;
 
 namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 
+/// <summary>
+/// Cung cap helper chuyen doi gia tri giua JsonNode va CLR value phu hop.
+/// </summary>
 internal static class JsonNodeValueFactory
 {
+    /// <summary>
+    /// Trich xuat gia tri tu JsonNode ve kieu CLR phu hop (string, bool, so, hoac JSON text).
+    /// </summary>
+    /// <param name="node">Node can trich xuat gia tri.</param>
+    /// <returns>
+    /// Gia tri da trich xuat; null neu node null.
+    /// Neu node khong phai JsonValue thi tra ve JSON string cua node.
+    /// </returns>
+    /// <example>
+    /// <code>
+    /// var value = JsonNodeValueFactory.ExtractNodeValue(JsonValue.Create(123));
+    /// // value = 123
+    /// </code>
+    /// </example>
     public static object? ExtractNodeValue(JsonNode? node)
     {
         if (node is null)
@@ -63,6 +80,22 @@ internal static class JsonNodeValueFactory
         return node.ToJsonString();
     }
 
+    /// <summary>
+    /// Tao JsonNode moi tu input value, uu tien giu kieu cua existingNode neu co.
+    /// </summary>
+    /// <param name="existingNode">Node hien tai de suy ra kieu mong muon.</param>
+    /// <param name="newValue">Gia tri moi can gan.</param>
+    /// <returns>
+    /// JsonNode da ep kieu theo existingNode, hoac parse theo thu tu bool -> long -> decimal -> string.
+    /// Tra ve null neu newValue rong.
+    /// </returns>
+    /// <example>
+    /// <code>
+    /// var current = JsonValue.Create(10);
+    /// var updated = JsonNodeValueFactory.CreateTypedNode(current, "25");
+    /// // updated.GetValue&lt;int&gt;() = 25
+    /// </code>
+    /// </example>
     public static JsonNode? CreateTypedNode(JsonNode? existingNode, object newValue)
     {
         string rawValue = newValue?.ToString() ?? string.Empty;
