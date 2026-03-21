@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="TMS.DeveloperTool.Blazor/TMS.DeveloperTool.Blazor.csproj" />
+  <Project Path="TMS.DeveloperTool.Blazor.Tests/TMS.DeveloperTool.Blazor.Tests.csproj" />
 </Solution>
