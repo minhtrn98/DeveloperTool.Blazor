@@ -64,45 +64,51 @@ public sealed class PickupTaskEventJsonMappingStrategy(
             ["vehicle_rental_in_progress"] = "Đang thuê xe"
         };
         List<string> statusIds = statusIdToNameMap.Keys.ToList();
-        Dictionary<string, string> dispatchTypeDescriptionToValueMap = new(StringComparer.OrdinalIgnoreCase)
+        Dictionary<object, object> dispatchTypeDescriptionToValueMap = new()
         {
-            ["Đi nhận - KH bưu cục"] = "1",
-            ["Đi nhận - KH hệ thống"] = "2",
-            ["Đi nhận - nhận hộ"] = "3",
-            ["Đi nhận - khách lẻ"] = "4",
-            ["Đi nhận - KH Web/API"] = "5",
-            ["Gửi hàng"] = "6",
-            ["Đón hàng"] = "7",
-            ["Cứu hộ hàng"] = "8",
-            ["Kết nối"] = "9",
-            ["Nối chuyến"] = "10"
+            ["Đi nhận - KH bưu cục"] = 1,
+            ["Đi nhận - KH hệ thống"] = 2,
+            ["Đi nhận - nhận hộ"] = 3,
+            ["Đi nhận - khách lẻ"] = 4,
+            ["Đi nhận - KH Web/API"] = 5,
+            ["Gửi hàng"] = 6,
+            ["Đón hàng"] = 7,
+            ["Cứu hộ hàng"] = 8,
+            ["Kết nối"] = 9,
+            ["Nối chuyến"] = 10
         };
-        List<string> dispatchTypeDescriptions = dispatchTypeDescriptionToValueMap.Keys.ToList();
+        List<object> dispatchTypeDescriptions = [.. dispatchTypeDescriptionToValueMap.Keys];
+        Dictionary<object, object> dispatchMethodDescriptionToValueMap = new()
+        {
+            ["Điều nhận"] = 1,
+            ["Điều chở"] = 2
+        };
+        List<object> dispatchMethodDescriptions = [.. dispatchMethodDescriptionToValueMap.Keys];
 
         _mappings = new Dictionary<string, JsonKeyMapping>(StringComparer.OrdinalIgnoreCase)
         {
             {
                 "OrderId",
                 new JsonKeyMapping(
-                    orderIds,
+                    [.. orderIds.Cast<object>()],
                     [
-                        new DependentValueMapping("CreatedAt", orderIdToCreatedAtMap)
+                        new DependentValueMapping("CreatedAt", ToObjectMap(orderIdToCreatedAtMap))
                     ])
             },
             {
                 "pickupPostOfficeCode",
                 new JsonKeyMapping(
-                    postOfficeCodes,
+                    [.. postOfficeCodes.Cast<object>()],
                     [
-                        new DependentValueMapping("pickupPostOfficeName", postOfficeCodeToNameMap)
+                        new DependentValueMapping("pickupPostOfficeName", ToObjectMap(postOfficeCodeToNameMap))
                     ])
             },
             {
                 "statusId",
                 new JsonKeyMapping(
-                    statusIds,
+                    [.. statusIds.Cast<object>()],
                     [
-                        new DependentValueMapping("statusName", statusIdToNameMap)
+                        new DependentValueMapping("statusName", ToObjectMap(statusIdToNameMap))
                     ])
             },
             {
@@ -112,6 +118,14 @@ public sealed class PickupTaskEventJsonMappingStrategy(
                     [
                         new DependentValueMapping("dispatchType", dispatchTypeDescriptionToValueMap)
                     ])
+            },
+            {
+                "dispatchMethod",
+                new JsonKeyMapping(
+                    dispatchMethodDescriptions,
+                    [
+                        new DependentValueMapping("dispatchMethod", dispatchMethodDescriptionToValueMap)
+                    ])
             }
         };
         return _mappings;
@@ -120,5 +134,10 @@ public sealed class PickupTaskEventJsonMappingStrategy(
     private static string FormatCreatedAt(DateTime value)
     {
         return value.ToLocalTime().ToString("O");
+    }
+
+    private static Dictionary<object, object> ToObjectMap(Dictionary<string, string> source)
+    {
+        return source.ToDictionary(kvp => (object)kvp.Key, kvp => (object)kvp.Value);
     }
 }

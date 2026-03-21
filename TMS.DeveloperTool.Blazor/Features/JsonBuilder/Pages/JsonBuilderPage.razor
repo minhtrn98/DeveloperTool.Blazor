@@ -37,10 +37,10 @@
                                 <MudText><strong>@key.Path:</strong> @key.CurrentValue</MudText>
                                 @if (key.Options.Count > 0)
                                 {
-                                    <MudSelect T="string" Value="@(key.CurrentValue?.ToString())" ValueChanged="v => OnValueChanged(key, v)" Label="@key.KeyName" Variant="Variant.Outlined" Class="ml-4" Style="width: 200px;">
+                                    <MudSelect T="object" Value="@key.CurrentValue" ValueChanged="v => OnValueChanged(key, v)" Label="@key.KeyName" Variant="Variant.Outlined" Class="ml-4" Style="width: 260px;">
                                         @foreach (var option in key.Options)
                                         {
-                                            <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                                            <MudSelectItem T="object" Value="@option">@GetOptionText(option)</MudSelectItem>
                                         }
                                     </MudSelect>
                                 }
@@ -71,9 +71,14 @@
         await JsonBuilderService.LoadDropdownOptionsAsync(JsonKeys, SelectedJsonType);
     }
 
-    private async Task OnValueChanged(JsonKey key, string newValue)
+    private async Task OnValueChanged(JsonKey key, object newValue)
     {
         JsonInput = await JsonBuilderService.ApplyValueChange(JsonInput, SelectedJsonType, JsonKeys, key, newValue);
+    }
+
+    private static string GetOptionText(object? option)
+    {
+        return option?.ToString() ?? string.Empty;
     }
 
     private async Task CopyJsonToClipboard()
