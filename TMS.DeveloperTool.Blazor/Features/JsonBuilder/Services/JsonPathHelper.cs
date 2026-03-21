@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 
 namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 
-internal static class JsonPathHelper
+public static class JsonPathHelper
 {
     public static bool TrySetValueByPath(JsonNode node, string path, object newValue)
     {
