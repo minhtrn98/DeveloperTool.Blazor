@@ -10,7 +10,7 @@ namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 public sealed class JsonBuilderService
 {
     private readonly Dictionary<string, IJsonTypeMappingStrategy> _strategiesByType;
-    private readonly Dictionary<string, Task<Dictionary<string, JsonKeyMapping>>> _mappingsCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Task<Dictionary<string, JsonKeyMapping>>> _mappingsCache = [with(StringComparer.OrdinalIgnoreCase)];
     private readonly Lock _cacheLock = new();
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
