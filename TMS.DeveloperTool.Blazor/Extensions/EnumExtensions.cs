@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Reflection;
 using System.Runtime.Serialization;
 
 namespace TMS.DeveloperTool.Blazor.Extensions;
@@ -27,7 +28,7 @@ public static class EnumExtensions
 
     public static string ToEnumMemberValueString(this Enum val)
     {
-        var field = val.GetType().GetField(val.ToString());
+        FieldInfo? field = val.GetType().GetField(val.ToString());
         if (field is null)
         {
             return val.ToString();
@@ -40,7 +41,7 @@ public static class EnumExtensions
     public static Dictionary<string, string> ToValueDescriptionMap<T>() where T : Enum
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var enumValue in Enum.GetValues(typeof(T)).Cast<Enum>())
+        foreach (Enum enumValue in Enum.GetValues(typeof(T)).Cast<Enum>())
         {
             string value = enumValue.ToEnumMemberValueString();
             string description = enumValue.ToDescriptionString();

@@ -96,7 +96,7 @@ public sealed class JsonBuilderService
     {
         if (node is JsonObject obj)
         {
-            foreach (var property in obj)
+            foreach (KeyValuePair<string, JsonNode?> property in obj)
             {
                 string path = string.IsNullOrEmpty(currentPath) ? property.Key : $"{currentPath}.{property.Key}";
                 if (property.Value is JsonObject or JsonArray)
@@ -198,7 +198,7 @@ public sealed class JsonBuilderService
             return updatedJson;
         }
 
-        foreach (var dependent in mapping.DependentMappings)
+        foreach (DependentValueMapping dependent in mapping.DependentMappings)
         {
             if (!JsonMappingValueResolver.TryGetMappedValue(dependent.ValueMappings, newValue, out object? dependentValue))
             {
@@ -206,7 +206,7 @@ public sealed class JsonBuilderService
             }
 
             string relatedPath = JsonPathHelper.BuildRelatedPath(changedKey.Path, dependent.RelatedKeyName);
-            foreach (var relatedKey in keys.Where(k => string.Equals(k.Path, relatedPath, StringComparison.OrdinalIgnoreCase)))
+            foreach (JsonKey? relatedKey in keys.Where(k => string.Equals(k.Path, relatedPath, StringComparison.OrdinalIgnoreCase)))
             {
                 bool isSelfMapping = string.Equals(relatedKey.Path, changedKey.Path, StringComparison.OrdinalIgnoreCase);
                 relatedKey.CurrentValue = isSelfMapping ? newValue : dependentValue;

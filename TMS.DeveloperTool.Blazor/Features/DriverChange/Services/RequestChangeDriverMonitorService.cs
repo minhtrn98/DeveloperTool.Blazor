@@ -133,8 +133,8 @@ public sealed class RequestChangeDriverMonitorService : IDisposable
             if (!_db.KeyExists(key))
                 return null;
 
-            var type = _db.KeyType(key);
-            var ttl = _db.KeyTimeToLive(key);
+            RedisType type = _db.KeyType(key);
+            TimeSpan? ttl = _db.KeyTimeToLive(key);
             string value;
 
             switch (type)
@@ -143,21 +143,21 @@ public sealed class RequestChangeDriverMonitorService : IDisposable
                     value = _db.StringGet(key).ToString();
                     break;
                 case RedisType.Hash:
-                    var hashEntries = _db.HashGetAll(key);
+                    HashEntry[] hashEntries = _db.HashGetAll(key);
                     value = string.Join(", ", hashEntries.Select(h => $"{h.Name}: {h.Value}"));
                     break;
                 case RedisType.List:
-                    var listItems = _db.ListRange(key, 0, 10);
+                    RedisValue[] listItems = _db.ListRange(key, 0, 10);
                     value = string.Join(", ", listItems.Take(10).Select(v => v.ToString()));
                     if (listItems.Length > 10) value += "...";
                     break;
                 case RedisType.Set:
-                    var setMembers = _db.SetMembers(key);
+                    RedisValue[] setMembers = _db.SetMembers(key);
                     value = string.Join(", ", setMembers.Take(10).Select(v => v.ToString()));
                     if (setMembers.Length > 10) value += "...";
                     break;
                 case RedisType.SortedSet:
-                    var sortedSetMembers = _db.SortedSetRangeByRankWithScores(key, 0, 10);
+                    SortedSetEntry[] sortedSetMembers = _db.SortedSetRangeByRankWithScores(key, 0, 10);
                     value = string.Join(", ", sortedSetMembers.Take(10).Select(v => $"{v.Element}:{v.Score}"));
                     if (sortedSetMembers.Length > 10) value += "...";
                     break;
@@ -184,7 +184,7 @@ public sealed class RequestChangeDriverMonitorService : IDisposable
 
     private void InvokeEventHandlers()
     {
-        foreach (var (_, handler) in _eventRegisters)
+        foreach ((Guid _, EventHandler? handler) in _eventRegisters)
         {
             handler.Invoke(this, EventArgs.Empty);
         }
