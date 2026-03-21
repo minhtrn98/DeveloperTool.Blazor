@@ -1,6 +1,6 @@
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Models;
 
-namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
+namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services.Strategies;
 
 public interface IJsonTypeMappingStrategy
 {

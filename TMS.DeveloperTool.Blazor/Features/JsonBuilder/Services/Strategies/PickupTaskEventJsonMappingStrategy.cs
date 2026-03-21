@@ -3,7 +3,7 @@ using TMS.DeveloperTool.Blazor.Extensions;
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Models;
 using TMS.DeveloperTool.Blazor.Features.Routing.Models;
 
-namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
+namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services.Strategies;
 
 public sealed class PickupTaskEventJsonMappingStrategy(
     OrderRepository orderRepository,
