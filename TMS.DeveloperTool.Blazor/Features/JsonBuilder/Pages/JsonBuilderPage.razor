@@ -4,6 +4,7 @@
 @using MudBlazor
 @inject JsonBuilderService JsonBuilderService
 @inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
 
 <AppPageTitle MenuName="JSON Builder" />
 
@@ -23,7 +24,7 @@
                 <MudTextField @bind-Value="JsonInput" Label="Nhập JSON" Lines="38" Variant="Variant.Outlined" />
                 <MudStack Row="true" Spacing="2" Class="mt-4">
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ParseJson">Parse JSON</MudButton>
-                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="CopyJsonToClipboard" Disabled="@string.IsNullOrWhiteSpace(JsonInput)">Copy JSON</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="CopyJsonToClipboard" Disabled="@string.IsNullOrWhiteSpace(JsonInput)">Copy</MudButton>
                 </MudStack>
             </MudItem>
             <MudItem xs="12" md="6">
@@ -84,6 +85,7 @@
     private async Task CopyJsonToClipboard()
     {
         await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", JsonInput);
+        Snackbar.Add("Copy thành công", Severity.Success);
     }
 
     private void OnJsonTypeChanged(string jsonType)
