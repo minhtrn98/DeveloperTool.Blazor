@@ -48,6 +48,37 @@ public sealed class PickupTaskEventJsonMappingStrategy(
                 g => g.First().PostOfficeName,
                 StringComparer.OrdinalIgnoreCase);
 
+        Dictionary<string, string> statusIdToNameMap = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["waiting_for_assignment"] = "Chờ phân công",
+            ["waiting_for_acceptance"] = "Chờ tiếp nhận",
+            ["in_transit"] = "Đang di chuyển",
+            ["arrived"] = "Đã đến",
+            ["picking_up"] = "Đang lấy hàng",
+            ["creating_order"] = "Đang tạo đơn",
+            ["completed"] = "Lấy thành công",
+            ["pickup_failed"] = "Chưa lấy được",
+            ["cancelled"] = "Hủy lấy đơn",
+            ["transferred_to_post_office"] = "Chuyển bưu cục",
+            ["waiting_for_vehicle_rental"] = "Chờ thuê xe",
+            ["vehicle_rental_in_progress"] = "Đang thuê xe"
+        };
+        List<string> statusIds = statusIdToNameMap.Keys.ToList();
+        Dictionary<string, string> dispatchTypeDescriptionToValueMap = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Đi nhận - KH bưu cục"] = "1",
+            ["Đi nhận - KH hệ thống"] = "2",
+            ["Đi nhận - nhận hộ"] = "3",
+            ["Đi nhận - khách lẻ"] = "4",
+            ["Đi nhận - KH Web/API"] = "5",
+            ["Gửi hàng"] = "6",
+            ["Đón hàng"] = "7",
+            ["Cứu hộ hàng"] = "8",
+            ["Kết nối"] = "9",
+            ["Nối chuyến"] = "10"
+        };
+        List<string> dispatchTypeDescriptions = dispatchTypeDescriptionToValueMap.Keys.ToList();
+
         _mappings = new Dictionary<string, JsonKeyMapping>(StringComparer.OrdinalIgnoreCase)
         {
             {
@@ -64,6 +95,22 @@ public sealed class PickupTaskEventJsonMappingStrategy(
                     postOfficeCodes,
                     [
                         new DependentValueMapping("pickupPostOfficeName", postOfficeCodeToNameMap)
+                    ])
+            },
+            {
+                "statusId",
+                new JsonKeyMapping(
+                    statusIds,
+                    [
+                        new DependentValueMapping("statusName", statusIdToNameMap)
+                    ])
+            },
+            {
+                "dispatchType",
+                new JsonKeyMapping(
+                    dispatchTypeDescriptions,
+                    [
+                        new DependentValueMapping("dispatchType", dispatchTypeDescriptionToValueMap)
                     ])
             }
         };
