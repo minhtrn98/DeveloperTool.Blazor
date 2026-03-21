@@ -12,7 +12,8 @@
     <MudPaper Elevation="2" Class="pa-6">
         <MudText Typo="Typo.h4" Class="mb-4">JSON Builder</MudText>
 
-        <MudSelect T="string" Value="SelectedJsonType" ValueChanged="OnJsonTypeChanged" Label="JSON Type" Variant="Variant.Outlined" Class="mb-4">
+        <MudSelect T="string" Value="SelectedJsonType" ValueChanged="OnJsonTypeChanged" Label="JSON Type"
+                   Variant="Variant.Outlined" Class="mb-4">
             @foreach (var jsonType in JsonTypes)
             {
                 <MudSelectItem T="string" Value="@jsonType">@jsonType</MudSelectItem>
@@ -24,7 +25,8 @@
                 <MudTextField @bind-Value="JsonInput" Label="Nhập JSON" Lines="38" Variant="Variant.Outlined" />
                 <MudStack Row="true" Spacing="2" Class="mt-4">
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ParseJson">Parse JSON</MudButton>
-                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="CopyJsonToClipboard" Disabled="@string.IsNullOrWhiteSpace(JsonInput)">Copy</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="CopyJsonToClipboard"
+                               Disabled="@string.IsNullOrWhiteSpace(JsonInput)">Copy</MudButton>
                 </MudStack>
             </MudItem>
             <MudItem xs="12" md="6">
@@ -38,7 +40,8 @@
                                 <MudText><strong>@key.Path:</strong> @key.CurrentValue</MudText>
                                 @if (key.Options.Count > 0)
                                 {
-                                    <MudSelect T="object" Value="@key.CurrentValue" ValueChanged="v => OnValueChanged(key, v)" Label="@key.KeyName" Variant="Variant.Outlined" Class="ml-4" Style="width: 260px;">
+                                    <MudSelect T="object" Value="@key.CurrentValue" ValueChanged="v => OnValueChanged(key, v)"
+                                               Label="@key.KeyName" Variant="Variant.Outlined" Class="ml-4" Style="width: 260px;">
                                         @foreach (var option in key.Options)
                                         {
                                             <MudSelectItem T="object" Value="@option">@GetOptionText(option)</MudSelectItem>
@@ -57,7 +60,7 @@
 @code {
     private List<string> JsonTypes { get; set; } = new();
     private string SelectedJsonType { get; set; } = string.Empty;
-    private string JsonInput { get; set; } = "";
+    private string JsonInput { get; set; } = string.Empty;
     private List<JsonKey> JsonKeys { get; set; } = new();
 
     protected override void OnInitialized()
@@ -68,8 +71,20 @@
 
     private async Task ParseJson()
     {
+        if (string.IsNullOrWhiteSpace(JsonInput))
+        {
+            JsonKeys.Clear();
+            Snackbar.Add("Please enter JSON content.", Severity.Warning);
+            return;
+        }
+
         JsonKeys = await JsonBuilderService.ParseJsonAndExtractKeys(JsonInput, SelectedJsonType);
         await JsonBuilderService.LoadDropdownOptionsAsync(JsonKeys, SelectedJsonType);
+
+        if (JsonKeys.Count == 0)
+        {
+            Snackbar.Add("Unable to parse JSON or no keys were found.", Severity.Info);
+        }
     }
 
     private async Task OnValueChanged(JsonKey key, object newValue)
@@ -85,7 +100,7 @@
     private async Task CopyJsonToClipboard()
     {
         await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", JsonInput);
-        Snackbar.Add("Copy thành công", Severity.Success);
+        Snackbar.Add("Copied JSON to clipboard.", Severity.Success);
     }
 
     private void OnJsonTypeChanged(string jsonType)

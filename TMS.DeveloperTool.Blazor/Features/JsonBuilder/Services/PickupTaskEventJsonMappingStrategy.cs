@@ -12,19 +12,22 @@ public sealed class PickupTaskEventJsonMappingStrategy(
     public const string TypeName = "RabbitMqPickupTaskEvent";
     public string JsonType => TypeName;
 
-    private Dictionary<string, JsonKeyMapping> _mappings = [];
+    private readonly Lazy<Task<Dictionary<string, JsonKeyMapping>>> _mappingsTask =
+        new(() => BuildMappingsInternal(orderRepository, routeRepository), LazyThreadSafetyMode.ExecutionAndPublication);
 
     public async Task<Dictionary<string, JsonKeyMapping>> BuildMappings()
     {
-        if (_mappings.Count > 0)
-        {
-            return _mappings;
-        }
+        return await _mappingsTask.Value;
+    }
 
+    private static async Task<Dictionary<string, JsonKeyMapping>> BuildMappingsInternal(
+        OrderRepository orderRepository,
+        RouteRepository routeRepository)
+    {
         List<OrderInfo> orders = await orderRepository.GetAllOrdersAsync();
         IEnumerable<PostOffice> postOffices = await routeRepository.GetPostOfficesAsync();
 
-        _mappings = new Dictionary<string, JsonKeyMapping>(StringComparer.OrdinalIgnoreCase)
+        return new Dictionary<string, JsonKeyMapping>(StringComparer.OrdinalIgnoreCase)
         {
             ["OrderId"] = CreateOrderIdMapping(orders),
             ["pickupPostOfficeCode"] = CreatePickupPostOfficeCodeMapping(postOffices),
@@ -32,7 +35,6 @@ public sealed class PickupTaskEventJsonMappingStrategy(
             ["dispatchType"] = CreateDispatchTypeMapping(),
             ["dispatchMethod"] = CreateDispatchMethodMapping()
         };
-        return _mappings;
     }
 
     private static string FormatCreatedAt(DateTime value)
