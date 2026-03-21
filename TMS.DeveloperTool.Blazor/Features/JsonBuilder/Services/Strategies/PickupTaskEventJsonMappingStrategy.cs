@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using TMS.DeveloperTool.Blazor.Domain.Enums;
 using TMS.DeveloperTool.Blazor.Extensions;
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Models;
@@ -12,22 +13,22 @@ public sealed class PickupTaskEventJsonMappingStrategy(
     public const string TypeName = "RabbitMqPickupTaskEvent";
     public override string JsonType => TypeName;
 
-    private readonly Lazy<Task<Dictionary<string, JsonKeyMapping>>> _mappingsTask =
+    private readonly Lazy<Task<IReadOnlyDictionary<string, JsonKeyMapping>>> _mappingsTask =
         new(() => BuildMappingsInternal(orderRepository, routeRepository), LazyThreadSafetyMode.ExecutionAndPublication);
 
-    public override async Task<Dictionary<string, JsonKeyMapping>> BuildMappings()
+    public override async Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappings()
     {
         return await _mappingsTask.Value;
     }
 
-    private static async Task<Dictionary<string, JsonKeyMapping>> BuildMappingsInternal(
+    private static async Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappingsInternal(
         OrderRepository orderRepository,
         RouteRepository routeRepository)
     {
         List<OrderInfo> orders = await orderRepository.GetAllOrdersAsync();
         IEnumerable<PostOffice> postOffices = await routeRepository.GetPostOfficesAsync();
 
-        return new Dictionary<string, JsonKeyMapping>(StringComparer.OrdinalIgnoreCase)
+        Dictionary<string, JsonKeyMapping> mappings = new(StringComparer.OrdinalIgnoreCase)
         {
             ["OrderId"] = CreateOrderIdMapping(orders),
             ["pickupPostOfficeCode"] = CreatePickupPostOfficeCodeMapping(postOffices),
@@ -35,6 +36,8 @@ public sealed class PickupTaskEventJsonMappingStrategy(
             ["dispatchType"] = CreateDispatchTypeMapping(),
             ["dispatchMethod"] = CreateDispatchMethodMapping()
         };
+
+        return new ReadOnlyDictionary<string, JsonKeyMapping>(mappings);
     }
 
     private static JsonKeyMapping CreateOrderIdMapping(IEnumerable<OrderInfo> orders)

@@ -6,7 +6,7 @@ public abstract class JsonTypeMappingStrategyBase : IJsonTypeMappingStrategy
 {
     public abstract string JsonType { get; }
 
-    public abstract Task<Dictionary<string, JsonKeyMapping>> BuildMappings();
+    public abstract Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappings();
 
     public virtual async Task<string?> LoadTemplateAsync(IWebHostEnvironment webHostEnvironment)
     {
