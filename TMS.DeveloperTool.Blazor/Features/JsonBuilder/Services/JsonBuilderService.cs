@@ -3,7 +3,6 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
-using Microsoft.AspNetCore.Hosting;
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Models;
 
 namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
@@ -53,7 +52,19 @@ public sealed class JsonBuilderService
             return null;
         }
 
-        return await File.ReadAllTextAsync(filePath);
+        string templateContent = await File.ReadAllTextAsync(filePath);
+        templateContent = ReplaceTemplateTokens(templateContent);
+        return templateContent;
+    }
+
+    private static string ReplaceTemplateTokens(string templateContent)
+    {
+        DateTimeOffset now = DateTimeOffset.Now;
+        DateTimeOffset localStartOfDay = new(now.Year, now.Month, now.Day, 0, 0, 0, now.Offset);
+
+        return templateContent
+            .Replace("{{datetime}}", localStartOfDay.ToString("O"), StringComparison.OrdinalIgnoreCase)
+            .Replace("{{yyyyMMdd}}", localStartOfDay.ToString("yyyyMMdd"), StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<List<JsonKey>> ParseJsonAndExtractKeys(string jsonString, string jsonType)
