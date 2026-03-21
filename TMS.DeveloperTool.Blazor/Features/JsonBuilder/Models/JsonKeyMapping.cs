@@ -11,6 +11,7 @@ public sealed record DependentValueContext(object? OldValue, object? NewValue, o
 public sealed class DependentValueMapping
 {
     private readonly Func<DependentValueContext, object?> _valueResolver;
+    private readonly bool _hasCustomValueResolver;
 
     public string RelatedKeyName { get; }
     public Dictionary<object, object> ValueMappings { get; }
@@ -23,11 +24,13 @@ public sealed class DependentValueMapping
         RelatedKeyName = relatedKeyName;
         ValueMappings = valueMappings;
         _valueResolver = valueResolver ?? DefaultValueResolver;
+        _hasCustomValueResolver = valueResolver is not null;
     }
 
     public bool TryResolveValue(object? oldValue, object? oldParentValue, object? newParentValue, out object? resolvedValue)
     {
-        if (!TryGetMappedValue(newParentValue, out object? mappedValue))
+        bool hasMappedValue = TryGetMappedValue(newParentValue, out object? mappedValue);
+        if (!hasMappedValue && !_hasCustomValueResolver)
         {
             resolvedValue = null;
             return false;
@@ -35,6 +38,12 @@ public sealed class DependentValueMapping
 
         DependentValueContext context = new(oldValue, mappedValue, oldParentValue, newParentValue);
         resolvedValue = _valueResolver(context);
+
+        if (!_hasCustomValueResolver)
+        {
+            return hasMappedValue;
+        }
+
         return true;
     }
 
