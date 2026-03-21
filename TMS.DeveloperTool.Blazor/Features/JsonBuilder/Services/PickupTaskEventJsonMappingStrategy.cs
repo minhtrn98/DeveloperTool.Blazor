@@ -37,11 +37,6 @@ public sealed class PickupTaskEventJsonMappingStrategy(
         };
     }
 
-    private static string FormatCreatedAt(DateTime value)
-    {
-        return value.ToLocalTime().ToString("O");
-    }
-
     private static JsonKeyMapping CreateOrderIdMapping(IEnumerable<OrderInfo> orders)
     {
         List<object> orderIds = orders
@@ -81,11 +76,20 @@ public sealed class PickupTaskEventJsonMappingStrategy(
                 g => g.Key,
                 g => g.First().PostOfficeName,
                 StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> postOfficeCodeToPickupTaskIdPrefixMap = postOffices
+            .Where(p => !string.IsNullOrWhiteSpace(p.PostOfficeCode))
+            .Select(p => p.PostOfficeCode)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                code => code,
+                code => code,
+                StringComparer.OrdinalIgnoreCase);
 
         return new JsonKeyMapping(
             [.. postOfficeCodes],
             [
-                new DependentValueMapping("pickupPostOfficeName", ToObjectMap(postOfficeCodeToNameMap))
+                new DependentValueMapping("pickupPostOfficeName", ToObjectMap(postOfficeCodeToNameMap)),
+                new DependentValueMapping("pickupTaskId", ToObjectMap(postOfficeCodeToPickupTaskIdPrefixMap), BuildPickupTaskId)
             ]);
     }
 
@@ -124,8 +128,32 @@ public sealed class PickupTaskEventJsonMappingStrategy(
             ]);
     }
 
+    private static object? BuildPickupTaskId(DependentValueContext context)
+    {
+        string newPrefix = context.NewValue?.ToString() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(newPrefix))
+        {
+            return context.OldValue;
+        }
+
+        string currentPickupTaskId = context.OldValue?.ToString() ?? string.Empty;
+        int firstDashIndex = currentPickupTaskId.IndexOf('-');
+        if (firstDashIndex < 0 || firstDashIndex >= currentPickupTaskId.Length - 1)
+        {
+            return newPrefix;
+        }
+
+        string currentSuffix = currentPickupTaskId[(firstDashIndex + 1)..];
+        return $"{newPrefix}-{currentSuffix}";
+    }
+
     private static Dictionary<object, object> ToObjectMap(Dictionary<string, string> source)
     {
         return source.ToDictionary(kvp => (object)kvp.Key, kvp => (object)kvp.Value);
+    }
+
+    private static string FormatCreatedAt(DateTime value)
+    {
+        return value.ToLocalTime().ToString("O");
     }
 }

@@ -49,8 +49,8 @@
   "isDeleted": false,
   "isCancelled": false,
   "cancellationReason": null,
-  "dispatchType": 4,
-  "dispatchMethod": 2,
+  "dispatchType": 1,
+  "dispatchMethod": 1,
   "orders": [
     {
       "OrderItemId": "",

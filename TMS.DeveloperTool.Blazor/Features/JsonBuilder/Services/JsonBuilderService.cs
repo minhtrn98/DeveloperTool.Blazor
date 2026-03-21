@@ -106,7 +106,7 @@ public sealed class JsonBuilderService
                 else
                 {
                     bool isSupported = mappings.ContainsKey(property.Key);
-                    var jsonKey = new JsonKey(path, property.Key, JsonNodeValueFactory.ExtractNodeValue(property.Value), isSupported);
+                    JsonKey jsonKey = new JsonKey(path, property.Key, JsonNodeValueFactory.ExtractNodeValue(property.Value), isSupported);
                     keys.Add(jsonKey);
                 }
             }
@@ -179,6 +179,7 @@ public sealed class JsonBuilderService
     public async Task<string> ApplyValueChange(string originalJson, string jsonType, List<JsonKey> keys, JsonKey changedKey, object newValue)
     {
         IReadOnlyDictionary<string, JsonKeyMapping> mappings = await GetMappingsByType(jsonType);
+        object? oldParentValue = changedKey.CurrentValue;
         changedKey.CurrentValue = newValue;
 
         object valueToWrite = newValue;
@@ -186,7 +187,7 @@ public sealed class JsonBuilderService
         {
             DependentValueMapping? selfMapping = changedKeyMapping.DependentMappings
                 .FirstOrDefault(dm => string.Equals(dm.RelatedKeyName, changedKey.KeyName, StringComparison.OrdinalIgnoreCase));
-            if (selfMapping != null && JsonMappingValueResolver.TryGetMappedValue(selfMapping.ValueMappings, newValue, out object? mappedSelfValue))
+            if (selfMapping != null && selfMapping.TryResolveValue(oldParentValue, oldParentValue, newValue, out object? mappedSelfValue))
             {
                 valueToWrite = mappedSelfValue!;
             }
@@ -200,21 +201,25 @@ public sealed class JsonBuilderService
 
         foreach (DependentValueMapping dependent in mapping.DependentMappings)
         {
-            if (!JsonMappingValueResolver.TryGetMappedValue(dependent.ValueMappings, newValue, out object? dependentValue))
-            {
-                continue;
-            }
-
             string relatedPath = JsonPathHelper.BuildRelatedPath(changedKey.Path, dependent.RelatedKeyName);
             foreach (JsonKey? relatedKey in keys.Where(k => string.Equals(k.Path, relatedPath, StringComparison.OrdinalIgnoreCase)))
             {
                 bool isSelfMapping = string.Equals(relatedKey.Path, changedKey.Path, StringComparison.OrdinalIgnoreCase);
-                relatedKey.CurrentValue = isSelfMapping ? newValue : dependentValue;
-
-                if (!isSelfMapping)
+                if (isSelfMapping)
                 {
-                    updatedJson = UpdateJsonValue(updatedJson, relatedKey.Path, dependentValue!);
+                    relatedKey.CurrentValue = newValue;
+                    continue;
                 }
+
+                object? oldValue = relatedKey.CurrentValue;
+                if (!dependent.TryResolveValue(oldValue, oldParentValue, newValue, out object? dependentValue))
+                {
+                    continue;
+                }
+
+                relatedKey.CurrentValue = dependentValue;
+
+                updatedJson = UpdateJsonValue(updatedJson, relatedKey.Path, dependentValue!);
             }
         }
 
@@ -241,7 +246,7 @@ public sealed class JsonBuilderService
     {
         try
         {
-            var jsonNode = JsonNode.Parse(originalJson);
+            JsonNode? jsonNode = JsonNode.Parse(originalJson);
             if (jsonNode != null)
             {
                 if (!JsonPathHelper.TrySetValueByPath(jsonNode, path, newValue))

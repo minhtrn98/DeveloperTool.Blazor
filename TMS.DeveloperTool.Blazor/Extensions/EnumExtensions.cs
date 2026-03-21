@@ -8,7 +8,7 @@ public static class EnumExtensions
 {
     public static string ToDescriptionString(this Enum val)
     {
-        var attributes = (DescriptionAttribute[])val
+        DescriptionAttribute[] attributes = (DescriptionAttribute[])val
            .GetType()
            .GetField(val.ToString())!
            .GetCustomAttributes(typeof(DescriptionAttribute), false);
@@ -34,13 +34,13 @@ public static class EnumExtensions
             return val.ToString();
         }
 
-        var enumMember = (EnumMemberAttribute?)Attribute.GetCustomAttribute(field, typeof(EnumMemberAttribute));
+        EnumMemberAttribute? enumMember = (EnumMemberAttribute?)Attribute.GetCustomAttribute(field, typeof(EnumMemberAttribute));
         return string.IsNullOrWhiteSpace(enumMember?.Value) ? val.ToString() : enumMember.Value;
     }
 
     public static Dictionary<string, string> ToValueDescriptionMap<T>() where T : Enum
     {
-        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (Enum enumValue in Enum.GetValues(typeof(T)).Cast<Enum>())
         {
             string value = enumValue.ToEnumMemberValueString();
