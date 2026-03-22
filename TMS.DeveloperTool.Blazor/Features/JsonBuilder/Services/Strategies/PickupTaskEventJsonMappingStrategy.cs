@@ -33,6 +33,7 @@ public sealed class PickupTaskEventJsonMappingStrategy(
             ["OrderId"] = CreateOrderIdMapping(orders),
             ["pickupPostOfficeCode"] = CreatePickupPostOfficeCodeMapping(postOffices),
             ["statusId"] = CreateStatusIdMapping(),
+            ["serviceTypeId"] = CreateServiceTypeIdMapping(),
             ["dispatchType"] = CreateDispatchTypeMapping(),
             ["dispatchMethod"] = CreateDispatchMethodMapping()
         };
@@ -104,6 +105,17 @@ public sealed class PickupTaskEventJsonMappingStrategy(
             [.. statusIdToNameMap.Keys],
             [
                 new DependentValueMapping("statusName", statusIdToNameMap)
+            ]);
+    }
+
+    private static JsonKeyMapping CreateServiceTypeIdMapping()
+    {
+        Dictionary<object, object> serviceTypeIdToNameMap = ToObjectMap(EnumExtensions.ToValueDescriptionMap<TransportServiceType>());
+
+        return new JsonKeyMapping(
+            [.. serviceTypeIdToNameMap.Keys],
+            [
+                new DependentValueMapping("serviceTypeName", serviceTypeIdToNameMap)
             ]);
     }
 
