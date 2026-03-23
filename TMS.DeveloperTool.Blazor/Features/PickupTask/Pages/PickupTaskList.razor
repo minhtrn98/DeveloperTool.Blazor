@@ -7,20 +7,20 @@
 @inject ISnackbar Snackbar
 @rendermode InteractiveServer
 
-<AppPageTitle MenuName="Pickup task" />
+<AppPageTitle MenuName="Điều tin" />
 
 <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
     <MudPaper Elevation="2" Class="pa-4">
         <div class="d-flex justify-space-between mb-4">
-            <MudText Typo="Typo.h4">Danh sach pickup task</MudText>
+            <MudText Typo="Typo.h4">Danh sách điều tin</MudText>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
                        OnClick="ReloadAsync" Disabled="@isLoading">
-                Lam moi
+                Làm mới
             </MudButton>
         </div>
 
         <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged"
-                         SearchFunc="SearchDrivers" ToStringFunc="GetDriverLabel" Label="Tai xe"
+                         SearchFunc="SearchDrivers" ToStringFunc="GetDriverLabel" Label="Tài xế"
                          Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
 
         @if (isLoading)
@@ -31,17 +31,17 @@
         }
         else if (!FilteredPickupTasks.Any())
         {
-            <MudAlert Severity="Severity.Info">Khong co pickup task nao phu hop.</MudAlert>
+            <MudAlert Severity="Severity.Info">Không có điều tin.</MudAlert>
         }
         else
         {
             <MudTable Items="@FilteredPickupTasks" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
-                    <MudTh>PickupTaskId</MudTh>
-                    <MudTh>Driver</MudTh>
-                    <MudTh>Status</MudTh>
-                    <MudTh>Scheduled Pickup Date</MudTh>
-                    <MudTh>Actions</MudTh>
+                    <MudTh>Mã điều tin</MudTh>
+                    <MudTh>Tài xế</MudTh>
+                    <MudTh>Trạng thái</MudTh>
+                    <MudTh>Ngày lấy hàng dự kiến</MudTh>
+                    <MudTh>Hành động</MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="PickupTaskId">@context.PickupTaskId</MudTd>
@@ -54,11 +54,11 @@
                     <MudTd DataLabel="Scheduled Pickup Date">@FormatDate(context.ScheduledPickupDate)</MudTd>
                     <MudTd DataLabel="Actions">
                         <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small" Class="flex-wrap">
-                            <MudButton Color="Color.Success" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionAccept))">Accept</MudButton>
-                            <MudButton Color="Color.Error" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionReject))">Reject</MudButton>
-                            <MudButton Color="Color.Primary" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionArrived))">Arrived</MudButton>
-                            <MudButton Color="Color.Dark" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionCancel))">Cancel</MudButton>
-                            <MudButton Color="Color.Warning" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionReschedule))">Reschedule</MudButton>
+                            <MudButton Color="Color.Success" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionAccept))">Chấp nhận</MudButton>
+                            <MudButton Color="Color.Error" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionReject))">Từ chối</MudButton>
+                            <MudButton Color="Color.Primary" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionArrived))">Đã tới nơi</MudButton>
+                            <MudButton Color="Color.Dark" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionCancel))">Hủy</MudButton>
+                            <MudButton Color="Color.Warning" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionReschedule))">Hẹn lấy lại</MudButton>
                         </MudButtonGroup>
                     </MudTd>
                 </RowTemplate>
@@ -252,11 +252,11 @@
                 pickupTasks[index] = updated;
             }
 
-            Snackbar.Add($"{action} pickup task {item.PickupTaskId} thanh cong.", Severity.Success);
+            Snackbar.Add($"{action} điều tin {item.PickupTaskId} thành công.", Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Co loi khi {action.ToLowerInvariant()} pickup task: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Có lỗi khi {action.ToLowerInvariant()} điều tin: {ex.Message}", Severity.Error);
         }
         finally
         {
