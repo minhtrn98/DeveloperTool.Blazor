@@ -27,10 +27,12 @@ public sealed class PickupTaskEventJsonMappingStrategy(
     {
         List<OrderInfo> orders = await orderRepository.GetAllOrdersAsync();
         IEnumerable<PostOffice> postOffices = await routeRepository.GetPostOfficesAsync();
+        List<OrderItemInfo> orderItems = await orderRepository.GetAllOrderItemsAsync();
 
         Dictionary<string, JsonKeyMapping> mappings = new(StringComparer.OrdinalIgnoreCase)
         {
             ["OrderId"] = CreateOrderIdMapping(orders),
+            ["OrderItemId"] = CreateOrderItemIdMapping(orderItems),
             ["pickupPostOfficeCode"] = CreatePickupPostOfficeCodeMapping(postOffices),
             ["statusId"] = CreateStatusIdMapping(),
             ["serviceTypeId"] = CreateServiceTypeIdMapping(),
@@ -58,10 +60,55 @@ public sealed class PickupTaskEventJsonMappingStrategy(
                 StringComparer.OrdinalIgnoreCase);
 
         return new JsonKeyMapping(
-            [.. orderIds],
+            orderIds,
             [
                 new DependentValueMapping("CreatedAt", ToObjectMap(orderIdToCreatedAtMap))
             ]);
+    }
+
+    private static JsonKeyMapping CreateOrderItemIdMapping(IEnumerable<OrderItemInfo> orderItems)
+    {
+        List<object> orderItemIds = orderItems
+            .Select(o => o.OrderItemId)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .Cast<object>()
+            .ToList();
+        Dictionary<string, decimal> orderItemIdToWeightAtMap = orderItems
+            .Where(o => !string.IsNullOrWhiteSpace(o.OrderItemId))
+            .ToDictionary(
+                o => o.OrderItemId,
+                o => o.Weight,
+                StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, decimal> orderItemIdToWAtMap = orderItems
+            .Where(o => !string.IsNullOrWhiteSpace(o.OrderItemId))
+            .ToDictionary(
+                o => o.OrderItemId,
+                o => o.W,
+                StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, decimal> orderItemIdToHAtMap = orderItems
+            .Where(o => !string.IsNullOrWhiteSpace(o.OrderItemId))
+            .ToDictionary(
+                o => o.OrderItemId,
+                o => o.H,
+                StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, decimal> orderItemIdToLAtMap = orderItems
+            .Where(o => !string.IsNullOrWhiteSpace(o.OrderItemId))
+            .ToDictionary(
+                o => o.OrderItemId,
+                o => o.L,
+                StringComparer.OrdinalIgnoreCase);
+
+        return new JsonKeyMapping(
+            orderItemIds,
+            [
+                new DependentValueMapping("Weight", ToObjectMap(orderItemIdToWeightAtMap)),
+                new DependentValueMapping("H", ToObjectMap(orderItemIdToHAtMap)),
+                new DependentValueMapping("L", ToObjectMap(orderItemIdToLAtMap)),
+                new DependentValueMapping("W", ToObjectMap(orderItemIdToWAtMap))
+            ]
+        );
     }
 
     private static JsonKeyMapping CreatePickupPostOfficeCodeMapping(IEnumerable<PostOffice> postOffices)
@@ -163,6 +210,11 @@ public sealed class PickupTaskEventJsonMappingStrategy(
     }
 
     private static Dictionary<object, object> ToObjectMap(Dictionary<string, string> source)
+    {
+        return source.ToDictionary(kvp => (object)kvp.Key, kvp => (object)kvp.Value);
+    }
+
+    private static Dictionary<object, object> ToObjectMap(Dictionary<string, decimal> source)
     {
         return source.ToDictionary(kvp => (object)kvp.Key, kvp => (object)kvp.Value);
     }
