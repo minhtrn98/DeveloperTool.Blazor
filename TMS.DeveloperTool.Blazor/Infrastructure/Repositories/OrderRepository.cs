@@ -17,7 +17,7 @@ public sealed class OrderRepository
                 union
                 select order_id from public.pickup_task_orders
             )
-            select 
+            select
                 o.order_id as "OrderId",
                 o.weight as "Weight",
                 o.w as "W",
@@ -39,7 +39,7 @@ public sealed class OrderRepository
             with pickup_order_items as (
                 select order_item_id from public.pickup_task_order_items
             )
-            select 
+            select
                 o.order_id as "OrderId",
                 o.order_item_id as "OrderItemId",
                 o.weight as "Weight",
@@ -53,5 +53,22 @@ public sealed class OrderRepository
             """;
         IEnumerable<OrderItemInfo> orderItems = await _dbQuery.QueryAsync<OrderItemInfo>(sql, null, cancellationToken);
         return orderItems.ToList();
+    }
+
+    public async Task<List<PickupTaskInfo>> GetAllPickupTaskAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            select
+                p.pickup_task_id::text as "PickupTaskId",
+                p.assigned_driver_id::text as "AssignedDriverId",
+                p.assigned_driver_code as "AssignedDriverCode",
+                p.assigned_driver_name as "AssignedDriverName",
+                p.status::text as "Status",
+                p.scheduled_pickup_date as "ScheduledPickupDate"
+            from public.pickup_tasks p
+            order by p.scheduled_pickup_date desc nulls last, p.pickup_task_id;
+            """;
+        IEnumerable<PickupTaskInfo> pickupTasks = await _dbQuery.QueryAsync<PickupTaskInfo>(sql, null, cancellationToken);
+        return pickupTasks.ToList();
     }
 }

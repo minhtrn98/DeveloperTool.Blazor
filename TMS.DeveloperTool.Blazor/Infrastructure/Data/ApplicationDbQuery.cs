@@ -56,6 +56,23 @@ public sealed class ApplicationDbQuery(IConfiguration configuration, string data
         return await _connection.QueryAsync<T>(commandDefinition);
     }
 
+    public async Task<IEnumerable<dynamic>> QueryAsync(string sql, object? parameters, CancellationToken cancellationToken)
+    {
+        _connection ??= new NpgsqlConnection(_connectionString);
+        if (_connection.State != ConnectionState.Open)
+        {
+            await _connection.OpenAsync(cancellationToken);
+        }
+
+        CommandDefinition commandDefinition = new(
+            commandText: sql,
+            parameters: parameters,
+            cancellationToken: cancellationToken
+        );
+
+        return await _connection.QueryAsync(commandDefinition);
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_connection != null)
