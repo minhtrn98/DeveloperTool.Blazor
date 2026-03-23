@@ -29,19 +29,19 @@
   "actualPickupTime": null,
   "statusId": "waiting_for_assignment",
   "statusName": "Chờ phân công",
-  "totalItems": 10,
-  "totalWeight": 10,
-  "totalCalWeight": 10,
+  "totalItems": 2,
+  "totalWeight": 2,
+  "totalCalWeight": 2,
   "totalCodAmount": 1000000,
-  "l": 100,
-  "h": 100,
-  "w": 100,
+  "l": 2,
+  "h": 2,
+  "w": 2,
   "serviceTypeId": "DE",
   "serviceTypeName": "Chuyển phát nhanh",
   "priority": 1,
   "notes": "Khách yêu cầu gọi trước khi đến",
   "internalNotes": "Ưu tiên xử lý trong buổi sáng",
-  "metadataJson": "",
+  "metadataJson": "{}",
   "createdBy": "00000000-0000-0000-0000-000000000000",
   "createdByName": "Nguyễn Văn A",
   "updatedBy": null,
@@ -53,9 +53,40 @@
   "dispatchMethod": 1,
   "orders": [
     {
-      "OrderItemId": "",
-      "OrderId": "ORD456",
-      "CreatedAt": "{{datetime}}"
+      "OrderId": "BOC2600009",
+      "CreatedAt": "{{datetime}}",
+      "Weight": 1,
+      "L": 1,
+      "H": 1,
+      "W": 1,
+      "Items": [
+        {
+          "OrderId": "BOC2600009",
+          "OrderItemId": "BOC2600009",
+          "Weight": 1,
+          "L": 1,
+          "H": 1,
+          "W": 1
+        }
+      ]
+    },
+    {
+      "OrderId": "BOC2600011",
+      "CreatedAt": "{{datetime}}",
+      "Weight": 1,
+      "L": 1,
+      "H": 1,
+      "W": 1,
+      "Items": [
+        {
+          "OrderId": "BOC2600011",
+          "OrderItemId": "BOC2600011",
+          "Weight": 1,
+          "L": 1,
+          "H": 1,
+          "W": 1
+        }
+      ]
     }
   ]
 }
