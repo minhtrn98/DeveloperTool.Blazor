@@ -277,6 +277,11 @@ public class JsonBuilderServiceTests
         {
             return Task.FromResult(_template);
         }
+
+        public Task SendRequestAsync(string jsonInput, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider

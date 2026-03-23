@@ -27,6 +27,8 @@
                     <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="LoadTemplate"
                                Disabled="@string.IsNullOrWhiteSpace(SelectedJsonType)">Load Template</MudButton>
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ParseJson">Parse JSON</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="SendRequest"
+                               Disabled="@(string.IsNullOrWhiteSpace(SelectedJsonType) || string.IsNullOrWhiteSpace(JsonInput))">Send Request</MudButton>
                     <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="CopyJsonToClipboard"
                                Disabled="@string.IsNullOrWhiteSpace(JsonInput)">Copy</MudButton>
                 </MudStack>
@@ -117,6 +119,25 @@
     {
         await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", JsonInput);
         Snackbar.Add("Copied JSON to clipboard.", Severity.Success);
+    }
+
+    private async Task SendRequest()
+    {
+        if (string.IsNullOrWhiteSpace(JsonInput) || string.IsNullOrWhiteSpace(SelectedJsonType))
+        {
+            Snackbar.Add("Please select JSON type and provide JSON content.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            await JsonBuilderService.SendRequestAsync(JsonInput, SelectedJsonType);
+            Snackbar.Add("Request sent.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Send request failed: {ex.Message}", Severity.Error);
+        }
     }
 
     private void OnJsonTypeChanged(string jsonType)

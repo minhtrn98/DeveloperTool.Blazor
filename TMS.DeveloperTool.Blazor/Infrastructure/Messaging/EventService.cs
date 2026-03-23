@@ -64,6 +64,46 @@ public sealed class EventService
         _logger.LogInformation("Message published to queue '{QueueName}': {Message}", queueName, message);
     }
 
+    public async Task PublishPickupTaskEvent(string message, CancellationToken cancellationToken = default)
+    {
+        if (_connection == null || !_connection.IsOpen)
+        {
+            await CreateConnectionAsync();
+        }
+
+        if (_connection == null)
+        {
+            _logger.LogError("Failed to create a RabbitMQ connection. Message not sent.");
+            return;
+        }
+
+        string queueName = _config.Exchanges[1].Queues["pickuptasks"].QueueName;
+        using IChannel channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
+        await channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null, cancellationToken: cancellationToken);
+
+        byte[] body = Encoding.UTF8.GetBytes(message);
+
+        BasicProperties properties = new()
+        {
+            Persistent = true,
+            Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds()),
+            ContentType = "application/json",
+            Headers = new Dictionary<string, object?>()
+            {
+            }
+        };
+
+        await channel.BasicPublishAsync(
+            exchange: _config.Exchanges[1].Name,
+            routingKey: _config.Exchanges[1].Queues["pickuptasks"].RoutingKey,
+            mandatory: true,
+            basicProperties: properties,
+            body: body,
+            cancellationToken: cancellationToken);
+
+        _logger.LogInformation("Message published to queue '{QueueName}': {Message}", queueName, message);
+    }
+
     private async Task CreateConnectionAsync()
     {
         try

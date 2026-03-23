@@ -13,4 +13,6 @@ public interface IJsonTypeMappingStrategy
     IReadOnlyDictionary<string, JsonKeyValueBuilder> KeyValueBuilders { get; }
 
     Task<string?> LoadTemplateAsync(IWebHostEnvironment webHostEnvironment);
+
+    Task SendRequestAsync(string jsonInput, CancellationToken cancellationToken = default);
 }

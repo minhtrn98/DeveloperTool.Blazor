@@ -64,6 +64,26 @@ public sealed class JsonBuilderService
         return await strategy.LoadTemplateAsync(_webHostEnvironment);
     }
 
+    public async Task SendRequestAsync(string jsonInput, string jsonType, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(jsonInput))
+        {
+            throw new ArgumentException("JSON input is required.", nameof(jsonInput));
+        }
+
+        if (string.IsNullOrWhiteSpace(jsonType))
+        {
+            throw new ArgumentException("JSON type is required.", nameof(jsonType));
+        }
+
+        if (!_strategiesByJsonType.TryGetValue(jsonType, out IJsonTypeMappingStrategy? strategy))
+        {
+            throw new InvalidOperationException($"Unsupported json type: {jsonType}.");
+        }
+
+        await strategy.SendRequestAsync(jsonInput, cancellationToken);
+    }
+
     public async Task<List<JsonKey>> ParseJsonAndExtractKeys(string jsonString, string jsonType)
     {
         if (string.IsNullOrWhiteSpace(jsonString))

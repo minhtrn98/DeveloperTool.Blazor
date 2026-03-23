@@ -7,8 +7,10 @@ using TMS.DeveloperTool.Blazor.Features.Routing.Models;
 namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services.Strategies;
 
 public sealed class PickupTaskEventJsonMappingStrategy(
-    OrderRepository orderRepository,
-    RouteRepository routeRepository) : JsonTypeMappingStrategyBase
+        OrderRepository orderRepository,
+        RouteRepository routeRepository,
+        EventService eventService
+    ) : JsonTypeMappingStrategyBase
 {
     public const string TypeName = "RabbitMqPickupTaskEvent";
     public override string JsonType => TypeName;
@@ -27,6 +29,11 @@ public sealed class PickupTaskEventJsonMappingStrategy(
     public override async Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappingsAsync()
     {
         return await _jsonKeyMappingsTask.Value;
+    }
+
+    public override async Task SendRequestAsync(string jsonInput, CancellationToken cancellationToken = default)
+    {
+        await eventService.PublishPickupTaskEvent(jsonInput, cancellationToken);
     }
 
     private static async Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappingsAsync(

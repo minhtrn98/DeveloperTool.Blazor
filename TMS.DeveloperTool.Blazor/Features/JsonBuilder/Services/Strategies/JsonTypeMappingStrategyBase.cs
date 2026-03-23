@@ -29,6 +29,11 @@ public abstract class JsonTypeMappingStrategyBase : IJsonTypeMappingStrategy
         return FormatTemplate(templateContent);
     }
 
+    public virtual Task SendRequestAsync(string jsonInput, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
     protected virtual string GetTemplateFileName()
     {
         return $"{JsonType}.json";
