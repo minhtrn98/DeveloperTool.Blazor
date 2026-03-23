@@ -1,8 +1,10 @@
 @page "/pickup-tasks"
 @using TMS.DeveloperTool.Blazor.Domain.Enums
 @using TMS.DeveloperTool.Blazor.Extensions
+@using TMS.DeveloperTool.Blazor.Features.PickupTask.Models
 @using TMS.DeveloperTool.Blazor.Features.PickupTask.Services
 @using TMS.DeveloperTool.Blazor.Services
+@inject IDialogService DialogService
 @inject OrderRepository OrderRepository
 @inject PickupTaskActionService PickupTaskActionService
 @inject MyDriverService MyDriverService
@@ -229,6 +231,52 @@
         return processingTaskIds.Contains(pickupTaskId);
     }
 
+    private async Task<PickupTaskActionDialogResult?> ShowActionDialogAsync(PickupTaskInfo item, string action)
+    {
+        List<PickupTaskOrderInfo> orders = await OrderRepository.GetOrdersByPickupTaskIdAsync(item.PickupTaskId);
+
+        DialogParameters parameters = new()
+        {
+            { nameof(PickupTaskActionDialog.ActionName), action },
+            { nameof(PickupTaskActionDialog.PickupTaskId), item.PickupTaskId },
+            { nameof(PickupTaskActionDialog.Orders), orders },
+            { nameof(PickupTaskActionDialog.InitialRescheduledPickupDt), GetSuggestedRescheduleTime(item) }
+        };
+
+        DialogOptions options = new()
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseOnEscapeKey = false
+        };
+
+        IDialogReference dialog = await DialogService.ShowAsync<PickupTaskActionDialog>(GetDialogTitle(action), parameters, options);
+        DialogResult? result = await dialog.Result;
+
+        if (result?.Canceled != false || result.Data is not PickupTaskActionDialogResult dialogResult)
+        {
+            return null;
+        }
+
+        return dialogResult;
+    }
+
+    private static DateTime GetSuggestedRescheduleTime(PickupTaskInfo item)
+    {
+        DateTime baseTime = item.ScheduledPickupDate?.ToLocalTime() ?? DateTime.Now;
+        return baseTime.AddHours(2);
+    }
+
+    private static string GetDialogTitle(string action)
+    {
+        return action switch
+        {
+            ActionCancel => "Hủy điều tin",
+            ActionReschedule => "Hẹn lấy lại",
+            _ => "Cập nhật điều tin"
+        };
+    }
+
     private async Task HandleActionAsync(PickupTaskInfo item, string action)
     {
         if (!processingTaskIds.Add(item.PickupTaskId))
@@ -238,6 +286,16 @@
 
         try
         {
+            PickupTaskActionDialogResult? dialogResult = null;
+            if (action is ActionCancel or ActionReschedule)
+            {
+                dialogResult = await ShowActionDialogAsync(item, action);
+                if (dialogResult is null)
+                {
+                    return;
+                }
+            }
+
             switch (action)
             {
                 case ActionAccept:
@@ -249,16 +307,15 @@
                 case ActionCancel:
                     await PickupTaskActionService.DriverCancelAsync(
                         item.PickupTaskId,
-                        "Driver cancelled from developer tool",
-                        Array.Empty<string>());
+                        dialogResult!.Reason,
+                        dialogResult.OrderIds);
                     break;
                 case ActionReschedule:
-                    DateTime nextPickupTime = (item.ScheduledPickupDate ?? DateTime.Now).AddHours(2);
                     await PickupTaskActionService.RescheduleAsync(
                         item.PickupTaskId,
-                        nextPickupTime,
-                        "Rescheduled from developer tool",
-                        Array.Empty<string>());
+                        dialogResult!.RescheduledPickupDt ?? GetSuggestedRescheduleTime(item),
+                        dialogResult.Reason,
+                        dialogResult.OrderIds);
                     break;
                 default:
                     Snackbar.Add($"Hành động '{action}' không hợp lệ.", Severity.Warning);
