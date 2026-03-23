@@ -7,6 +7,7 @@ using TMS.DeveloperTool.Blazor.Features.DriverChange.Services;
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services.Strategies;
 using TMS.DeveloperTool.Blazor.Features.Pairing.Services;
+using TMS.DeveloperTool.Blazor.Features.PickupTask.Services;
 using TMS.DeveloperTool.Blazor.Features.Routing.Services;
 using TMS.DeveloperTool.Blazor.Features.Simulation.Services;
 using TMS.DeveloperTool.Blazor.Infrastructure.Security;
@@ -83,6 +84,7 @@ builder.Services.AddScoped<OrderRepository>();
 builder.Services.AddScoped<FakeVehicleTransportService>();
 builder.Services.AddScoped<RouteCheckPointTemplateService>();
 builder.Services.AddScoped<PairingService>();
+builder.Services.AddScoped<PickupTaskActionService>();
 builder.Services.AddScoped<IJsonTypeMappingStrategy, PickupTaskEventJsonMappingStrategy>();
 builder.Services.AddScoped<JsonBuilderService>();
 

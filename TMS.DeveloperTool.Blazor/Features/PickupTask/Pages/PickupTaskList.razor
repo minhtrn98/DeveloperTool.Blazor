@@ -1,8 +1,10 @@
 @page "/pickup-tasks"
 @using TMS.DeveloperTool.Blazor.Domain.Enums
 @using TMS.DeveloperTool.Blazor.Extensions
+@using TMS.DeveloperTool.Blazor.Features.PickupTask.Services
 @using TMS.DeveloperTool.Blazor.Services
 @inject OrderRepository OrderRepository
+@inject PickupTaskActionService PickupTaskActionService
 @inject MyDriverService MyDriverService
 @inject ISnackbar Snackbar
 @rendermode InteractiveServer
@@ -19,9 +21,9 @@
             </MudButton>
         </div>
 
-        <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged"
-                         SearchFunc="SearchDrivers" ToStringFunc="GetDriverLabel" Label="Tài xế"
-                         Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
+        <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
+                         ToStringFunc="GetDriverLabel" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true" Clearable="true"
+                         MaxItems="20" Class="mb-3" />
 
         @if (isLoading)
         {
@@ -47,18 +49,22 @@
                     <MudTd DataLabel="PickupTaskId">@context.PickupTaskId</MudTd>
                     <MudTd DataLabel="Driver">@FormatDriver(context)</MudTd>
                     <MudTd DataLabel="Status">
-                        <MudChip T="string" Color="@GetStatusColor(context.Status)" Variant="Variant.Outlined" Size="Size.Small">
+                        <MudChip T="string" Color="@GetStatusColor(context.Status)" Variant="Variant.Outlined"
+                                 Size="Size.Small">
                             @GetStatusDescription(context.Status)
                         </MudChip>
                     </MudTd>
                     <MudTd DataLabel="Scheduled Pickup Date">@FormatDate(context.ScheduledPickupDate)</MudTd>
                     <MudTd DataLabel="Actions">
                         <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small" Class="flex-wrap">
-                            <MudButton Color="Color.Success" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionAccept))">Chấp nhận</MudButton>
-                            <MudButton Color="Color.Error" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionReject))">Từ chối</MudButton>
-                            <MudButton Color="Color.Primary" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionArrived))">Đã tới nơi</MudButton>
-                            <MudButton Color="Color.Dark" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionCancel))">Hủy</MudButton>
-                            <MudButton Color="Color.Warning" Disabled="@IsBusy(context.PickupTaskId)" OnClick="@(() => HandleActionAsync(context, ActionReschedule))">Hẹn lấy lại</MudButton>
+                            <MudButton Color="Color.Success" Disabled="@IsBusy(context.PickupTaskId)"
+                                       OnClick="@(() => HandleActionAsync(context, ActionAccept))">Chấp nhận</MudButton>
+                            <MudButton Color="Color.Primary" Disabled="@IsBusy(context.PickupTaskId)"
+                                       OnClick="@(() => HandleActionAsync(context, ActionArrived))">Đã tới nơi</MudButton>
+                            <MudButton Color="Color.Dark" Disabled="@IsBusy(context.PickupTaskId)"
+                                       OnClick="@(() => HandleActionAsync(context, ActionCancel))">Hủy</MudButton>
+                            <MudButton Color="Color.Warning" Disabled="@IsBusy(context.PickupTaskId)"
+                                       OnClick="@(() => HandleActionAsync(context, ActionReschedule))">Hẹn lấy lại</MudButton>
                         </MudButtonGroup>
                     </MudTd>
                 </RowTemplate>
@@ -69,7 +75,6 @@
 
 @code {
     private const string ActionAccept = "Accept";
-    private const string ActionReject = "Reject";
     private const string ActionArrived = "Arrived";
     private const string ActionCancel = "Cancel";
     private const string ActionReschedule = "Reschedule";
@@ -233,24 +238,34 @@
 
         try
         {
-            // TODO: wire API call when pickup task action endpoint is available.
-            await Task.Delay(120);
-
-            PickupTaskInfo updated = action switch
+            switch (action)
             {
-                "Accept" => item with { Status = "Accepted" },
-                "Reject" => item with { Status = "Rejected" },
-                "Arrived" => item with { Status = "Arrived" },
-                "Cancel" => item with { Status = "Canceled" },
-                "Reschedule" => item with { Status = "Rescheduled", ScheduledPickupDate = (item.ScheduledPickupDate ?? DateTime.Now).AddHours(2) },
-                _ => item
-            };
-
-            int index = pickupTasks.FindIndex(x => x.PickupTaskId == item.PickupTaskId);
-            if (index >= 0)
-            {
-                pickupTasks[index] = updated;
+                case ActionAccept:
+                    await PickupTaskActionService.AcceptAsync(item.PickupTaskId);
+                    break;
+                case ActionArrived:
+                    await PickupTaskActionService.ConfirmArrivedAsync(item.PickupTaskId);
+                    break;
+                case ActionCancel:
+                    await PickupTaskActionService.DriverCancelAsync(
+                        item.PickupTaskId,
+                        "Driver cancelled from developer tool",
+                        Array.Empty<string>());
+                    break;
+                case ActionReschedule:
+                    DateTime nextPickupTime = (item.ScheduledPickupDate ?? DateTime.Now).AddHours(2);
+                    await PickupTaskActionService.RescheduleAsync(
+                        item.PickupTaskId,
+                        nextPickupTime,
+                        "Rescheduled from developer tool",
+                        Array.Empty<string>());
+                    break;
+                default:
+                    Snackbar.Add($"Hành động '{action}' không hợp lệ.", Severity.Warning);
+                    return;
             }
+
+            await ReloadAsync();
 
             Snackbar.Add($"{action} điều tin {item.PickupTaskId} thành công.", Severity.Success);
         }
