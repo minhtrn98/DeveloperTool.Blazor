@@ -153,7 +153,86 @@ public class JsonBuilderServiceTests
         await service.ApplyValueChange("{\"event\":{\"status\":\"A\"}}", "Type1", keys, keys[0], "B");
         await service.ApplyValueChange("{\"event\":{\"status\":\"B\"}}", "Type1", keys, keys[0], "C");
 
-        strategy.BuildMappingsCallCount.Should().Be(1);
+        strategy.BuildMappingsAsyncCallCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ApplyKeyValueBuildersAsync_ReplacesMatchingKey_WithBuiltArrayValue()
+    {
+        var env = new Mock<IWebHostEnvironment>();
+        var strategy = new FakeStrategy(
+            "Type1",
+            keyValueBuilders: new Dictionary<string, JsonKeyValueBuilder>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["orders"] = () => Task.FromResult<object>(new[]
+                {
+                    new { OrderId = "ORD-001" }
+                })
+            });
+        var service = new JsonBuilderService([strategy], env.Object);
+
+        string original = "{\"orders\":[],\"event\":\"sample\"}";
+
+        string updated = await service.ApplyKeyValueBuildersAsync(original, "Type1");
+
+        JsonNode parsed = JsonNode.Parse(updated)!;
+        parsed["orders"]![0]!["OrderId"]!.GetValue<string>().Should().Be("ORD-001");
+    }
+
+    [Fact]
+    public async Task ApplyKeyValueBuildersAsync_UsesCachedBuilderValue_WithinTtl()
+    {
+        var env = new Mock<IWebHostEnvironment>();
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 3, 23, 10, 0, 0, TimeSpan.Zero));
+        int buildCount = 0;
+        var strategy = new FakeStrategy(
+            "Type1",
+            keyValueBuilders: new Dictionary<string, JsonKeyValueBuilder>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["orders"] = () =>
+                {
+                    buildCount++;
+                    return Task.FromResult<object>(new[] { new { OrderId = $"ORD-{buildCount:000}" } });
+                }
+            });
+        var service = new JsonBuilderService([strategy], env.Object, timeProvider);
+
+        string original = "{\"orders\":[]}";
+
+        string first = await service.ApplyKeyValueBuildersAsync(original, "Type1");
+        timeProvider.Advance(TimeSpan.FromSeconds(30));
+        string second = await service.ApplyKeyValueBuildersAsync(original, "Type1");
+
+        buildCount.Should().Be(1);
+        second.Should().Be(first);
+    }
+
+    [Fact]
+    public async Task ApplyKeyValueBuildersAsync_RebuildsValue_AfterTtlExpires()
+    {
+        var env = new Mock<IWebHostEnvironment>();
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 3, 23, 10, 0, 0, TimeSpan.Zero));
+        int buildCount = 0;
+        var strategy = new FakeStrategy(
+            "Type1",
+            keyValueBuilders: new Dictionary<string, JsonKeyValueBuilder>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["orders"] = () =>
+                {
+                    buildCount++;
+                    return Task.FromResult<object>(new[] { new { OrderId = $"ORD-{buildCount:000}" } });
+                }
+            });
+        var service = new JsonBuilderService([strategy], env.Object, timeProvider);
+
+        string original = "{\"orders\":[]}";
+
+        string first = await service.ApplyKeyValueBuildersAsync(original, "Type1");
+        timeProvider.Advance(TimeSpan.FromMinutes(2));
+        string second = await service.ApplyKeyValueBuildersAsync(original, "Type1");
+
+        buildCount.Should().Be(2);
+        second.Should().NotBe(first);
     }
 
     [Fact]
@@ -169,30 +248,49 @@ public class JsonBuilderServiceTests
     private sealed class FakeStrategy : IJsonTypeMappingStrategy
     {
         private readonly IReadOnlyDictionary<string, JsonKeyMapping> _mappings;
+        private readonly IReadOnlyDictionary<string, JsonKeyValueBuilder> _keyValueBuilders;
         private readonly string? _template;
 
         public FakeStrategy(
             string jsonType,
             IReadOnlyDictionary<string, JsonKeyMapping>? mappings = null,
+            IReadOnlyDictionary<string, JsonKeyValueBuilder>? keyValueBuilders = null,
             string? template = null)
         {
             JsonType = jsonType;
             _mappings = mappings ?? new Dictionary<string, JsonKeyMapping>(StringComparer.OrdinalIgnoreCase);
+            _keyValueBuilders = keyValueBuilders ?? new Dictionary<string, JsonKeyValueBuilder>(StringComparer.OrdinalIgnoreCase);
             _template = template;
         }
 
-        public int BuildMappingsCallCount { get; private set; }
+        public int BuildMappingsAsyncCallCount { get; private set; }
         public string JsonType { get; }
+        public IReadOnlyDictionary<string, JsonKeyValueBuilder> KeyValueBuilders => _keyValueBuilders;
 
-        public Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappings()
+        public Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappingsAsync()
         {
-            BuildMappingsCallCount++;
+            BuildMappingsAsyncCallCount++;
             return Task.FromResult(_mappings);
         }
 
         public Task<string?> LoadTemplateAsync(IWebHostEnvironment webHostEnvironment)
         {
             return Task.FromResult(_template);
+        }
+    }
+
+    private sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        private DateTimeOffset _utcNow = utcNow;
+
+        public override DateTimeOffset GetUtcNow()
+        {
+            return _utcNow;
+        }
+
+        public void Advance(TimeSpan duration)
+        {
+            _utcNow = _utcNow.Add(duration);
         }
     }
 }

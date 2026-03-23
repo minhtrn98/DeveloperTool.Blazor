@@ -98,6 +98,16 @@ internal static class JsonNodeValueFactory
     /// </example>
     public static JsonNode? CreateTypedNode(JsonNode? existingNode, object newValue)
     {
+        if (newValue is JsonNode jsonNode)
+        {
+            return jsonNode.DeepClone();
+        }
+
+        if (newValue is not null && newValue is not string && newValue is not ValueType)
+        {
+            return JsonSerializer.SerializeToNode(newValue);
+        }
+
         string rawValue = newValue?.ToString() ?? string.Empty;
         if (string.IsNullOrEmpty(rawValue))
         {

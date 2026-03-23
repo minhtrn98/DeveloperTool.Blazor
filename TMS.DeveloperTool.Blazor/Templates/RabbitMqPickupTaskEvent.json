@@ -29,13 +29,13 @@
   "actualPickupTime": null,
   "statusId": "waiting_for_assignment",
   "statusName": "Chờ phân công",
-  "totalItems": 2,
-  "totalWeight": 2,
-  "totalCalWeight": 2,
-  "totalCodAmount": 1000000,
-  "l": 2,
-  "h": 2,
-  "w": 2,
+  "totalItems": 1,
+  "totalWeight": 1,
+  "totalCalWeight": 1,
+  "totalCodAmount": 1,
+  "l": 1,
+  "h": 1,
+  "w": 1,
   "serviceTypeId": "DE",
   "serviceTypeName": "Chuyển phát nhanh",
   "priority": 1,
@@ -51,42 +51,5 @@
   "cancellationReason": null,
   "dispatchType": 1,
   "dispatchMethod": 1,
-  "orders": [
-    {
-      "OrderId": "BOC2600009",
-      "CreatedAt": "{{datetime}}",
-      "Weight": 1,
-      "L": 1,
-      "H": 1,
-      "W": 1,
-      "Items": [
-        {
-          "OrderId": "BOC2600009",
-          "OrderItemId": "BOC2600009",
-          "Weight": 1,
-          "L": 1,
-          "H": 1,
-          "W": 1
-        }
-      ]
-    },
-    {
-      "OrderId": "BOC2600011",
-      "CreatedAt": "{{datetime}}",
-      "Weight": 1,
-      "L": 1,
-      "H": 1,
-      "W": 1,
-      "Items": [
-        {
-          "OrderId": "BOC2600011",
-          "OrderItemId": "BOC2600011",
-          "Weight": 1,
-          "L": 1,
-          "H": 1,
-          "W": 1
-        }
-      ]
-    }
-  ]
+  "orders": []
 }

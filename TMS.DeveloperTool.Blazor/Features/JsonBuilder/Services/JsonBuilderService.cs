@@ -10,9 +10,16 @@ namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 
 public sealed class JsonBuilderService
 {
-    private readonly IReadOnlyDictionary<string, IJsonTypeMappingStrategy> _strategiesByType;
+    private sealed record CachedBuilderResult(Lazy<Task<object>> ValueFactory, DateTimeOffset ExpiresAt);
+
+    private static readonly TimeSpan KeyValueBuilderCacheTtl = TimeSpan.FromMinutes(1);
+
+    private readonly IReadOnlyDictionary<string, IJsonTypeMappingStrategy> _strategiesByJsonType;
     private readonly IWebHostEnvironment _webHostEnvironment;
-    private readonly ConcurrentDictionary<string, Lazy<Task<IReadOnlyDictionary<string, JsonKeyMapping>>>> _mappingsCache =
+    private readonly TimeProvider _timeProvider;
+    private readonly ConcurrentDictionary<string, Lazy<Task<IReadOnlyDictionary<string, JsonKeyMapping>>>> _jsonKeyMappingsCache =
+        new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, CachedBuilderResult> _keyValueBuilderCache =
         new(StringComparer.OrdinalIgnoreCase);
 
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
@@ -23,14 +30,23 @@ public sealed class JsonBuilderService
     };
 
     public JsonBuilderService(IEnumerable<IJsonTypeMappingStrategy> strategies, IWebHostEnvironment webHostEnvironment)
+        : this(strategies, webHostEnvironment, TimeProvider.System)
     {
-        _strategiesByType = strategies.ToDictionary(s => s.JsonType, s => s, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public JsonBuilderService(
+        IEnumerable<IJsonTypeMappingStrategy> strategies,
+        IWebHostEnvironment webHostEnvironment,
+        TimeProvider timeProvider)
+    {
+        _strategiesByJsonType = strategies.ToDictionary(s => s.JsonType, s => s, StringComparer.OrdinalIgnoreCase);
         _webHostEnvironment = webHostEnvironment;
+        _timeProvider = timeProvider;
     }
 
     public IReadOnlyList<string> GetJsonTypes()
     {
-        return _strategiesByType.Keys.OrderBy(x => x).ToList();
+        return _strategiesByJsonType.Keys.OrderBy(x => x).ToList();
     }
 
     public async Task<string?> LoadTemplateAsync(string jsonType)
@@ -40,7 +56,7 @@ public sealed class JsonBuilderService
             return null;
         }
 
-        if (!_strategiesByType.TryGetValue(jsonType, out IJsonTypeMappingStrategy? strategy))
+        if (!_strategiesByJsonType.TryGetValue(jsonType, out IJsonTypeMappingStrategy? strategy))
         {
             return null;
         }
@@ -56,7 +72,7 @@ public sealed class JsonBuilderService
         }
 
         List<JsonKey> keys = [];
-        IReadOnlyDictionary<string, JsonKeyMapping> mappings = await GetMappingsByType(jsonType);
+        IReadOnlyDictionary<string, JsonKeyMapping> mappings = await GetMappingsAsync(jsonType);
 
         try
         {
@@ -71,6 +87,40 @@ public sealed class JsonBuilderService
             // Invalid JSON, return empty list
         }
         return keys;
+    }
+
+    public async Task<string> ApplyKeyValueBuildersAsync(string originalJson, string jsonType)
+    {
+        if (string.IsNullOrWhiteSpace(originalJson))
+        {
+            return originalJson;
+        }
+
+        if (!_strategiesByJsonType.TryGetValue(jsonType, out IJsonTypeMappingStrategy? strategy) || strategy.KeyValueBuilders.Count == 0)
+        {
+            return originalJson;
+        }
+
+        try
+        {
+            JsonNode? jsonNode = JsonNode.Parse(originalJson);
+            if (jsonNode is null)
+            {
+                return originalJson;
+            }
+
+            foreach ((string keyName, JsonKeyValueBuilder builder) in strategy.KeyValueBuilders)
+            {
+                object builtValue = await GetKeyValueBuilderResultAsync(jsonType, keyName, builder);
+                ReplaceMatchingPropertyValues(jsonNode, keyName, builtValue);
+            }
+
+            return jsonNode.ToJsonString(_jsonOptions);
+        }
+        catch (JsonException)
+        {
+            return originalJson;
+        }
     }
 
     private static void ExtractKeysRecursive(JsonNode node, string currentPath, List<JsonKey> keys, IReadOnlyDictionary<string, JsonKeyMapping> mappings)
@@ -136,9 +186,77 @@ public sealed class JsonBuilderService
         return path;
     }
 
+    private static void ReplaceMatchingPropertyValues(JsonNode node, string keyName, object builtValue)
+    {
+        if (node is JsonObject jsonObject)
+        {
+            List<string> propertyNames = [.. jsonObject.Select(p => p.Key)];
+            foreach (string propertyName in propertyNames)
+            {
+                JsonNode? propertyNode = jsonObject[propertyName];
+
+                if (string.Equals(propertyName, keyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    jsonObject[propertyName] = JsonNodeValueFactory.CreateTypedNode(propertyNode, builtValue);
+                    propertyNode = jsonObject[propertyName];
+                }
+
+                if (propertyNode is JsonObject or JsonArray)
+                {
+                    ReplaceMatchingPropertyValues(propertyNode, keyName, builtValue);
+                }
+            }
+
+            return;
+        }
+
+        if (node is not JsonArray jsonArray)
+        {
+            return;
+        }
+
+        foreach (JsonNode? item in jsonArray)
+        {
+            if (item is JsonObject or JsonArray)
+            {
+                ReplaceMatchingPropertyValues(item, keyName, builtValue);
+            }
+        }
+    }
+
+    private async Task<object> GetKeyValueBuilderResultAsync(string jsonType, string keyName, JsonKeyValueBuilder builder)
+    {
+        string cacheKey = $"{jsonType}:{keyName}";
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+
+        if (_keyValueBuilderCache.TryGetValue(cacheKey, out CachedBuilderResult? cachedResult) && cachedResult.ExpiresAt > now)
+        {
+            return await cachedResult.ValueFactory.Value;
+        }
+
+        CachedBuilderResult newCachedResult = new(
+            new Lazy<Task<object>>(() => builder(), LazyThreadSafetyMode.ExecutionAndPublication),
+            now.Add(KeyValueBuilderCacheTtl));
+
+        CachedBuilderResult activeCachedResult = _keyValueBuilderCache.AddOrUpdate(
+            cacheKey,
+            newCachedResult,
+            (_, existingCachedResult) => existingCachedResult.ExpiresAt > now ? existingCachedResult : newCachedResult);
+
+        try
+        {
+            return await activeCachedResult.ValueFactory.Value;
+        }
+        catch
+        {
+            _keyValueBuilderCache.TryRemove(cacheKey, out _);
+            throw;
+        }
+    }
+
     public async Task LoadDropdownOptionsAsync(List<JsonKey> keys, string jsonType)
     {
-        IReadOnlyDictionary<string, JsonKeyMapping> mappings = await GetMappingsByType(jsonType);
+        IReadOnlyDictionary<string, JsonKeyMapping> mappings = await GetMappingsAsync(jsonType);
 
         foreach (JsonKey key in keys.Where(k => k.IsSupported))
         {
@@ -159,7 +277,7 @@ public sealed class JsonBuilderService
 
     public async Task<string> ApplyValueChange(string originalJson, string jsonType, List<JsonKey> keys, JsonKey changedKey, object newValue)
     {
-        IReadOnlyDictionary<string, JsonKeyMapping> mappings = await GetMappingsByType(jsonType);
+        IReadOnlyDictionary<string, JsonKeyMapping> mappings = await GetMappingsAsync(jsonType);
         object? oldParentValue = changedKey.CurrentValue;
         changedKey.CurrentValue = newValue;
 
@@ -207,17 +325,17 @@ public sealed class JsonBuilderService
         return updatedJson;
     }
 
-    private async Task<IReadOnlyDictionary<string, JsonKeyMapping>> GetMappingsByType(string jsonType)
+    private async Task<IReadOnlyDictionary<string, JsonKeyMapping>> GetMappingsAsync(string jsonType)
     {
-        if (!_strategiesByType.TryGetValue(jsonType, out IJsonTypeMappingStrategy? strategy))
+        if (!_strategiesByJsonType.TryGetValue(jsonType, out IJsonTypeMappingStrategy? strategy))
         {
             return new Dictionary<string, JsonKeyMapping>(StringComparer.OrdinalIgnoreCase);
         }
 
-        Lazy<Task<IReadOnlyDictionary<string, JsonKeyMapping>>> lazyMappings = _mappingsCache.GetOrAdd(
+        Lazy<Task<IReadOnlyDictionary<string, JsonKeyMapping>>> lazyMappings = _jsonKeyMappingsCache.GetOrAdd(
             jsonType,
             _ => new Lazy<Task<IReadOnlyDictionary<string, JsonKeyMapping>>>(
-                async () => await strategy.BuildMappings(),
+                async () => await strategy.BuildMappingsAsync(),
                 LazyThreadSafetyMode.ExecutionAndPublication));
 
         return await lazyMappings.Value;

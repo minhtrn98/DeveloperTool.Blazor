@@ -6,7 +6,10 @@ public abstract class JsonTypeMappingStrategyBase : IJsonTypeMappingStrategy
 {
     public abstract string JsonType { get; }
 
-    public abstract Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappings();
+    public abstract Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappingsAsync();
+
+    public virtual IReadOnlyDictionary<string, JsonKeyValueBuilder> KeyValueBuilders { get; } =
+        new Dictionary<string, JsonKeyValueBuilder>(StringComparer.OrdinalIgnoreCase);
 
     public virtual async Task<string?> LoadTemplateAsync(IWebHostEnvironment webHostEnvironment)
     {

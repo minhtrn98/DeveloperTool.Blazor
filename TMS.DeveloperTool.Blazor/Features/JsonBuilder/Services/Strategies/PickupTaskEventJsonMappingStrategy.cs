@@ -13,26 +13,29 @@ public sealed class PickupTaskEventJsonMappingStrategy(
     public const string TypeName = "RabbitMqPickupTaskEvent";
     public override string JsonType => TypeName;
 
-    private readonly Lazy<Task<IReadOnlyDictionary<string, JsonKeyMapping>>> _mappingsTask =
-        new(() => BuildMappingsInternal(orderRepository, routeRepository), LazyThreadSafetyMode.ExecutionAndPublication);
+    private readonly IReadOnlyDictionary<string, JsonKeyValueBuilder> _keyValueBuilders =
+        new Dictionary<string, JsonKeyValueBuilder>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["orders"] = async () => await BuildOrdersValueAsync(orderRepository)
+        };
 
-    public override async Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappings()
+    private readonly Lazy<Task<IReadOnlyDictionary<string, JsonKeyMapping>>> _jsonKeyMappingsTask =
+        new(() => BuildMappingsAsync(routeRepository), LazyThreadSafetyMode.ExecutionAndPublication);
+
+    public override IReadOnlyDictionary<string, JsonKeyValueBuilder> KeyValueBuilders => _keyValueBuilders;
+
+    public override async Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappingsAsync()
     {
-        return await _mappingsTask.Value;
+        return await _jsonKeyMappingsTask.Value;
     }
 
-    private static async Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappingsInternal(
-        OrderRepository orderRepository,
+    private static async Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappingsAsync(
         RouteRepository routeRepository)
     {
-        List<OrderInfo> orders = await orderRepository.GetAllOrdersAsync();
         IEnumerable<PostOffice> postOffices = await routeRepository.GetPostOfficesAsync();
-        List<OrderItemInfo> orderItems = await orderRepository.GetAllOrderItemsAsync();
 
         Dictionary<string, JsonKeyMapping> mappings = new(StringComparer.OrdinalIgnoreCase)
         {
-            ["OrderId"] = CreateOrderIdMapping(orders),
-            ["OrderItemId"] = CreateOrderItemIdMapping(orderItems),
             ["pickupPostOfficeCode"] = CreatePickupPostOfficeCodeMapping(postOffices),
             ["statusId"] = CreateStatusIdMapping(),
             ["serviceTypeId"] = CreateServiceTypeIdMapping(),
@@ -41,74 +44,6 @@ public sealed class PickupTaskEventJsonMappingStrategy(
         };
 
         return new ReadOnlyDictionary<string, JsonKeyMapping>(mappings);
-    }
-
-    private static JsonKeyMapping CreateOrderIdMapping(IEnumerable<OrderInfo> orders)
-    {
-        List<object> orderIds = orders
-            .Select(o => o.OrderId)
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x)
-            .Cast<object>()
-            .ToList();
-        Dictionary<string, string> orderIdToCreatedAtMap = orders
-            .Where(o => !string.IsNullOrWhiteSpace(o.OrderId))
-            .ToDictionary(
-                o => o.OrderId,
-                o => FormatCreatedAt(o.CreatedAt),
-                StringComparer.OrdinalIgnoreCase);
-
-        return new JsonKeyMapping(
-            orderIds,
-            [
-                new DependentValueMapping("CreatedAt", ToObjectMap(orderIdToCreatedAtMap))
-            ]);
-    }
-
-    private static JsonKeyMapping CreateOrderItemIdMapping(IEnumerable<OrderItemInfo> orderItems)
-    {
-        List<object> orderItemIds = orderItems
-            .Select(o => o.OrderItemId)
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x)
-            .Cast<object>()
-            .ToList();
-        Dictionary<string, decimal> orderItemIdToWeightAtMap = orderItems
-            .Where(o => !string.IsNullOrWhiteSpace(o.OrderItemId))
-            .ToDictionary(
-                o => o.OrderItemId,
-                o => o.Weight,
-                StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, decimal> orderItemIdToWAtMap = orderItems
-            .Where(o => !string.IsNullOrWhiteSpace(o.OrderItemId))
-            .ToDictionary(
-                o => o.OrderItemId,
-                o => o.W,
-                StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, decimal> orderItemIdToHAtMap = orderItems
-            .Where(o => !string.IsNullOrWhiteSpace(o.OrderItemId))
-            .ToDictionary(
-                o => o.OrderItemId,
-                o => o.H,
-                StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, decimal> orderItemIdToLAtMap = orderItems
-            .Where(o => !string.IsNullOrWhiteSpace(o.OrderItemId))
-            .ToDictionary(
-                o => o.OrderItemId,
-                o => o.L,
-                StringComparer.OrdinalIgnoreCase);
-
-        return new JsonKeyMapping(
-            orderItemIds,
-            [
-                new DependentValueMapping("Weight", ToObjectMap(orderItemIdToWeightAtMap)),
-                new DependentValueMapping("H", ToObjectMap(orderItemIdToHAtMap)),
-                new DependentValueMapping("L", ToObjectMap(orderItemIdToLAtMap)),
-                new DependentValueMapping("W", ToObjectMap(orderItemIdToWAtMap))
-            ]
-        );
     }
 
     private static JsonKeyMapping CreatePickupPostOfficeCodeMapping(IEnumerable<PostOffice> postOffices)
@@ -214,9 +149,42 @@ public sealed class PickupTaskEventJsonMappingStrategy(
         return source.ToDictionary(kvp => (object)kvp.Key, kvp => (object)kvp.Value);
     }
 
-    private static Dictionary<object, object> ToObjectMap(Dictionary<string, decimal> source)
+    private static async Task<object> BuildOrdersValueAsync(OrderRepository orderRepository)
     {
-        return source.ToDictionary(kvp => (object)kvp.Key, kvp => (object)kvp.Value);
+        List<OrderInfo> orders = await orderRepository.GetAllOrdersAsync();
+        List<OrderItemInfo> orderItems = await orderRepository.GetAllOrderItemsAsync();
+
+        Dictionary<string, List<PickupTaskEventOrderItemDto>> orderItemsByOrderId = orderItems
+            .Where(orderItem => !string.IsNullOrWhiteSpace(orderItem.OrderId))
+            .GroupBy(orderItem => orderItem.OrderId, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .Select(orderItem => new PickupTaskEventOrderItemDto(
+                        orderItem.OrderId,
+                        orderItem.OrderItemId,
+                        orderItem.Weight,
+                        orderItem.L,
+                        orderItem.H,
+                        orderItem.W,
+                        orderItem.HasPickupTask))
+                    .ToList(),
+                StringComparer.OrdinalIgnoreCase);
+
+        List<PickupTaskEventOrderDto> orderDtos = orders
+            .Where(order => !string.IsNullOrWhiteSpace(order.OrderId))
+            .Select(order => new PickupTaskEventOrderDto(
+                order.OrderId,
+                FormatCreatedAt(order.CreatedAt),
+                order.Weight,
+                order.L,
+                order.H,
+                order.W,
+                order.HasPickupTask,
+                orderItemsByOrderId.GetValueOrDefault(order.OrderId, [])))
+            .ToList();
+
+        return orderDtos;
     }
 
     private static string FormatCreatedAt(DateTime value)

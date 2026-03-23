@@ -80,6 +80,7 @@
             return;
         }
 
+        JsonInput = await JsonBuilderService.ApplyKeyValueBuildersAsync(JsonInput, SelectedJsonType);
         JsonKeys = await JsonBuilderService.ParseJsonAndExtractKeys(JsonInput, SelectedJsonType);
         await JsonBuilderService.LoadDropdownOptionsAsync(JsonKeys, SelectedJsonType);
 
