@@ -84,13 +84,28 @@ builder.Services.AddScoped<OrderRepository>();
 
 builder.Services.AddScoped<FakeVehicleTransportService>();
 builder.Services.AddScoped<RouteCheckPointTemplateService>();
+builder.Services.AddTransient<LoggingHttpHandler>();
+RefitSettings fleetRefitSettings = new(new SystemTextJsonContentSerializer(
+    new System.Text.Json.JsonSerializerOptions
+    {
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    }));
+builder.Services.AddRefitClient<IFleetAssignmentApi>(fleetRefitSettings)
+    .ConfigureHttpClient((sp, c) =>
+    {
+        ApiUrlsOptions apiUrls = sp.GetRequiredService<ApiUrlsOptions>();
+        c.BaseAddress = new Uri(apiUrls.Fleet);
+    })
+    .AddHttpMessageHandler<LoggingHttpHandler>();
 builder.Services.AddScoped<PairingService>();
 builder.Services.AddRefitClient<IPickupTaskApi>()
     .ConfigureHttpClient((sp, c) =>
     {
         ApiUrlsOptions apiUrls = sp.GetRequiredService<ApiUrlsOptions>();
         c.BaseAddress = new Uri(apiUrls.Order);
-    });
+    })
+    .AddHttpMessageHandler<LoggingHttpHandler>();
 builder.Services.AddScoped<PickupTaskActionService>();
 builder.Services.AddScoped<IJsonTypeMappingStrategy, PickupTaskEventJsonMappingStrategy>();
 builder.Services.AddScoped<JsonBuilderService>();

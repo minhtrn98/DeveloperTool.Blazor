@@ -1,109 +1,72 @@
-using System.Net.Http.Headers;
+using Refit;
+using TMS.DeveloperTool.Blazor.Domain.Enums;
 using TMS.DeveloperTool.Blazor.Features.Pairing.Models;
 
 namespace TMS.DeveloperTool.Blazor.Features.Pairing.Services;
 
-public sealed class PairingService
+public sealed class PairingService(IFleetAssignmentApi api)
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-
-    public PairingService(IHttpClientFactory httpClientFactory)
-    {
-        _httpClientFactory = httpClientFactory;
-    }
-
     public Task<ApiCallResult> SendPairingAsync(
-        string apiHost,
-        string apiPath,
         string accessToken,
         string? companyId,
         string? departmentId,
         PairingRequest request,
         CancellationToken cancellationToken = default)
     {
-        return SendRequestAsync(apiHost, apiPath, accessToken, companyId, departmentId, request, cancellationToken);
+        (string? auth, string? companyHeader, string? deptHeader) = BuildHeaders(accessToken, companyId, departmentId);
+        Task apiTask = request.ActionType switch
+        {
+            ActionType.Pairing => api.PairingAsync(request, auth, companyHeader, deptHeader, cancellationToken),
+            ActionType.Unpairing => api.UnpairingAsync(request, auth, companyHeader, deptHeader, cancellationToken),
+            ActionType.UnexpectedPairing => api.UnexpectedPairingAsync(request, auth, companyHeader, deptHeader, cancellationToken),
+            _ => throw new NotSupportedException($"ActionType '{request.ActionType}' không được hỗ trợ.")
+        };
+        return WrapAsync(apiTask);
     }
 
     public Task<ApiCallResult> SendSwapDriverAsync(
-        string apiHost,
-        string apiPath,
         string accessToken,
         string? companyId,
         string? departmentId,
         SwapDriverRequest request,
         CancellationToken cancellationToken = default)
     {
-        return SendRequestAsync(apiHost, apiPath, accessToken, companyId, departmentId, request, cancellationToken);
+        (string? auth, string? companyHeader, string? deptHeader) = BuildHeaders(accessToken, companyId, departmentId);
+        return WrapAsync(api.SwapDriverAsync(request, auth, companyHeader, deptHeader, cancellationToken));
     }
 
     public Task<ApiCallResult> SendConfirmAsync(
-        string apiHost,
-        string apiPath,
         string accessToken,
         string? companyId,
         string? departmentId,
         Guid vehicleId,
         CancellationToken cancellationToken = default)
     {
-        ConfirmRequest request = new()
-        {
-            VehicleId = vehicleId
-        };
-
-        return SendRequestAsync(apiHost, apiPath, accessToken, companyId, departmentId, request, cancellationToken);
+        (string? auth, string? companyHeader, string? deptHeader) = BuildHeaders(accessToken, companyId, departmentId);
+        return WrapAsync(api.ConfirmAsync(new ConfirmRequest { VehicleId = vehicleId }, auth, companyHeader, deptHeader, cancellationToken));
     }
 
-    private async Task<ApiCallResult> SendRequestAsync<T>(
-        string apiHost,
-        string apiPath,
-        string accessToken,
-        string? companyId,
-        string? departmentId,
-        T request,
-        CancellationToken cancellationToken)
+    private static (string? auth, string? companyId, string? departmentId) BuildHeaders(
+        string accessToken, string? companyId, string? departmentId)
     {
-        using HttpClient client = _httpClientFactory.CreateClient();
-        using HttpRequestMessage httpRequest = new(HttpMethod.Post, BuildApiUrl(apiHost, apiPath))
-        {
-            Content = JsonContent.Create(request)
-        };
+        string? auth = string.IsNullOrWhiteSpace(accessToken) ? null : $"Bearer {accessToken.Trim()}";
+        string? companyHeader = Guid.TryParse(companyId, out Guid companyGuid) ? companyGuid.ToString() : null;
+        string? deptHeader = Guid.TryParse(departmentId, out Guid deptGuid) ? deptGuid.ToString() : null;
+        return (auth, companyHeader, deptHeader);
+    }
 
-        if (!string.IsNullOrWhiteSpace(accessToken))
+    private static async Task<ApiCallResult> WrapAsync(Task apiTask)
+    {
+        try
         {
-            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Trim());
-        }
-
-        AddHeaderIfGuid(httpRequest, "CompanyId", companyId);
-        AddHeaderIfGuid(httpRequest, "DepartmentId", departmentId);
-
-        using HttpResponseMessage response = await client.SendAsync(httpRequest, cancellationToken);
-        if (response.IsSuccessStatusCode)
-        {
+            await apiTask;
             return ApiCallResult.Success();
         }
-
-        string error = await response.Content.ReadAsStringAsync(cancellationToken);
-        string message = $"{(int)response.StatusCode} {response.ReasonPhrase}. {error}";
-        return ApiCallResult.Failure(message);
-    }
-
-    private static void AddHeaderIfGuid(HttpRequestMessage httpRequest, string headerName, string? headerValue)
-    {
-        if (Guid.TryParse(headerValue, out Guid parsed))
+        catch (ApiException ex)
         {
-            httpRequest.Headers.Add(headerName, parsed.ToString());
+            string message = $"{(int)ex.StatusCode} {ex.ReasonPhrase}. {ex.Content}";
+            return ApiCallResult.Failure(message);
         }
-    }
-
-    private static string BuildApiUrl(string apiHost, string apiPath)
-    {
-        if (string.IsNullOrWhiteSpace(apiHost))
-        {
-            return apiPath;
-        }
-
-        string trimmedHost = apiHost.Trim().TrimEnd('/');
-        return $"{trimmedHost}{apiPath}";
     }
 }
 

@@ -7,7 +7,6 @@
 @inject MyDriverService MyDriverService
 @inject PairingService PairingService
 @inject ISnackbar Snackbar
-@inject ApiUrlsOptions ApiUrlsOptions
 
 <AppPageTitle MenuName="Yêu cầu đổi tài xế" />
 
@@ -62,15 +61,12 @@
 </MudContainer>
 
 @code {
-    private const string ConfirmApiPath = "/api/v1/assignments/confirm";
     private string accessToken = string.Empty;
     private List<Driver> drivers = [];
     private Driver? selectedDriver;
     private readonly List<PairingCacheItem> cacheItems = [];
     private bool isLoading;
     private bool isSubmitting;
-
-    private string ApiHost => ApiUrlsOptions.Fleet.Trim().TrimEnd('/');
 
     protected override async Task OnInitializedAsync()
     {
@@ -159,8 +155,6 @@
         try
         {
             ApiCallResult result = await PairingService.SendConfirmAsync(
-                ApiHost,
-                ConfirmApiPath,
                 accessToken,
                 companyId: null,
                 departmentId: null,
