@@ -11,31 +11,33 @@ public sealed class PickupTaskActionService
         _apiUrls = apiUrls;
     }
 
-    public Task AcceptAsync(string pickupTaskId, CancellationToken cancellationToken = default)
+    public Task AcceptAsync(string pickupTaskId, string bearerToken, CancellationToken cancellationToken = default)
     {
         string encodedPickupTaskId = Uri.EscapeDataString(pickupTaskId);
         string path = $"/accept?pickupTaskId={encodedPickupTaskId}";
-        return SendAsync(HttpMethod.Put, path, body: null, cancellationToken);
+        return SendAsync(HttpMethod.Put, path, body: null, bearerToken, cancellationToken);
     }
 
-    public Task ConfirmArrivedAsync(string pickupTaskId, CancellationToken cancellationToken = default)
+    public Task ConfirmArrivedAsync(string pickupTaskId, string bearerToken, CancellationToken cancellationToken = default)
     {
         ConfirmArrivalRequest request = new([pickupTaskId]);
-        return SendAsync(HttpMethod.Post, "/confirm-arrived", request, cancellationToken);
+        return SendAsync(HttpMethod.Post, "/confirm-arrived", request, bearerToken, cancellationToken);
     }
 
     public Task DriverCancelAsync(
         string pickupTaskId,
+        string bearerToken,
         string reason,
         string[] orderIds,
         CancellationToken cancellationToken = default)
     {
         DriverCancelPickupTaskRequest request = new(pickupTaskId, reason, orderIds);
-        return SendAsync(HttpMethod.Put, "/driver-cancel", request, cancellationToken);
+        return SendAsync(HttpMethod.Put, "/driver-cancel", request, bearerToken, cancellationToken);
     }
 
     public Task RescheduleAsync(
         string pickupTaskId,
+        string bearerToken,
         DateTime rescheduledPickupDt,
         string reason,
         string[] orderIds,
@@ -47,10 +49,10 @@ public sealed class PickupTaskActionService
             reason,
             orderIds);
 
-        return SendAsync(HttpMethod.Put, "/reschedule", request, cancellationToken);
+        return SendAsync(HttpMethod.Put, "/reschedule", request, bearerToken, cancellationToken);
     }
 
-    private async Task SendAsync(HttpMethod method, string path, object? body, CancellationToken cancellationToken)
+    private async Task SendAsync(HttpMethod method, string path, object? body, string bearerToken, CancellationToken cancellationToken)
     {
         using HttpClient client = _httpClientFactory.CreateClient();
         string baseUrl = _apiUrls.Order.TrimEnd('/');
@@ -58,6 +60,7 @@ public sealed class PickupTaskActionService
         string url = $"{baseUrl}/api/v1/pickup-tasks{normalizedPath}";
 
         using HttpRequestMessage request = new(method, url);
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
         if (body is not null)
         {
             request.Content = JsonContent.Create(body);

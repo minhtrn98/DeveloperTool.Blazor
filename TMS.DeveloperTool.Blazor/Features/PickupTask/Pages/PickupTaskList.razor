@@ -286,6 +286,13 @@
 
         try
         {
+            string bearerToken = selectedDriver?.BearerToken ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(bearerToken))
+            {
+                Snackbar.Add("Vui lòng chọn tài xế có Bearer token trước khi thao tác.", Severity.Warning);
+                return;
+            }
+
             PickupTaskActionDialogResult? dialogResult = null;
             if (action is ActionCancel or ActionReschedule)
             {
@@ -299,20 +306,22 @@
             switch (action)
             {
                 case ActionAccept:
-                    await PickupTaskActionService.AcceptAsync(item.PickupTaskId);
+                    await PickupTaskActionService.AcceptAsync(item.PickupTaskId, bearerToken);
                     break;
                 case ActionArrived:
-                    await PickupTaskActionService.ConfirmArrivedAsync(item.PickupTaskId);
+                    await PickupTaskActionService.ConfirmArrivedAsync(item.PickupTaskId, bearerToken);
                     break;
                 case ActionCancel:
                     await PickupTaskActionService.DriverCancelAsync(
                         item.PickupTaskId,
+                        bearerToken,
                         dialogResult!.Reason,
                         dialogResult.OrderIds);
                     break;
                 case ActionReschedule:
                     await PickupTaskActionService.RescheduleAsync(
                         item.PickupTaskId,
+                        bearerToken,
                         dialogResult!.RescheduledPickupDt ?? GetSuggestedRescheduleTime(item),
                         dialogResult.Reason,
                         dialogResult.OrderIds);
