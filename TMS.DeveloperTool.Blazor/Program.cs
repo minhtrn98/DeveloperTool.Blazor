@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
+using Refit;
 using Serilog;
 using StackExchange.Redis;
 using TMS.DeveloperTool.Blazor.Components;
@@ -84,6 +85,12 @@ builder.Services.AddScoped<OrderRepository>();
 builder.Services.AddScoped<FakeVehicleTransportService>();
 builder.Services.AddScoped<RouteCheckPointTemplateService>();
 builder.Services.AddScoped<PairingService>();
+builder.Services.AddRefitClient<IPickupTaskApi>()
+    .ConfigureHttpClient((sp, c) =>
+    {
+        ApiUrlsOptions apiUrls = sp.GetRequiredService<ApiUrlsOptions>();
+        c.BaseAddress = new Uri(apiUrls.Order);
+    });
 builder.Services.AddScoped<PickupTaskActionService>();
 builder.Services.AddScoped<IJsonTypeMappingStrategy, PickupTaskEventJsonMappingStrategy>();
 builder.Services.AddScoped<JsonBuilderService>();
