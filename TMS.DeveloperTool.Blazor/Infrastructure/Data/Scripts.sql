@@ -1,3 +1,5 @@
+create database "DeveloperDB";
+
 CREATE TABLE route_checkpoint_templates (
     id UUID PRIMARY KEY,
     "name" VARCHAR(255) NOT NULL,
