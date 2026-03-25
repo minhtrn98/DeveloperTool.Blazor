@@ -1,6 +1,6 @@
 using TMS.DeveloperTool.Blazor.Domain.Enums;
 
-namespace TMS.DeveloperTool.Blazor.Contracts;
+namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
 public sealed record LatestAssignmentResponse
 {

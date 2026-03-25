@@ -1,4 +1,5 @@
 using Refit;
+using TMS.DeveloperTool.Blazor.Features.Pairing.Contracts;
 using TMS.DeveloperTool.Blazor.Features.Pairing.Models;
 
 namespace TMS.DeveloperTool.Blazor.Features.Pairing.Services;

@@ -17,14 +17,6 @@ public sealed class PairingRequest
     public List<PairingAssignmentImage> AssignmentImages { get; set; } = [];
 }
 
-public sealed record SwapDriverRequest
-{
-    public required Guid VehicleId { get; init; }
-    public required double Odometer { get; init; }
-    public required ActionType ActionType { get; init; }
-    public required Guid DriverRequest { get; init; }
-}
-
 public sealed class ConfirmRequest
 {
     public required Guid VehicleId { get; init; }

@@ -1,4 +1,5 @@
 using Refit;
+using TMS.DeveloperTool.Blazor.Features.PickupTask.Contracts;
 
 namespace TMS.DeveloperTool.Blazor.Features.PickupTask.Services;
 

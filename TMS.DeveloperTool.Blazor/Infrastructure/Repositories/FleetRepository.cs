@@ -1,5 +1,4 @@
 ﻿using TMS.DeveloperTool.Blazor.Domain.Enums;
-using TMS.DeveloperTool.Blazor.Extensions;
 using VehicleRecord = (System.Guid Id, string LicensePlate);
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;

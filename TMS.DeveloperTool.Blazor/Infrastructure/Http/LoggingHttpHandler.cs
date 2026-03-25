@@ -1,4 +1,4 @@
-namespace TMS.DeveloperTool.Blazor.Infrastructure.Messaging;
+namespace TMS.DeveloperTool.Blazor.Infrastructure.Http;
 
 public sealed class LoggingHttpHandler(ILogger<LoggingHttpHandler> logger) : DelegatingHandler
 {

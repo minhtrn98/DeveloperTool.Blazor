@@ -1,3 +1,5 @@
+using TMS.DeveloperTool.Blazor.Features.PickupTask.Contracts;
+
 namespace TMS.DeveloperTool.Blazor.Features.PickupTask.Services;
 
 public sealed class PickupTaskActionService(IPickupTaskApi api)
@@ -28,16 +30,3 @@ public sealed class PickupTaskActionService(IPickupTaskApi api)
             $"Bearer {bearerToken}",
             cancellationToken);
 }
-
-public sealed record DriverCancelPickupTaskRequest(
-    string PickupTaskId,
-    string Reason,
-    string[] OrderIds);
-
-public sealed record ConfirmArrivalRequest(List<string> PickupTaskIds);
-
-public sealed record ReschedulePickupTaskRequest(
-    string PickupTaskId,
-    DateTime RescheduledPickupDt,
-    string Reason,
-    string[] OrderIds);

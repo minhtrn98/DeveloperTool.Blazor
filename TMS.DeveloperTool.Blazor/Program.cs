@@ -1,6 +1,3 @@
-using TMS.DeveloperTool.Blazor.Components;
-using TMS.DeveloperTool.Blazor.Infrastructure.Extensions;
-
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Configure environment-specific settings
@@ -16,30 +13,16 @@ builder.ConfigureSerilog();
 builder.Services
     .AddConfigurationSettings(builder.Configuration)
     .AddPresentationServices()
-    .AddInfrastructureServices()
+    .AddDatabaseServices()
+    .AddCachingServices()
     .AddTmsDatabases()
     .AddRepositories()
     .AddFeatureServices()
     .AddExternalApis();
 
+WebApplication app = builder.Build();
 
 // Configure middleware and environment
-WebApplication app = builder.Build();
-if (app.Environment.IsProduction())
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    app.UseHsts();
-}
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-
-if (app.Environment.IsProduction())
-{
-    app.UseHttpsRedirection();
-}
-
-app.UseAntiforgery();
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+app.ConfigureMiddleware();
 
 await app.RunAsync();

@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.Serialization;
 
-namespace TMS.DeveloperTool.Blazor.Extensions;
+namespace TMS.DeveloperTool.Blazor.Infrastructure.Extensions;
 
 public static class EnumExtensions
 {
