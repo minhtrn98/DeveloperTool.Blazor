@@ -15,7 +15,7 @@ using TMS.DeveloperTool.Blazor.Infrastructure.Security;
 using TMS.DeveloperTool.Blazor.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
-if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Local"))
+if (builder.Environment.IsDevelopmentOrLocal())
 {
     builder.WebHost.UseStaticWebAssets();
 }
@@ -30,10 +30,12 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .Enrich.FromLogContext();
 });
 
-builder.Services.Configure<RabbitMqConfig>(builder.Configuration.GetSection("MyRabbitMq"));
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Identity"));
-builder.Services.Configure<ApiUrlsOptions>(builder.Configuration.GetSection(ApiUrlsOptions.SectionName));
-builder.Services.AddSingleton(sp => sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ApiUrlsOptions>>().Value);
+// Bind and validate configuration settings
+builder.Services.AddSettingsAndValidate<ConnectionStringsOptions>(builder.Configuration);
+builder.Services.AddSettingsAndValidate<MyRedisOptions>(builder.Configuration);
+builder.Services.AddSettingsAndValidate<RabbitMqConfig>(builder.Configuration);
+builder.Services.AddSettingsAndValidate<JwtOptions>(builder.Configuration);
+builder.Services.AddSettingsAndValidate<ApiUrlsOptions>(builder.Configuration);
 
 builder.Services.AddMudServices();
 
@@ -45,23 +47,24 @@ builder.Services
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
-    string cnnStr = builder.Configuration.GetValue<string>("MyRedis:ConnectionString") ?? throw new Exception("Missing redis connection string!!!");
-    ConfigurationOptions configuration = ConfigurationOptions.Parse(cnnStr, true);
-    configuration.Password = builder.Configuration.GetValue<string>("MyRedis:Password");
+    MyRedisOptions redisOptions = sp.GetRequiredService<MyRedisOptions>();
+    ConfigurationOptions configuration = ConfigurationOptions.Parse(redisOptions.ConnectionString, true);
+    configuration.Password = redisOptions.Password;
 
-    configuration.AbortOnConnectFail = builder.Configuration.GetValue<bool>("MyRedis:AbortOnConnectFail");
-    configuration.ConnectRetry = builder.Configuration.GetValue<int>("MyRedis:ConnectRetry");
-    configuration.ConnectTimeout = builder.Configuration.GetValue<int>("MyRedis:ConnectTimeout");
-    configuration.SyncTimeout = builder.Configuration.GetValue<int>("MyRedis:SyncTimeout");
-    configuration.AsyncTimeout = builder.Configuration.GetValue<int>("MyRedis:AsyncTimeout");
-    configuration.DefaultDatabase = builder.Configuration.GetValue<int>("MyRedis:Database");
+    configuration.AbortOnConnectFail = redisOptions.AbortOnConnectFail;
+    configuration.ConnectRetry = redisOptions.ConnectRetry;
+    configuration.ConnectTimeout = redisOptions.ConnectTimeout;
+    configuration.SyncTimeout = redisOptions.SyncTimeout;
+    configuration.AsyncTimeout = redisOptions.AsyncTimeout;
+    configuration.DefaultDatabase = redisOptions.Database;
 
     return ConnectionMultiplexer.Connect(configuration);
 });
 
 builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
 {
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DeveloperDb"), npgsqlOptions =>
+    ConnectionStringsOptions connectionStrings = sp.GetRequiredService<ConnectionStringsOptions>();
+    options.UseNpgsql(connectionStrings.DeveloperDb, npgsqlOptions =>
     {
         npgsqlOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(5L), null);
     });
@@ -120,13 +123,17 @@ WebApplication app = builder.Build();
 // ==================================================
 
 
-if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Local"))
+if (app.Environment.IsProduction())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseHttpsRedirection();
+
+if (app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAntiforgery();
 
@@ -135,15 +142,3 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 await app.RunAsync();
-
-static class Extensions
-{
-    public static IServiceCollection AddTMSDbQuery(this IServiceCollection services, string database)
-    {
-        services.AddKeyedScoped(database, (sp, _) =>
-        {
-            return new ApplicationDbQuery(sp.GetRequiredService<IConfiguration>(), database);
-        });
-        return services;
-    }
-}

@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -17,9 +16,9 @@ public sealed class JwtTokenService
     private readonly JwtOptions _jwtSetting;
     private readonly JwtSecurityTokenHandler _handler = new();
 
-    public JwtTokenService(IOptions<JwtOptions> options)
+    public JwtTokenService(JwtOptions jwtOptions)
     {
-        _jwtSetting = options.Value;
+        _jwtSetting = jwtOptions;
     }
 
     public string CreateToken(Driver driver)

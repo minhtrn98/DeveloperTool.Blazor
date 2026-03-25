@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using RabbitMQ.Client;
 using System.Text;
 using TMS.DeveloperTool.Blazor.Features.Simulation.Models;
@@ -12,9 +11,9 @@ public sealed class EventService
     private readonly RabbitMqConfig _config;
     private IConnection? _connection;
 
-    public EventService(IOptions<RabbitMqConfig> options, ILogger<EventService> logger)
+    public EventService(RabbitMqConfig config, ILogger<EventService> logger)
     {
-        _config = options.Value;
+        _config = config;
         _logger = logger;
     }
 
@@ -31,7 +30,10 @@ public sealed class EventService
             return;
         }
 
-        string queueName = _config.Exchanges[0].Queues["vehicles"].QueueName;
+        ExchangeConfig vehiclesExchange = _config.GetVehicleEventsExchange();
+        QueueConfig vehicleQueue = vehiclesExchange.GetVehicleQueue();
+
+        string queueName = vehicleQueue.QueueName;
         using IChannel channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
         await channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null, cancellationToken: cancellationToken);
 
@@ -54,8 +56,8 @@ public sealed class EventService
         };
 
         await channel.BasicPublishAsync(
-            exchange: _config.Exchanges[0].Name,
-            routingKey: _config.Exchanges[0].Queues["vehicles"].RoutingKey,
+            exchange: vehiclesExchange.Name,
+            routingKey: vehicleQueue.RoutingKey,
             mandatory: true,
             basicProperties: properties,
             body: body,
@@ -77,7 +79,10 @@ public sealed class EventService
             return;
         }
 
-        string queueName = _config.Exchanges[1].Queues["pickuptasks"].QueueName;
+        ExchangeConfig pmsEventsExchange = _config.GetPmsEventsExchange();
+        QueueConfig pickupTaskQueue = pmsEventsExchange.GetPickupTasksQueue();
+
+        string queueName = pickupTaskQueue.QueueName;
         using IChannel channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
         await channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null, cancellationToken: cancellationToken);
 
@@ -94,8 +99,8 @@ public sealed class EventService
         };
 
         await channel.BasicPublishAsync(
-            exchange: _config.Exchanges[1].Name,
-            routingKey: _config.Exchanges[1].Queues["pickuptasks"].RoutingKey,
+            exchange: pmsEventsExchange.Name,
+            routingKey: pickupTaskQueue.RoutingKey,
             mandatory: true,
             basicProperties: properties,
             body: body,
