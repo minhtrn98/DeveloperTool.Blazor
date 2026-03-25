@@ -23,6 +23,10 @@
             </MudButton>
         </div>
 
+        <MudTextField @bind-Value="searchId" Label="Tìm theo mã điều tin" Variant="Variant.Outlined"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true" Clearable="true" Class="mb-3" />
+
         <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
                          ToStringFunc="GetDriverLabel" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true" Clearable="true"
                          MaxItems="20" Class="mb-3" />
@@ -84,18 +88,21 @@
     private List<PickupTaskInfo> pickupTasks = [];
     private List<Driver> drivers = [];
     private Driver? selectedDriver;
+    private string searchId = string.Empty;
     private readonly HashSet<string> processingTaskIds = [];
     private bool isLoading = true;
 
-    private IEnumerable<PickupTaskInfo> FilteredPickupTasks => selectedDriver == null
-        ? pickupTasks
-        : pickupTasks.Where(task =>
-            (!string.IsNullOrWhiteSpace(task.AssignedDriverId)
-             && task.AssignedDriverId.Equals(selectedDriver.DriverId.ToString(), StringComparison.OrdinalIgnoreCase))
-            || (!string.IsNullOrWhiteSpace(task.AssignedDriverCode)
-                && task.AssignedDriverCode.Equals(selectedDriver.Code, StringComparison.OrdinalIgnoreCase))
-            || (!string.IsNullOrWhiteSpace(task.AssignedDriverName)
-                && task.AssignedDriverName.Equals(selectedDriver.Name, StringComparison.OrdinalIgnoreCase)));
+    private IEnumerable<PickupTaskInfo> FilteredPickupTasks =>
+        pickupTasks
+            .Where(task => string.IsNullOrWhiteSpace(searchId)
+                || task.PickupTaskId.Contains(searchId, StringComparison.OrdinalIgnoreCase))
+            .Where(task => selectedDriver == null
+                || (!string.IsNullOrWhiteSpace(task.AssignedDriverId)
+                    && task.AssignedDriverId.Equals(selectedDriver.DriverId.ToString(), StringComparison.OrdinalIgnoreCase))
+                || (!string.IsNullOrWhiteSpace(task.AssignedDriverCode)
+                    && task.AssignedDriverCode.Equals(selectedDriver.Code, StringComparison.OrdinalIgnoreCase))
+                || (!string.IsNullOrWhiteSpace(task.AssignedDriverName)
+                    && task.AssignedDriverName.Equals(selectedDriver.Name, StringComparison.OrdinalIgnoreCase)));
 
     private Driver? SelectedDriver
     {
