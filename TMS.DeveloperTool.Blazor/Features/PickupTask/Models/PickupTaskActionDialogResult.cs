@@ -3,4 +3,5 @@ namespace TMS.DeveloperTool.Blazor.Features.PickupTask.Models;
 public sealed record PickupTaskActionDialogResult(
     string[] OrderIds,
     string Reason,
-    DateTime? RescheduledPickupDt);
+    DateTime? RescheduledPickupDt,
+    string? TargetDriverId);

@@ -29,4 +29,15 @@ public sealed class PickupTaskActionService(IPickupTaskApi api)
             new ReschedulePickupTaskRequest(pickupTaskId, rescheduledPickupDt.ToUniversalTime(), reason, orderIds),
             $"Bearer {bearerToken}",
             cancellationToken);
+
+    public Task TransferAsync(
+        string pickupTaskId,
+        string bearerToken,
+        string reason,
+        string? targetDriverId,
+        CancellationToken cancellationToken = default)
+        => api.TransferAsync(
+            new TransferPickupTaskRequest(pickupTaskId, reason, targetDriverId),
+            $"Bearer {bearerToken}",
+            cancellationToken);
 }

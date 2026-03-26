@@ -71,6 +71,8 @@
                                        OnClick="@(() => HandleActionAsync(context, ActionCancel))">Hủy</MudButton>
                             <MudButton Color="Color.Warning" Disabled="@IsBusy(context.PickupTaskId)"
                                        OnClick="@(() => HandleActionAsync(context, ActionReschedule))">Hẹn lấy lại</MudButton>
+                            <MudButton Color="Color.Secondary" Disabled="@IsBusy(context.PickupTaskId)"
+                                       OnClick="@(() => HandleActionAsync(context, ActionTransfer))">Chuyển tiếp</MudButton>
                         </MudButtonGroup>
                     </MudTd>
                 </RowTemplate>
@@ -84,6 +86,7 @@
     private const string ActionArrived = "Arrived";
     private const string ActionCancel = "Cancel";
     private const string ActionReschedule = "Reschedule";
+    private const string ActionTransfer = "Transfer";
 
     private List<PickupTaskInfo> pickupTasks = [];
     private List<Driver> drivers = [];
@@ -240,14 +243,24 @@
 
     private async Task<PickupTaskActionDialogResult?> ShowActionDialogAsync(PickupTaskInfo item, string action)
     {
-        List<PickupTaskOrderInfo> orders = await OrderRepository.GetOrdersByPickupTaskIdAsync(item.PickupTaskId);
+        List<PickupTaskOrderInfo> orders = [];
+        if (action is ActionCancel or ActionReschedule)
+        {
+            orders = await OrderRepository.GetOrdersByPickupTaskIdAsync(item.PickupTaskId);
+        }
+
+        List<Driver> transferDrivers = drivers
+            .Where(driver => selectedDriver == null || driver.DriverId != selectedDriver.DriverId)
+            .ToList();
 
         DialogParameters parameters = new()
         {
             { nameof(PickupTaskActionDialog.ActionName), action },
             { nameof(PickupTaskActionDialog.PickupTaskId), item.PickupTaskId },
             { nameof(PickupTaskActionDialog.Orders), orders },
-            { nameof(PickupTaskActionDialog.InitialRescheduledPickupDt), GetSuggestedRescheduleTime(item) }
+            { nameof(PickupTaskActionDialog.InitialRescheduledPickupDt), GetSuggestedRescheduleTime(item) },
+            { nameof(PickupTaskActionDialog.TransferDrivers), transferDrivers },
+            { nameof(PickupTaskActionDialog.InitialTargetDriverId), string.Empty }
         };
 
         DialogOptions options = new()
@@ -280,6 +293,7 @@
         {
             ActionCancel => "Hủy điều tin",
             ActionReschedule => "Hẹn lấy lại",
+            ActionTransfer => "Chuyển tiếp điều tin",
             _ => "Cập nhật điều tin"
         };
     }
@@ -301,7 +315,7 @@
             }
 
             PickupTaskActionDialogResult? dialogResult = null;
-            if (action is ActionCancel or ActionReschedule)
+            if (action is ActionCancel or ActionReschedule or ActionTransfer)
             {
                 dialogResult = await ShowActionDialogAsync(item, action);
                 if (dialogResult is null)
@@ -332,6 +346,13 @@
                         dialogResult!.RescheduledPickupDt ?? GetSuggestedRescheduleTime(item),
                         dialogResult.Reason,
                         dialogResult.OrderIds);
+                    break;
+                case ActionTransfer:
+                    await PickupTaskActionService.TransferAsync(
+                        item.PickupTaskId,
+                        bearerToken,
+                        dialogResult!.Reason,
+                        dialogResult.TargetDriverId);
                     break;
                 default:
                     Snackbar.Add($"Hành động '{action}' không hợp lệ.", Severity.Warning);

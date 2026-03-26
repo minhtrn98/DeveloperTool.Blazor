@@ -16,4 +16,7 @@ public interface IPickupTaskApi
 
     [Put("/api/v1/pickup-tasks/reschedule")]
     Task RescheduleAsync([Body] ReschedulePickupTaskRequest request, [Header("Authorization")] string authorization, CancellationToken cancellationToken = default);
+
+    [Post("/api/v1/pickup-tasks/transfer")]
+    Task TransferAsync([Body] TransferPickupTaskRequest request, [Header("Authorization")] string authorization, CancellationToken cancellationToken = default);
 }

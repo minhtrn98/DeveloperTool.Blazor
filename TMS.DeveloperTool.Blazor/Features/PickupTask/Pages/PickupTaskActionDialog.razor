@@ -1,30 +1,46 @@
 @using TMS.DeveloperTool.Blazor.Features.PickupTask.Models
+@using TMS.DeveloperTool.Blazor.Domain
 
 <MudDialog>
     <TitleContent>
         <MudText Typo="Typo.h6">@DialogTitle: @PickupTaskId</MudText>
     </TitleContent>
     <DialogContent>
-        @if (!orderSelections.Any())
+        @if (RequiresOrderSelection)
         {
-            <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">
-                Không có đơn hàng nào.
-            </MudAlert>
-        }
-        else
-        {
-            <MudText Typo="Typo.subtitle2" Class="mb-2">Chọn đơn hàng</MudText>
-            <MudPaper Outlined="true" Class="pa-3 mb-4">
-                @foreach (OrderSelectionItem order in orderSelections)
-                {
-                    <MudCheckBox T="bool" Value="@order.IsSelected" ValueChanged="@((bool value) => order.IsSelected = value)"
-                                 Label="@GetOrderLabel(order)" Dense="true" Class="mb-1" />
-                }
-            </MudPaper>
+            @if (!orderSelections.Any())
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">
+                    Không có đơn hàng nào.
+                </MudAlert>
+            }
+            else
+            {
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Chọn đơn hàng</MudText>
+                <MudPaper Outlined="true" Class="pa-3 mb-4">
+                    @foreach (OrderSelectionItem order in orderSelections)
+                    {
+                        <MudCheckBox T="bool" Value="@order.IsSelected" ValueChanged="@((bool value) => order.IsSelected = value)"
+                                     Label="@GetOrderLabel(order)" Dense="true" Class="mb-1" />
+                    }
+                </MudPaper>
+            }
         }
 
         <MudTextField @bind-Value="reason" Label="Lý do" Variant="Variant.Outlined" FullWidth="true" Lines="3"
                       AutoGrow="true" Class="mb-4" />
+
+        @if (IsTransfer)
+        {
+            <MudSelect T="string" @bind-Value="selectedTargetDriverId" Label="Tài xế nhận điều tin" Variant="Variant.Outlined" FullWidth="true" Class="mb-4">
+                <MudSelectItem T="string" Value="@string.Empty">Không chọn</MudSelectItem>
+                @foreach (Driver driver in TransferDrivers)
+                {
+                    string driverId = driver.DriverId.ToString();
+                    <MudSelectItem T="string" Value="@driverId">@GetDriverOptionLabel(driver)</MudSelectItem>
+                }
+            </MudSelect>
+        }
 
         @if (IsReschedule)
         {
@@ -69,18 +85,28 @@
     [Parameter]
     public DateTime? InitialRescheduledPickupDt { get; set; }
 
+    [Parameter]
+    public List<Driver> TransferDrivers { get; set; } = [];
+
+    [Parameter]
+    public string? InitialTargetDriverId { get; set; }
+
     private readonly List<OrderSelectionItem> orderSelections = [];
     private string reason = string.Empty;
     private DateTime? selectedDate;
     private TimeSpan? selectedTime;
+    private string selectedTargetDriverId = string.Empty;
     private string validationMessage = string.Empty;
 
     private bool IsReschedule => ActionName == "Reschedule";
+    private bool IsTransfer => ActionName == "Transfer";
+    private bool RequiresOrderSelection => ActionName is "Cancel" or "Reschedule";
 
     private string DialogTitle => ActionName switch
     {
         "Cancel" => "Hủy điều tin",
         "Reschedule" => "Hẹn lấy lại",
+        "Transfer" => "Chuyển tiếp điều tin",
         _ => "Cập nhật điều tin"
     };
 
@@ -97,21 +123,26 @@
         DateTime defaultDateTime = InitialRescheduledPickupDt ?? DateTime.Now.AddHours(2);
         selectedDate = defaultDateTime.Date;
         selectedTime = defaultDateTime.TimeOfDay;
+        selectedTargetDriverId = InitialTargetDriverId ?? string.Empty;
     }
 
     private async Task SubmitAsync()
     {
         validationMessage = string.Empty;
 
-        string[] selectedOrderIds = orderSelections
-            .Where(order => order.IsSelected && !order.IsCancelled)
-            .Select(order => order.OrderId)
-            .ToArray();
-
-        if (selectedOrderIds.Length == 0)
+        string[] selectedOrderIds = [];
+        if (RequiresOrderSelection)
         {
-            validationMessage = "Vui lòng chọn ít nhất 1 order.";
-            return;
+            selectedOrderIds = orderSelections
+                .Where(order => order.IsSelected && !order.IsCancelled)
+                .Select(order => order.OrderId)
+                .ToArray();
+
+            if (selectedOrderIds.Length == 0)
+            {
+                validationMessage = "Vui lòng chọn ít nhất 1 order.";
+                return;
+            }
         }
 
         if (string.IsNullOrWhiteSpace(reason))
@@ -132,7 +163,11 @@
             rescheduledPickupDt = selectedDate.Value.Date.Add(selectedTime.Value);
         }
 
-        PickupTaskActionDialogResult result = new(selectedOrderIds, reason.Trim(), rescheduledPickupDt);
+        string? targetDriverId = string.IsNullOrWhiteSpace(selectedTargetDriverId)
+            ? null
+            : selectedTargetDriverId;
+
+        PickupTaskActionDialogResult result = new(selectedOrderIds, reason.Trim(), rescheduledPickupDt, targetDriverId);
         MudDialog.Close(DialogResult.Ok(result));
         await Task.CompletedTask;
     }
@@ -145,6 +180,13 @@
     private static string GetOrderLabel(OrderSelectionItem order)
     {
         return order.IsCancelled ? $"{order.OrderId} (đã hủy)" : order.OrderId;
+    }
+
+    private static string GetDriverOptionLabel(Driver driver)
+    {
+        return string.IsNullOrWhiteSpace(driver.Code)
+            ? driver.Name
+            : $"{driver.Code} - {driver.Name}";
     }
 
     private sealed class OrderSelectionItem
