@@ -1,0 +1,95 @@
+@page "/top-moving-vehicles"
+@rendermode InteractiveServer
+
+@inject TrackingRepository TrackingRepository
+
+<AppPageTitle MenuName="Top xe di chuyển" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4">
+        <div class="d-flex justify-space-between mb-4">
+            <MudText Typo="Typo.h4">Danh sách xe di chuyển nhiều nhất</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="ReloadAsync" Disabled="@isLoading">
+                Làm mới
+            </MudButton>
+        </div>
+
+        <MudTextField @bind-Value="searchText" Label="Tìm theo biển số" Variant="Variant.Outlined"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true" Clearable="true" Class="mb-3" />
+
+        @if (isLoading)
+        {
+            <div class="d-flex justify-content-center">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (!FilteredVehicles.Any())
+        {
+            <MudAlert Severity="Severity.Info">Không có dữ liệu xe di chuyển gần nhất.</MudAlert>
+        }
+        else
+        {
+            <MudTable Items="@FilteredVehicles" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>STT</MudTh>
+                    <MudTh>Biển số thực tế</MudTh>
+                    <MudTh>Biển số</MudTh>
+                    <MudTh>Vận tốc tối đa</MudTh>
+                    <MudTh>Chênh lệch odo</MudTh>
+                    <MudTh>Số điểm GPS</MudTh>
+                    <MudTh>Điểm di chuyển</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="STT">@(vehicles.IndexOf(context) + 1)</MudTd>
+                    <MudTd DataLabel="Biển số thực tế">@DisplayText(context.ActualPlate)</MudTd>
+                    <MudTd DataLabel="Biển số">@DisplayText(context.Plate)</MudTd>
+                    <MudTd DataLabel="Vận tốc tối đa">@context.MaxSpeed</MudTd>
+                    <MudTd DataLabel="Chênh lệch odo">@context.OdoDiff</MudTd>
+                    <MudTd DataLabel="Số điểm GPS">@context.GpsPoints</MudTd>
+                    <MudTd DataLabel="Điểm di chuyển">
+                        <MudChip T="double" Color="Color.Success" Variant="Variant.Outlined" Size="Size.Small" Value="@context.MovingScore">
+                            @context.MovingScore
+                        </MudChip>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<TopMovingVehicle> vehicles = [];
+    private string searchText = string.Empty;
+    private bool isLoading = true;
+
+    private IEnumerable<TopMovingVehicle> FilteredVehicles =>
+        vehicles.Where(vehicle =>
+            string.IsNullOrWhiteSpace(searchText)
+            || vehicle.ActualPlate.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || vehicle.Plate.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        try
+        {
+            vehicles = (await TrackingRepository.GetTopMovingVehicleAsync()).ToList();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static string DisplayText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value;
+    }
+}

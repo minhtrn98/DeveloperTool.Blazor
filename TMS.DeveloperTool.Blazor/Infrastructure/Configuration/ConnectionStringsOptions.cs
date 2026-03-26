@@ -9,5 +9,6 @@ public sealed class ConnectionStringsOptions
     public required string RouteDb { get; init; }
     public required string PlanningDb { get; init; }
     public required string OrderDb { get; init; }
+    public required string TrackingDb { get; init; }
     public required string DeveloperDb { get; init; }
 }

@@ -60,6 +60,7 @@ public static class DatabaseServiceExtensions
         services.AddTMSDbQuery("RouteDb");
         services.AddTMSDbQuery("PlanningDb");
         services.AddTMSDbQuery("OrderDb");
+        services.AddTMSDbQuery("TrackingDb");
         return services;
     }
 
@@ -73,6 +74,7 @@ public static class DatabaseServiceExtensions
         services.AddScoped<RouteRepository>();
         services.AddScoped<PlanningRepository>();
         services.AddScoped<OrderRepository>();
+        services.AddScoped<TrackingRepository>();
         return services;
     }
 }
