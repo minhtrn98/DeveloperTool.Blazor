@@ -55,7 +55,14 @@
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="PickupTaskId">@context.PickupTaskId</MudTd>
-                    <MudTd DataLabel="Driver">@FormatDriver(context)</MudTd>
+                    <MudTd DataLabel="Driver">
+                        <div class="d-flex align-center ga-2">
+                            <span>@FormatDriver(context)</span>
+                            <MudIconButton Icon="@Icons.Material.Filled.FilterAlt" Color="Color.Primary" Size="Size.Small"
+                                           Disabled="@(!CanApplyDriverFilter(context))"
+                                           OnClick="@(() => ApplyDriverFilterFromTaskAsync(context))" title="Lọc theo tài xế này" />
+                        </div>
+                    </MudTd>
                     <MudTd DataLabel="Status">
                         <MudChip T="string" Color="@GetStatusColor(context.Status)" Variant="Variant.Outlined"
                                  Size="Size.Small">
@@ -181,6 +188,63 @@
     {
         SelectedDriver = driver;
         return Task.CompletedTask;
+    }
+
+    private Task ApplyDriverFilterFromTaskAsync(PickupTaskInfo item)
+    {
+        Driver? taskDriver = FindTaskDriver(item);
+        if (taskDriver is null)
+        {
+            Snackbar.Add("Không tìm thấy tài xế tương ứng trong danh sách filter.", Severity.Warning);
+            return Task.CompletedTask;
+        }
+
+        SelectedDriver = taskDriver;
+        return Task.CompletedTask;
+    }
+
+    private bool CanApplyDriverFilter(PickupTaskInfo item)
+    {
+        Driver? taskDriver = FindTaskDriver(item);
+        if (taskDriver is null)
+        {
+            return false;
+        }
+
+        return selectedDriver?.DriverId != taskDriver.DriverId;
+    }
+
+    private Driver? FindTaskDriver(PickupTaskInfo item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.AssignedDriverId)
+            && Guid.TryParse(item.AssignedDriverId, out Guid driverId))
+        {
+            Driver? byId = drivers.FirstOrDefault(driver => driver.DriverId == driverId);
+            if (byId is not null)
+            {
+                return byId;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.AssignedDriverCode))
+        {
+            Driver? byCode = drivers.FirstOrDefault(driver =>
+                !string.IsNullOrWhiteSpace(driver.Code)
+                && driver.Code.Equals(item.AssignedDriverCode, StringComparison.OrdinalIgnoreCase));
+            if (byCode is not null)
+            {
+                return byCode;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.AssignedDriverName))
+        {
+            return drivers.FirstOrDefault(driver =>
+                !string.IsNullOrWhiteSpace(driver.Name)
+                && driver.Name.Equals(item.AssignedDriverName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return null;
     }
 
     private static string FormatDate(DateTime? value)
