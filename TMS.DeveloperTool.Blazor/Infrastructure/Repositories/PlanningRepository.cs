@@ -9,7 +9,7 @@ public sealed class PlanningRepository
         _dbQuery = dbQuery;
     }
 
-    public async Task<IEnumerable<DropdownItemPlanning>> GetDailyPlans(CancellationToken cancellationToken)
+    public async Task<IEnumerable<DropdownItemPlanning>> GetDailyPlansDropdown(CancellationToken cancellationToken)
     {
         // create gmt+7 now datetime
         DateTimeOffset utcNow = DateTimeOffset.UtcNow;

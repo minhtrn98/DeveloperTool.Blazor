@@ -358,7 +358,7 @@
         switch (planningType)
         {
             case AssignmentPlanType.DailyPlan:
-                planningOptions = (await PlanningRepository.GetDailyPlans(cancellationToken)).ToList();
+                planningOptions = (await PlanningRepository.GetDailyPlansDropdown(cancellationToken)).ToList();
                 break;
             case AssignmentPlanType.Inspection when vehicleId != Guid.Empty:
                 planningOptions = (await FleetRepository.GetInspectionPlansByVehicleAsync(vehicleId, cancellationToken)).ToList();
