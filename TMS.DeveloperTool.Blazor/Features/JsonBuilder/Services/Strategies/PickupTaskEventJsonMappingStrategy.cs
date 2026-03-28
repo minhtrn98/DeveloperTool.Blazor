@@ -190,7 +190,12 @@ public sealed class PickupTaskEventJsonMappingStrategy(
                 orderItemsByOrderId.GetValueOrDefault(order.OrderId, [])))
             .ToList();
 
-        return orderDtos;
+        const int take = 5;
+        List<PickupTaskEventOrderDto> orderWithoutPt = orderDtos.Where(o => !o.HasPickupTask).Take(take).ToList();
+        
+        return orderWithoutPt.Count > 0
+            ? orderWithoutPt
+            : orderDtos;
     }
 
     private static string FormatCreatedAt(DateTime value)
