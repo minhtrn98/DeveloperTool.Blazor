@@ -11,6 +11,7 @@
 @inject MyDriverService MyDriverService
 @inject PairingService PairingService
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <AppPageTitle MenuName="Ghép xe" />
 
@@ -27,12 +28,12 @@
         else
         {
             <MudForm>
-                <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged"
-                                 SearchFunc="SearchDrivers" ToStringFunc="GetDriverLabel" Label="Tài xế"
-                                 Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
+                <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
+                                 ToStringFunc="GetDriverLabel" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true"
+                                 Clearable="true" MaxItems="20" Class="mb-3" />
 
-                <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="4"
-                              Class="mb-3" />
+                <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true"
+                              Lines="4" Class="mb-3" />
 
                 @* <MudGrid>
                     <MudItem xs="12" md="6">
@@ -76,14 +77,14 @@
                 @if (actionType is ActionType.SwapMainDriver or ActionType.SwapSubDriver)
                 {
                     <MudAutocomplete T="Driver" @bind-Value="selectedSwapDriver" SearchFunc="SearchDrivers"
-                                     ToStringFunc="GetDriverLabel" Label="Tài xế cần đổi" Variant="Variant.Outlined"
-                                     FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
+                                     ToStringFunc="GetDriverLabel" Label="Tài xế cần đổi" Variant="Variant.Outlined" FullWidth="true"
+                                     Clearable="true" MaxItems="20" Class="mb-3" />
                 }
 
                 <MudGrid>
                     <MudItem xs="12" md="6">
-                        <MudSelect T="AssignmentPlanType" @bind-Value="planningType" @bind-Value:after="OnPlanningTypeChanged"
-                                   Label="Loại kế hoạch" Variant="Variant.Outlined"
+                        <MudSelect T="AssignmentPlanType" @bind-Value="planningType"
+                                   @bind-Value:after="OnPlanningTypeChanged" Label="Loại kế hoạch" Variant="Variant.Outlined"
                                    FullWidth="true" Class="mb-3">
                             @foreach (var item in planningTypes)
                             {
@@ -92,9 +93,25 @@
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" md="6">
-                        <MudAutocomplete T="DropdownItemPlanning" @bind-Value="SelectedPlanningOption"
-                                         SearchFunc="SearchPlanningOptions" ToStringFunc="GetDropdownLabel" Label="Kế hoạch"
-                                         Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
+                        <div class="d-flex align-end gap-2">
+                            <MudAutocomplete T="DropdownItemPlanning" @bind-Value="SelectedPlanningOption"
+                                             SearchFunc="SearchPlanningOptions" ToStringFunc="GetDropdownLabel" Label="Kế hoạch"
+                                             Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
+                            @if (planningType == AssignmentPlanType.DailyPlan)
+                            {
+                                <MudButton Variant="Variant.Outlined" Color="Color.Info" Class="mb-3"
+                                           OnClick="SuggestDailyPlansAsync" Disabled="@isSuggesting">
+                                    @if (isSuggesting)
+                                    {
+                                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                    }
+                                    else
+                                    {
+                                        <MudText>Gợi ý</MudText>
+                                    }
+                                </MudButton>
+                            }
+                        </div>
                     </MudItem>
                 </MudGrid>
 
@@ -152,6 +169,7 @@
 
     private bool isLoading = true;
     private bool isSubmitting;
+    private bool isSuggesting;
 
     protected override async Task OnInitializedAsync()
     {
@@ -165,10 +183,12 @@
         {
             CancellationToken cancellationToken = CancellationToken.None;
 
-            Dictionary<Guid, string> vehicleMap = await FleetRepository.GetAllVehiclePlateAsync(isPairingAllowed: true, cancellationToken);
+            Dictionary<Guid, string> vehicleMap = await FleetRepository.GetAllVehiclePlateAsync(isPairingAllowed: true,
+cancellationToken);
             vehicleOptions = vehicleMap
                 .OrderBy(kvp => kvp.Value)
-                .Select(kvp => new DropdownItem<Guid>(kvp.Key, kvp.Value.Replace(".", "").Replace("-", "").ToLowerInvariant(), kvp.Value))
+                .Select(kvp => new DropdownItem<Guid>(kvp.Key, kvp.Value.Replace(".", "").Replace("-", "").ToLowerInvariant(),
+kvp.Value))
                 .ToList();
 
             pairingReasonTypes = (await FleetRepository.GetPairingReasonTypes(cancellationToken)).ToList();
@@ -510,6 +530,44 @@
         return Enumerable.Range(1, 6)
             .Select(type => new PairingAssignmentImage { ImageId = Guid.Empty, Type = type })
             .ToList();
+    }
+
+    private async Task SuggestDailyPlansAsync()
+    {
+        isSuggesting = true;
+        try
+        {
+            List<DailyPlanDto> dailyPlans = (await PlanningRepository.GetDailyPlans(CancellationToken.None)).ToList();
+
+            DialogParameters<DailyPlanSuggestionDialog> parameters = new()
+            {
+                { x => x.DailyPlans, dailyPlans }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Large,
+                FullWidth = true
+            };
+
+            IDialogReference dialog = await DialogService.ShowAsync<DailyPlanSuggestionDialog>("Gợi ý kế hoạch ngày", parameters,
+options);
+            DialogResult? dialogResult = await dialog.Result;
+
+            if (dialogResult is { Canceled: false, Data: DailyPlanDto selectedPlan })
+            {
+                SelectedPlanningOption = planningOptions.FirstOrDefault(p => p.Id == selectedPlan.Id)
+                    ?? new DropdownItemPlanning(selectedPlan.Id, selectedPlan.Code, selectedPlan.Name, selectedPlan.Status);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Lỗi khi tải gợi ý: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSuggesting = false;
+        }
     }
 
 }

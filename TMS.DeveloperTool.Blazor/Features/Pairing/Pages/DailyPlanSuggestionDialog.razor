@@ -1,0 +1,180 @@
+@using TMS.DeveloperTool.Blazor.Domain.Enums
+@using TMS.DeveloperTool.Blazor.Infrastructure.Extensions
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Gợi ý kế hoạch ngày</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (DailyPlans.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Class="my-2">Không có kế hoạch nào phù hợp.</MudAlert>
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="string" Value="selectedDepartment" ValueChanged="OnDepartmentChanged" Label="Phòng ban"
+                               Variant="Variant.Outlined" Clearable="true" Class="mb-3">
+                        @foreach (string dept in departments)
+                        {
+                            <MudSelectItem Value="@dept">@dept</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="string" MultiSelection="true" SelectedValues="selectedPostOffices"
+                               SelectedValuesChanged="OnPostOfficesChanged" Label="Bưu cục" Variant="Variant.Outlined"
+                               Clearable="true" Class="mb-3" MultiSelectionTextFunc="@(selected => string.Join(", ", selected))">
+                        @foreach (string po in postOffices)
+                        {
+                            <MudSelectItem Value="@po">@po</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="BusinessOperation" MultiSelection="true" SelectedValues="selectedBusinessOps"
+                               SelectedValuesChanged="OnBusinessOpsChanged" Label="Nghiệp vụ" Variant="Variant.Outlined"
+                               Clearable="true" Class="mb-3"
+                               MultiSelectionTextFunc="@(selected => string.Join(", ", selected.Select(s => Enum.TryParse<BusinessOperation>(s, out var e) ? e.ToDescriptionString() : s)))">
+                        @foreach (BusinessOperation op in Enum.GetValues<BusinessOperation>())
+                        {
+                            <MudSelectItem Value="@op">@op.ToDescriptionString()</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+
+            foreach (DailyPlanDto plan in FilteredPlans)
+            {
+                <MudCard Class="mb-3" Outlined="true">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.subtitle1">
+                                <b>@plan.Code</b> - @plan.Name
+                            </MudText>
+                            <MudText Typo="Typo.caption">
+                                Phòng ban: @plan.DepartmentCode | Ngày: @plan.ExecutionDate.ToString("dd/MM/yyyy") | Trạng thái:
+                                @plan.Status
+                            </MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                       OnClick="() => SelectPlan(plan)">Chọn</MudButton>
+                        </CardHeaderActions>
+                    </MudCardHeader>
+                    @if (plan.Details.Count > 0)
+                    {
+                        <MudCardContent>
+                            <MudTable Items="@plan.Details" Dense="true" Hover="true" Elevation="0">
+                                <HeaderContent>
+                                    <MudTh>Bưu cục</MudTh>
+                                    <MudTh>Từ</MudTh>
+                                    <MudTh>Đến</MudTh>
+                                    <MudTh>Nghiệp vụ</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd>@context.PostOfficeCode</MudTd>
+                                    <MudTd>@context.FromTime.ToString(@"hh\:mm")</MudTd>
+                                    <MudTd>@context.ToTime.ToString(@"hh\:mm")</MudTd>
+                                    <MudTd>@context.BusinessOperation.ToDescriptionString()</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </MudCardContent>
+                    }
+                </MudCard>
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined">Đóng</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public List<DailyPlanDto> DailyPlans { get; set; } = [];
+
+    private string? selectedDepartment;
+    private IEnumerable<string> selectedPostOffices = [];
+    private IEnumerable<BusinessOperation> selectedBusinessOps = [BusinessOperation.Receive,
+BusinessOperation.ReceiveAndDelivery];
+    private List<string> departments = [];
+    private List<string> postOffices = [];
+
+    private List<DailyPlanDto> FilteredPlans
+    {
+        get
+        {
+            IEnumerable<DailyPlanDto> result = DailyPlans;
+
+            if (!string.IsNullOrEmpty(selectedDepartment))
+                result = result.Where(p => p.DepartmentCode == selectedDepartment);
+
+            if (selectedPostOffices.Any())
+            {
+                HashSet<string> poFilter = [.. selectedPostOffices];
+                result = result.Where(p => p.Details.Any(d => poFilter.Contains(d.PostOfficeCode)));
+            }
+
+            if (selectedBusinessOps.Any())
+            {
+                HashSet<BusinessOperation> opFilter = [.. selectedBusinessOps];
+                result = result.Where(p => p.Details.Any(d => opFilter.Contains(d.BusinessOperation)));
+            }
+
+            return result.ToList();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        departments = DailyPlans.Select(p => p.DepartmentCode).Distinct().OrderBy(d => d).ToList();
+        UpdatePostOffices();
+    }
+
+    private void UpdatePostOffices()
+    {
+        IEnumerable<DailyPlanDto> source = string.IsNullOrEmpty(selectedDepartment)
+            ? DailyPlans
+            : DailyPlans.Where(p => p.DepartmentCode == selectedDepartment);
+
+        postOffices = source.SelectMany(p => p.Details).Select(d => d.PostOfficeCode).Distinct().OrderBy(po => po).ToList();
+
+        if (selectedPostOffices.Any())
+        {
+            HashSet<string> valid = [.. postOffices];
+            selectedPostOffices = selectedPostOffices.Where(valid.Contains).ToList();
+        }
+    }
+
+    private void OnDepartmentChanged(string? value)
+    {
+        selectedDepartment = value;
+        UpdatePostOffices();
+    }
+
+    private void OnPostOfficesChanged(IEnumerable<string> values)
+    {
+        selectedPostOffices = values;
+    }
+
+    private void OnBusinessOpsChanged(IEnumerable<BusinessOperation> values)
+    {
+        selectedBusinessOps = values;
+    }
+
+    private void SelectPlan(DailyPlanDto plan)
+    {
+        MudDialog.Close(DialogResult.Ok(plan));
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}

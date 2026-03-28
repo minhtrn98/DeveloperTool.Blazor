@@ -24,4 +24,44 @@ public sealed class PlanningRepository
         IEnumerable<DropdownItemPlanning> records = await _dbQuery.QueryAsync<DropdownItemPlanning>(sql, null, cancellationToken);
         return records;
     }
+
+    public async Task<IEnumerable<DailyPlanDto>> GetDailyPlans(CancellationToken cancellationToken)
+    {
+        // create gmt+7 now datetime
+        DateTimeOffset utcNow = DateTimeOffset.UtcNow.AddDays(-1);
+        DateTimeOffset gmt7Now = utcNow.ToOffset(TimeSpan.FromHours(7));
+        string todayGmt7 = gmt7Now.ToString("yyyy-MM-dd");
+
+        string sqlDailyPlan = $"""
+            select id as "Id"
+                , code as "Code"
+                , name as "Name"
+                , status as "Status"
+                , department_code as "DepartmentCode"
+                , execution_date as "ExecutionDate"
+            from public.real_plans
+            where execution_date = '{todayGmt7}' and status = 'PENDING'
+        """;
+        IEnumerable<DailyPlanDto> dailyPlans = await _dbQuery.QueryAsync<DailyPlanDto>(sqlDailyPlan, null, cancellationToken);
+        Guid[] dailyPlanIds = [.. dailyPlans.Select(dp => dp.Id)];
+
+        const string sqlDailyPlanDetails = $"""
+            select d.id as "Id"
+                , d.real_plan_id as "DailyPlanId"
+                , d.post_office_code as "PostOfficeCode"
+                , d.from_time as "FromTime"
+                , d.to_time as "ToTime"
+                , d.business_operation as "BusinessOperation"
+                , d.step_number as "StepNumber"
+            from public.real_plan_details d
+            join UNNEST(@Ids) as r(id) on d.real_plan_id = r.id
+        """;
+        IEnumerable<DailyPlanDetailDto> dailyPlanDetails = await _dbQuery.QueryAsync<DailyPlanDetailDto>(sqlDailyPlanDetails, new { Ids = dailyPlanIds }, cancellationToken);
+        foreach (DailyPlanDto dailyPlan in dailyPlans)
+        {
+            dailyPlan.Details = dailyPlanDetails.Where(dpd => dpd.DailyPlanId == dailyPlan.Id).OrderBy(x => x.StepNumber).ToList();
+        }
+
+        return dailyPlans;
+    }
 }
