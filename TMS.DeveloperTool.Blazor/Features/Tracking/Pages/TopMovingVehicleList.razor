@@ -15,23 +15,19 @@
             </MudButton>
         </div>
 
-        <MudTextField @bind-Value="searchText" Label="Tìm theo biển số" Variant="Variant.Outlined"
-                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true" Clearable="true"
-                      Class="mb-3" />
-
         @if (isLoading)
         {
             <div class="d-flex justify-content-center">
                 <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
             </div>
         }
-        else if (!FilteredVehicles.Any())
+        else if (!vehicles.Any())
         {
             <MudAlert Severity="Severity.Info">Không có dữ liệu xe di chuyển gần nhất.</MudAlert>
         }
         else
         {
-            <MudTable Items="@FilteredVehicles" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm">
+            <MudTable Items="@vehicles" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm">
                 <HeaderContent>
                     <MudTh>STT</MudTh>
                     <MudTh>Biển số thực tế</MudTh>
@@ -62,14 +58,7 @@
 
 @code {
     private List<TopMovingVehicle> vehicles = [];
-    private string searchText = string.Empty;
     private bool isLoading = true;
-
-    private IEnumerable<TopMovingVehicle> FilteredVehicles =>
-        vehicles.Where(vehicle =>
-            string.IsNullOrWhiteSpace(searchText)
-            || vehicle.ActualPlate.Contains(searchText, StringComparison.OrdinalIgnoreCase)
-            || vehicle.Plate.Contains(searchText, StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnInitializedAsync()
     {
