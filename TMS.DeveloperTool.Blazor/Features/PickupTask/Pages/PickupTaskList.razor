@@ -1,8 +1,10 @@
 @page "/pickup-tasks"
 @using TMS.DeveloperTool.Blazor.Domain.Enums
 @using TMS.DeveloperTool.Blazor.Infrastructure.Extensions
+@using TMS.DeveloperTool.Blazor.Features.PickupTask.Contracts
 @using TMS.DeveloperTool.Blazor.Features.PickupTask.Models
 @using TMS.DeveloperTool.Blazor.Features.PickupTask.Services
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
 @using TMS.DeveloperTool.Blazor.Services
 @inject IDialogService DialogService
 @inject OrderRepository OrderRepository
@@ -24,8 +26,8 @@
         </div>
 
         <MudTextField @bind-Value="searchId" Label="Tìm theo mã điều tin" Variant="Variant.Outlined"
-                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
-                      Immediate="true" Clearable="true" Class="mb-3" />
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true" Clearable="true"
+                      Class="mb-3" />
 
         <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
                          ToStringFunc="GetDriverLabel" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true" Clearable="true"
@@ -73,6 +75,8 @@
                                        OnClick="@(() => HandleActionAsync(context, ActionReschedule))">Hẹn lấy lại</MudButton>
                             <MudButton Color="Color.Secondary" Disabled="@IsBusy(context.PickupTaskId)"
                                        OnClick="@(() => HandleActionAsync(context, ActionTransfer))">Chuyển tiếp</MudButton>
+                            <MudButton Color="Color.Tertiary" Disabled="@IsBusy(context.PickupTaskId)"
+                                       OnClick="@(() => HandleConfirmPickupAsync(context))">Xác nhận lấy đơn</MudButton>
                         </MudButtonGroup>
                     </MudTd>
                 </RowTemplate>
@@ -270,7 +274,8 @@
             CloseOnEscapeKey = false
         };
 
-        IDialogReference dialog = await DialogService.ShowAsync<PickupTaskActionDialog>(GetDialogTitle(action), parameters, options);
+        IDialogReference dialog = await DialogService.ShowAsync<PickupTaskActionDialog>(GetDialogTitle(action), parameters,
+options);
         DialogResult? result = await dialog.Result;
 
         if (result?.Canceled != false || result.Data is not PickupTaskActionDialogResult dialogResult)
@@ -296,6 +301,63 @@
             ActionTransfer => "Chuyển tiếp điều tin",
             _ => "Cập nhật điều tin"
         };
+    }
+
+    private async Task HandleConfirmPickupAsync(PickupTaskInfo item)
+    {
+        if (!processingTaskIds.Add(item.PickupTaskId))
+        {
+            return;
+        }
+
+        try
+        {
+            string bearerToken = selectedDriver?.BearerToken ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(bearerToken))
+            {
+                Snackbar.Add("Vui lòng chọn tài xế có Bearer token trước khi thao tác.", Severity.Warning);
+                return;
+            }
+
+            List<PickupTaskOrderInfo> orders = await OrderRepository.GetOrdersByPickupTaskIdAsync(item.PickupTaskId);
+            List<OrderItemInfo> orderItems = await OrderRepository.GetOrderItemsByPickupTaskIdAsync(item.PickupTaskId);
+
+            DialogParameters parameters = new()
+            {
+                { nameof(ConfirmPickupDialog.PickupTaskId), item.PickupTaskId },
+                { nameof(ConfirmPickupDialog.Orders), orders },
+                { nameof(ConfirmPickupDialog.OrderItems), orderItems },
+                { nameof(ConfirmPickupDialog.AllDrivers), drivers },
+                { nameof(ConfirmPickupDialog.CurrentDriver), selectedDriver }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.ExtraLarge,
+                FullWidth = true,
+                CloseOnEscapeKey = false
+            };
+
+            IDialogReference dialog = await DialogService.ShowAsync<ConfirmPickupDialog>("Xác nhận lấy đơn", parameters, options);
+            DialogResult? result = await dialog.Result;
+
+            if (result?.Canceled != false || result.Data is not ConfirmPickupRequest request)
+            {
+                return;
+            }
+
+            await PickupTaskActionService.ConfirmPickupAsync(request, bearerToken);
+            await ReloadAsync();
+            Snackbar.Add($"Xác nhận lấy đơn {item.PickupTaskId} thành công.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Có lỗi khi xác nhận lấy đơn: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            processingTaskIds.Remove(item.PickupTaskId);
+        }
     }
 
     private async Task HandleActionAsync(PickupTaskInfo item, string action)

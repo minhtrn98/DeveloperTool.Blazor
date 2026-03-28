@@ -19,4 +19,7 @@ public interface IPickupTaskApi
 
     [Post("/api/v1/pickup-tasks/transfer")]
     Task TransferAsync([Body] TransferPickupTaskRequest request, [Header("Authorization")] string authorization, CancellationToken cancellationToken = default);
+
+    [Post("/api/v1/pickup-tasks/confirm-pickup")]
+    Task ConfirmPickupAsync([Body] ConfirmPickupRequest request, [Header("Authorization")] string authorization, CancellationToken cancellationToken = default);
 }

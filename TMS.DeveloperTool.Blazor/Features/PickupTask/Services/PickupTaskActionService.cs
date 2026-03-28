@@ -40,4 +40,10 @@ public sealed class PickupTaskActionService(IPickupTaskApi api)
             new TransferPickupTaskRequest(pickupTaskId, reason, targetDriverId),
             $"Bearer {bearerToken}",
             cancellationToken);
+
+    public Task ConfirmPickupAsync(
+        ConfirmPickupRequest request,
+        string bearerToken,
+        CancellationToken cancellationToken = default)
+        => api.ConfirmPickupAsync(request, $"Bearer {bearerToken}", cancellationToken);
 }

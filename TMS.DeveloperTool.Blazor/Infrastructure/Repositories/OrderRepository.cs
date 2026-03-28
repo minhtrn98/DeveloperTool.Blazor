@@ -39,7 +39,7 @@ public sealed class OrderRepository
             select
                 o.pickup_task_id as "PickupTaskId",
                 o.order_id as "OrderId",
-                o.is_cancel as "IsCancel"
+                o.status as "Status"
             from public.pickup_task_orders o
             where o.pickup_task_id = @PickupTaskId
             order by o.order_id;
@@ -67,6 +67,25 @@ public sealed class OrderRepository
             order by o.order_item_id;
             """;
         IEnumerable<OrderItemInfo> orderItems = await _dbQuery.QueryAsync<OrderItemInfo>(sql, null, cancellationToken);
+        return orderItems.ToList();
+    }
+
+    public async Task<List<OrderItemInfo>> GetOrderItemsByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            select
+                ptoi.order_id as "OrderId",
+                ptoi.order_item_id as "OrderItemId",
+                ptoi.weight as "Weight",
+                ptoi.w as "W",
+                ptoi.h as "H",
+                ptoi.l as "L",
+                true as "HasPickupTask"
+            from public.pickup_task_order_items ptoi
+            where ptoi.pickup_task_id = @PickupTaskId
+            order by ptoi.order_id, ptoi.order_item_id;
+            """;
+        IEnumerable<OrderItemInfo> orderItems = await _dbQuery.QueryAsync<OrderItemInfo>(sql, new { PickupTaskId = pickupTaskId }, cancellationToken);
         return orderItems.ToList();
     }
 

@@ -1,0 +1,461 @@
+@using TMS.DeveloperTool.Blazor.Domain
+@using TMS.DeveloperTool.Blazor.Domain.Enums
+@using TMS.DeveloperTool.Blazor.Features.PickupTask.Contracts
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Xác nhận lấy đơn: @PickupTaskId</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="PickupMode" @bind-Value="mode" Label="Chế độ lấy hàng" Variant="Variant.Outlined"
+                           FullWidth="true">
+                    <MudSelectItem T="PickupMode" Value="PickupMode.Full">Lấy tổng</MudSelectItem>
+                    <MudSelectItem T="PickupMode" Value="PickupMode.ByOrder">Lấy theo đơn/kiện</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudNumericField T="int" @bind-Value="totalOrders" Label="Tổng số đơn" Variant="Variant.Outlined"
+                                 Min="0" />
+            </MudItem>
+            <MudItem xs="12" sm="3" Class="d-flex align-center">
+                <MudCheckBox T="bool" @bind-Value="isShipmentBatch" Label="Shipment Batch" Dense="true" />
+            </MudItem>
+        </MudGrid>
+
+        @* Orders & Items (parent-child in one table) *@
+        <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Đơn hàng và kiện hàng</MudText>
+        <MudPaper Outlined="true" Class="pa-3 mb-3">
+            @if (!orderSelections.Any())
+            {
+                <MudAlert Severity="Severity.Info" Dense="true">Không có đơn hàng nào.</MudAlert>
+            }
+            else
+            {
+                <div class="mb-2">
+                    <MudCheckBox T="bool" Value="@AllOrdersSelected" ValueChanged="ToggleAllOrders" Dense="true" Label="Chọn tất cả đơn hàng" />
+                </div>
+
+                <MudSimpleTable Dense="true" Hover="true">
+                    <thead>
+                        <tr>
+                            <th style="width: 44px;"></th>
+                            <th style="width: 44px;"></th>
+                            <th>Mã đơn / Mã kiện</th>
+                            <th>Weight</th>
+                            <th>L</th>
+                            <th>W</th>
+                            <th>H</th>
+                            <th>Loại hàng</th>
+                            <th>Giá trị khai báo</th>
+                            <th>Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (OrderSelection order in orderSelections)
+                        {
+                            List<OrderItemSelection> orderItems = orderItemSelections
+                                .Where(i => i.OrderId == order.OrderId)
+                                .ToList();
+
+                            <tr>
+                                <td>
+                                    <MudIconButton Icon="@(IsOrderExpanded(order.OrderId) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                                   OnClick="@(() => ToggleOrderExpanded(order.OrderId))"
+                                                   Size="Size.Small"
+                                                   Color="Color.Default" />
+                                </td>
+                                <td>
+                                    <MudCheckBox T="bool" Value="@order.IsSelected"
+                                                 ValueChanged="@((bool v) => ToggleOrderSelection(order.OrderId, v))"
+                                                 Dense="true" />
+                                </td>
+                                <td><MudText Typo="Typo.subtitle2">@order.OrderId</MudText></td>
+                                <td>
+                                    <MudNumericField T="decimal?" @bind-Value="order.Weight" Variant="Variant.Text"
+                                                     Margin="Margin.Dense" HideSpinButtons="true" />
+                                </td>
+                                <td>
+                                    <MudNumericField T="decimal?" @bind-Value="order.L" Variant="Variant.Text"
+                                                     Margin="Margin.Dense" HideSpinButtons="true" />
+                                </td>
+                                <td>
+                                    <MudNumericField T="decimal?" @bind-Value="order.W" Variant="Variant.Text"
+                                                     Margin="Margin.Dense" HideSpinButtons="true" />
+                                </td>
+                                <td>
+                                    <MudNumericField T="decimal?" @bind-Value="order.H" Variant="Variant.Text"
+                                                     Margin="Margin.Dense" HideSpinButtons="true" />
+                                </td>
+                                <td>
+                                    <MudSelect T="GoodsType" @bind-Value="order.GoodsType" Variant="Variant.Text"
+                                               Margin="Margin.Dense">
+                                        <MudSelectItem T="GoodsType" Value="GoodsType.Document">Document</MudSelectItem>
+                                        <MudSelectItem T="GoodsType" Value="GoodsType.Goods">Goods</MudSelectItem>
+                                    </MudSelect>
+                                </td>
+                                <td>
+                                    <MudNumericField T="decimal?" @bind-Value="order.DeclaredValue" Variant="Variant.Text"
+                                                     Margin="Margin.Dense" HideSpinButtons="true" />
+                                </td>
+                                <td>
+                                    <MudTextField T="string" @bind-Value="order.Note" Variant="Variant.Text"
+                                                  Margin="Margin.Dense" />
+                                </td>
+                            </tr>
+
+                            @if (IsOrderExpanded(order.OrderId))
+                            {
+                                foreach (OrderItemSelection item in orderItems)
+                                {
+                                    <tr class="mud-theme-primary-lighten-5">
+                                        <td></td>
+                                        <td>
+                                            <MudCheckBox T="bool" Value="@item.IsSelected"
+                                                         ValueChanged="@((bool v) => ToggleItemSelection(item.OrderId, item.OrderItemId, v))"
+                                                         Dense="true" />
+                                        </td>
+                                        <td>
+                                            <MudText Class="pl-6">- @item.OrderItemId</MudText>
+                                        </td>
+                                        <td>
+                                            <MudNumericField T="decimal?" @bind-Value="item.Weight" Variant="Variant.Text"
+                                                             Margin="Margin.Dense" HideSpinButtons="true" />
+                                        </td>
+                                        <td>
+                                            <MudNumericField T="decimal?" @bind-Value="item.L" Variant="Variant.Text"
+                                                             Margin="Margin.Dense" HideSpinButtons="true" />
+                                        </td>
+                                        <td>
+                                            <MudNumericField T="decimal?" @bind-Value="item.W" Variant="Variant.Text"
+                                                             Margin="Margin.Dense" HideSpinButtons="true" />
+                                        </td>
+                                        <td>
+                                            <MudNumericField T="decimal?" @bind-Value="item.H" Variant="Variant.Text"
+                                                             Margin="Margin.Dense" HideSpinButtons="true" />
+                                        </td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>
+                                            <MudTextField T="string" @bind-Value="item.Note" Variant="Variant.Text"
+                                                          Margin="Margin.Dense" />
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+        </MudPaper>
+
+        @* Workers Section *@
+        <MudText Typo="Typo.subtitle1" Class="mt-2 mb-2">Nhân viên lấy hàng (Workers)</MudText>
+        <MudPaper Outlined="true" Class="pa-3 mb-3">
+            <MudTable Items="@workerSelections" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Mã NV</MudTh>
+                    <MudTh>Tên NV</MudTh>
+                    <MudTh>Tỉ lệ đóng góp (%)</MudTh>
+                    <MudTh></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Code">@context.EmployeeCode</MudTd>
+                    <MudTd DataLabel="Name">@context.EmployeeName</MudTd>
+                    <MudTd DataLabel="Ratio">
+                        <MudNumericField T="decimal" @bind-Value="context.WorkContributionRatio" Variant="Variant.Text"
+                                         Margin="Margin.Dense" Min="0" Max="100" HideSpinButtons="true" />
+                    </MudTd>
+                    <MudTd>
+                        @if (!context.IsCurrentDriver)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                                           OnClick="@(() => RemoveWorker(context))" />
+                        }
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <MudAutocomplete T="Driver" SearchFunc="SearchAvailableDrivers" ToStringFunc="GetDriverLabel"
+                             Label="Thêm tài xế" Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20"
+                             Class="mt-3" ResetValueOnEmptyText="true" ValueChanged="OnAddWorkerDriver" />
+        </MudPaper>
+
+        @if (!string.IsNullOrWhiteSpace(validationMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">
+                @validationMessage
+            </MudAlert>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined">Hủy</MudButton>
+        <MudButton OnClick="Submit" Variant="Variant.Filled" Color="Color.Primary">Xác nhận lấy đơn</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string PickupTaskId { get; set; } = string.Empty;
+    [Parameter] public List<PickupTaskOrderInfo> Orders { get; set; } = [];
+    [Parameter] public List<OrderItemInfo> OrderItems { get; set; } = [];
+    [Parameter] public List<Driver> AllDrivers { get; set; } = [];
+    [Parameter] public Driver? CurrentDriver { get; set; }
+
+    private PickupMode mode = PickupMode.Full;
+    private bool isShipmentBatch;
+    private int totalOrders;
+    private string validationMessage = string.Empty;
+
+    private readonly List<OrderSelection> orderSelections = [];
+    private readonly List<OrderItemSelection> orderItemSelections = [];
+    private readonly List<WorkerSelection> workerSelections = [];
+    private readonly HashSet<string> expandedOrderIds = [];
+
+    private bool AllOrdersSelected => orderSelections.Count > 0 && orderSelections.All(o => o.IsSelected);
+
+    protected override void OnInitialized()
+    {
+        orderSelections.Clear();
+        orderSelections.AddRange(Orders.Select(o => new OrderSelection
+        {
+            OrderId = o.OrderId,
+            IsSelected = true
+        }));
+
+        orderItemSelections.Clear();
+        orderItemSelections.AddRange(OrderItems.Select(oi => new OrderItemSelection
+        {
+            OrderId = oi.OrderId,
+            OrderItemId = oi.OrderItemId,
+            Weight = oi.Weight,
+            L = oi.L,
+            W = oi.W,
+            H = oi.H,
+            IsSelected = true
+        }));
+
+        expandedOrderIds.Clear();
+        foreach (OrderSelection order in orderSelections)
+        {
+            expandedOrderIds.Add(order.OrderId);
+        }
+
+        totalOrders = Orders.Count;
+
+        // Default current driver as worker
+        if (CurrentDriver is not null)
+        {
+            workerSelections.Add(new WorkerSelection
+            {
+                EmployeeId = CurrentDriver.DriverId,
+                EmployeeCode = CurrentDriver.Code,
+                EmployeeName = CurrentDriver.Name,
+                WorkContributionRatio = 100,
+                IsCurrentDriver = true
+            });
+        }
+    }
+
+    private void ToggleAllOrders(bool value)
+    {
+        foreach (OrderSelection order in orderSelections)
+        {
+            order.IsSelected = value;
+        }
+
+        foreach (OrderItemSelection item in orderItemSelections)
+        {
+            item.IsSelected = value;
+        }
+    }
+
+    private void ToggleOrderSelection(string orderId, bool isSelected)
+    {
+        OrderSelection? order = orderSelections.FirstOrDefault(o => o.OrderId == orderId);
+        if (order is null)
+        {
+            return;
+        }
+
+        order.IsSelected = isSelected;
+
+        foreach (OrderItemSelection item in orderItemSelections.Where(i => i.OrderId == orderId))
+        {
+            item.IsSelected = isSelected;
+        }
+    }
+
+    private void ToggleItemSelection(string orderId, string orderItemId, bool isSelected)
+    {
+        OrderItemSelection? item = orderItemSelections.FirstOrDefault(i => i.OrderId == orderId && i.OrderItemId == orderItemId);
+        if (item is null)
+        {
+            return;
+        }
+
+        item.IsSelected = isSelected;
+
+        OrderSelection? order = orderSelections.FirstOrDefault(o => o.OrderId == orderId);
+        if (order is null)
+        {
+            return;
+        }
+
+        order.IsSelected = orderItemSelections.Any(i => i.OrderId == orderId && i.IsSelected)
+            ? true
+            : order.IsSelected;
+    }
+
+    private bool IsOrderExpanded(string orderId) => expandedOrderIds.Contains(orderId);
+
+    private void ToggleOrderExpanded(string orderId)
+    {
+        if (!expandedOrderIds.Add(orderId))
+        {
+            expandedOrderIds.Remove(orderId);
+        }
+    }
+
+    private void Submit()
+    {
+        validationMessage = string.Empty;
+
+        List<PickedOrderDto> pickedOrders = orderSelections
+            .Where(o => o.IsSelected)
+            .Select(o => new PickedOrderDto
+            {
+                OrderId = o.OrderId,
+                Weight = o.Weight,
+                L = o.L,
+                W = o.W,
+                H = o.H,
+                GoodsType = o.GoodsType,
+                DeclaredValue = o.DeclaredValue,
+                Note = o.Note,
+                IsDirty = false,
+                Items = orderItemSelections
+                    .Where(i => i.IsSelected && i.OrderId == o.OrderId)
+                    .Select(i => new PickedItemDto
+                    {
+                        OrderId = i.OrderId,
+                        OrderItemId = i.OrderItemId,
+                        Weight = i.Weight,
+                        L = i.L,
+                        W = i.W,
+                        H = i.H,
+                        Note = i.Note,
+                        IsDirty = false
+                    })
+                    .ToList()
+            })
+            .ToList();
+
+        List<PickedWorkerDto> workers = workerSelections
+            .Select(w => new PickedWorkerDto
+            {
+                EmployeeId = w.EmployeeId,
+                EmployeeCode = w.EmployeeCode,
+                EmployeeName = w.EmployeeName,
+                WorkContributionRatio = w.WorkContributionRatio
+            })
+            .ToList();
+
+        ConfirmPickupRequest request = new()
+        {
+            PickupTaskId = PickupTaskId,
+            Mode = mode,
+            IsShipmentBatch = isShipmentBatch,
+            TotalOrders = totalOrders,
+            PickedOrders = pickedOrders,
+            Workers = workers
+        };
+
+        MudDialog.Close(DialogResult.Ok(request));
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private Task<IEnumerable<Driver>> SearchAvailableDrivers(string value, CancellationToken cancellationToken)
+    {
+        HashSet<Guid> existingIds = workerSelections.Select(w => w.EmployeeId).ToHashSet();
+        IEnumerable<Driver> available = AllDrivers.Where(d => !existingIds.Contains(d.DriverId));
+
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            available = available.Where(d =>
+                d.Code.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+                d.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return Task.FromResult(available);
+    }
+
+    private void OnAddWorkerDriver(Driver? driver)
+    {
+        if (driver is null || workerSelections.Any(w => w.EmployeeId == driver.DriverId))
+        {
+            return;
+        }
+
+        workerSelections.Add(new WorkerSelection
+        {
+            EmployeeId = driver.DriverId,
+            EmployeeCode = driver.Code,
+            EmployeeName = driver.Name,
+            WorkContributionRatio = 0,
+            IsCurrentDriver = false
+        });
+    }
+
+    private void RemoveWorker(WorkerSelection worker)
+    {
+        workerSelections.Remove(worker);
+    }
+
+    private static string GetDriverLabel(Driver? driver)
+    {
+        return driver is null ? string.Empty : $"{driver.Code} - {driver.Name}";
+    }
+
+    private sealed class OrderSelection
+    {
+        public string OrderId { get; init; } = string.Empty;
+        public bool IsSelected { get; set; }
+        public decimal? Weight { get; set; }
+        public decimal? L { get; set; }
+        public decimal? W { get; set; }
+        public decimal? H { get; set; }
+        public GoodsType GoodsType { get; set; } = GoodsType.Document;
+        public decimal? DeclaredValue { get; set; }
+        public string? Note { get; set; }
+    }
+
+    private sealed class OrderItemSelection
+    {
+        public string OrderId { get; init; } = string.Empty;
+        public string OrderItemId { get; init; } = string.Empty;
+        public bool IsSelected { get; set; }
+        public decimal? Weight { get; set; }
+        public decimal? L { get; set; }
+        public decimal? W { get; set; }
+        public decimal? H { get; set; }
+        public string? Note { get; set; }
+    }
+
+    private sealed class WorkerSelection
+    {
+        public Guid EmployeeId { get; init; }
+        public string EmployeeCode { get; init; } = string.Empty;
+        public string EmployeeName { get; init; } = string.Empty;
+        public decimal WorkContributionRatio { get; set; }
+        public bool IsCurrentDriver { get; init; }
+    }
+}
