@@ -192,7 +192,7 @@ public sealed class PickupTaskEventJsonMappingStrategy(
 
         const int take = 5;
         List<PickupTaskEventOrderDto> orderWithoutPt = orderDtos.Where(o => !o.HasPickupTask).Take(take).ToList();
-        
+
         return orderWithoutPt.Count > 0
             ? orderWithoutPt
             : orderDtos;

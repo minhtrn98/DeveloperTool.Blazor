@@ -1,0 +1,296 @@
+@page "/pickup-tasks/create-event"
+@using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Models
+@using TMS.DeveloperTool.Blazor.Features.PickupTask.Services
+@inject CreatePickupTaskEventService Service
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@rendermode InteractiveServer
+
+<AppPageTitle MenuName="Tạo điều tin" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-6">
+        <MudText Typo="Typo.h4" Class="mb-4">Tạo điều tin</MudText>
+
+        @if (isLoading)
+        {
+            <div class="d-flex justify-center">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else
+        {
+            <MudGrid>
+                @* Left column: Dropdowns *@
+                <MudItem xs="12" md="5">
+                    <MudText Typo="Typo.h6" Class="mb-3">Thông tin điều tin</MudText>
+
+                    <MudSelect T="PostOfficeOption" Value="selectedPostOffice" ValueChanged="OnPostOfficeChanged"
+                               Label="Bưu cục" Variant="Variant.Outlined" Class="mb-3" Clearable="true"
+                               ToStringFunc="@(x => x?.ToString() ?? string.Empty)">
+                        @foreach (var po in postOfficeOptions)
+                        {
+                            <MudSelectItem T="PostOfficeOption" Value="@po">@po</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect T="EnumOption" Value="selectedStatus" ValueChanged="OnStatusChanged" Label="Trạng thái"
+                               Variant="Variant.Outlined" Class="mb-3" Clearable="true"
+                               ToStringFunc="@(x => x?.ToString() ?? string.Empty)">
+                        @foreach (var s in statusOptions)
+                        {
+                            <MudSelectItem T="EnumOption" Value="@s">@s</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect T="EnumOption" Value="selectedServiceType" ValueChanged="OnServiceTypeChanged"
+                               Label="Loại dịch vụ" Variant="Variant.Outlined" Class="mb-3" Clearable="true"
+                               ToStringFunc="@(x => x?.ToString() ?? string.Empty)">
+                        @foreach (var st in serviceTypeOptions)
+                        {
+                            <MudSelectItem T="EnumOption" Value="@st">@st</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect T="EnumOption" Value="selectedDispatchType" ValueChanged="OnDispatchTypeChanged"
+                               Label="Loại điều tin" Variant="Variant.Outlined" Class="mb-3" Clearable="true"
+                               ToStringFunc="@(x => x?.ToString() ?? string.Empty)">
+                        @foreach (var dt in dispatchTypeOptions)
+                        {
+                            <MudSelectItem T="EnumOption" Value="@dt">@dt</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect T="EnumOption" Value="selectedDispatchMethod" ValueChanged="OnDispatchMethodChanged"
+                               Label="Phương thức điều tin" Variant="Variant.Outlined" Class="mb-3" Clearable="true"
+                               ToStringFunc="@(x => x?.ToString() ?? string.Empty)">
+                        @foreach (var dm in dispatchMethodOptions)
+                        {
+                            <MudSelectItem T="EnumOption" Value="@dm">@dm</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudGrid>
+                        <MudItem xs="7">
+                            <MudDatePicker @bind-Date="scheduledPickupDate" Label="Ngày lấy hàng dự kiến" Editable="true"
+                                           Variant="Variant.Outlined" Clearable="true" DateFormat="dd/MM/yyyy"
+                                           Placeholder="Chọn ngày" />
+                        </MudItem>
+                        <MudItem xs="5">
+                            <MudTimePicker @bind-Time="scheduledPickupTime" Label="Giờ" Variant="Variant.Outlined" Editable="true"
+                                           Clearable="true" />
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudDivider Class="my-4" />
+
+                    <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="BuildJson"
+                                   StartIcon="@Icons.Material.Filled.Build">Build JSON</MudButton>
+                    </MudStack>
+                </MudItem>
+
+                @* Right column: JSON output *@
+                <MudItem xs="12" md="7">
+                    <MudText Typo="Typo.h6" Class="mb-3">JSON Output</MudText>
+                    <MudTextField @bind-Value="jsonOutput" Lines="26" Variant="Variant.Outlined" ReadOnly="false"
+                                  Placeholder="Nhấn Build JSON để tạo..." />
+                    <MudStack Row="true" Spacing="2" Class="mt-3" Justify="Justify.FlexEnd">
+                        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="SendRequest"
+                                   Disabled="@string.IsNullOrWhiteSpace(jsonOutput)" StartIcon="@Icons.Material.Filled.Send">Gửi
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="CopyJson"
+                                   Disabled="@string.IsNullOrWhiteSpace(jsonOutput)"
+                                   StartIcon="@Icons.Material.Filled.ContentCopy">Copy</MudButton>
+                    </MudStack>
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            @* Orders section *@
+            <MudText Typo="Typo.h6" Class="mb-3">
+                Đơn hàng
+                <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
+                    Đã chọn: @selectedOrderIds.Count / @allOrders.Count
+                </MudChip>
+            </MudText>
+
+            <MudStack Row="true" Class="mb-3" Justify="Justify.FlexEnd">
+                <MudCheckBox T="bool" @bind-Value="showOnlyWithoutPickupTask" Label="Chỉ hiện đơn chưa có điều tin"
+                             Color="Color.Primary" />
+            </MudStack>
+
+            <MudTable Items="@FilteredOrders" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" MultiSelection="true"
+                      @bind-SelectedItems="selectedOrderSet" FixedHeader="true">
+                <HeaderContent>
+                    <MudTh>Mã đơn hàng</MudTh>
+                    <MudTh>Ngày tạo</MudTh>
+                    <MudTh>Trọng lượng</MudTh>
+                    <MudTh>Kích thước (L×H×W)</MudTh>
+                    <MudTh>Có điều tin</MudTh>
+                    <MudTh>Số kiện</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="OrderId">@context.OrderId</MudTd>
+                    <MudTd DataLabel="CreatedAt">@FormatCreatedAt(context.CreatedAt)</MudTd>
+                    <MudTd DataLabel="Weight">@context.Weight</MudTd>
+                    <MudTd DataLabel="Dimensions">@context.L × @context.H × @context.W</MudTd>
+                    <MudTd DataLabel="HasPickupTask">
+                        @if (context.HasPickupTask)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error" Size="Size.Small" />
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Items">@context.Items.Count</MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private bool isLoading = true;
+
+    // Dropdown options
+    private List<PostOfficeOption> postOfficeOptions = [];
+    private List<EnumOption> statusOptions = [];
+    private List<EnumOption> serviceTypeOptions = [];
+    private List<EnumOption> dispatchTypeOptions = [];
+    private List<EnumOption> dispatchMethodOptions = [];
+
+    // Selected values
+    private PostOfficeOption? selectedPostOffice;
+    private EnumOption? selectedStatus;
+    private EnumOption? selectedServiceType;
+    private EnumOption? selectedDispatchType;
+    private EnumOption? selectedDispatchMethod;
+
+    // Date
+    private DateTime? scheduledPickupDate = DateTime.Today;
+    private TimeSpan? scheduledPickupTime = new TimeSpan(8, 0, 0);
+
+    // Orders
+    private List<PickupTaskEventOrderDto> allOrders = [];
+    private HashSet<PickupTaskEventOrderDto> selectedOrderSet = [];
+    private HashSet<string> selectedOrderIds = [];
+    private bool showOnlyWithoutPickupTask = true;
+
+    // Output
+    private string jsonOutput = string.Empty;
+
+    private IEnumerable<PickupTaskEventOrderDto> FilteredOrders
+    {
+        get
+        {
+            IEnumerable<PickupTaskEventOrderDto> result = allOrders;
+
+            if (showOnlyWithoutPickupTask)
+            {
+                result = result.Where(o => !o.HasPickupTask);
+            }
+
+            return result;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            postOfficeOptions = await Service.GetPostOfficeOptionsAsync();
+            statusOptions = CreatePickupTaskEventService.GetStatusOptions();
+            serviceTypeOptions = CreatePickupTaskEventService.GetServiceTypeOptions();
+            dispatchTypeOptions = CreatePickupTaskEventService.GetDispatchTypeOptions();
+            dispatchMethodOptions = CreatePickupTaskEventService.GetDispatchMethodOptions();
+            allOrders = await Service.GetOrdersAsync();
+
+            // Pre-select defaults
+            selectedStatus = statusOptions.FirstOrDefault();
+            selectedServiceType = serviceTypeOptions.FirstOrDefault();
+            selectedDispatchType = dispatchTypeOptions.FirstOrDefault();
+            selectedDispatchMethod = dispatchMethodOptions.FirstOrDefault();
+            selectedPostOffice = postOfficeOptions.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Lỗi tải dữ liệu: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnPostOfficeChanged(PostOfficeOption? value) => selectedPostOffice = value;
+    private void OnStatusChanged(EnumOption? value) => selectedStatus = value;
+    private void OnServiceTypeChanged(EnumOption? value) => selectedServiceType = value;
+    private void OnDispatchTypeChanged(EnumOption? value) => selectedDispatchType = value;
+    private void OnDispatchMethodChanged(EnumOption? value) => selectedDispatchMethod = value;
+
+    private void BuildJson()
+    {
+        try
+        {
+            CreatePickupTaskEventInput input = new()
+            {
+                PostOfficeCode = selectedPostOffice?.Code,
+                PostOfficeName = selectedPostOffice?.Name,
+                StatusId = selectedStatus?.Value,
+                StatusName = selectedStatus?.Description,
+                ServiceTypeId = selectedServiceType?.Value,
+                ServiceTypeName = selectedServiceType?.Description,
+                DispatchType = selectedDispatchType is not null ? int.Parse(selectedDispatchType.Value) : null,
+                DispatchMethod = selectedDispatchMethod is not null ? int.Parse(selectedDispatchMethod.Value) : null,
+                SelectedOrders = selectedOrderSet.ToList(),
+                ScheduledPickupDate = scheduledPickupDate?.Add(scheduledPickupTime ?? TimeSpan.Zero)
+            };
+
+            jsonOutput = Service.BuildJson(input);
+            Snackbar.Add("Build JSON thành công.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Lỗi build JSON: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task SendRequest()
+    {
+        if (string.IsNullOrWhiteSpace(jsonOutput))
+        {
+            Snackbar.Add("Vui lòng Build JSON trước.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            await Service.SendAsync(jsonOutput);
+            Snackbar.Add("Gửi thành công.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Gửi thất bại: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task CopyJson()
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", jsonOutput);
+        Snackbar.Add("Đã copy JSON.", Severity.Success);
+    }
+
+    private static string FormatCreatedAt(string isoDate)
+    {
+        if (DateTimeOffset.TryParse(isoDate, out DateTimeOffset dto))
+        {
+            return dto.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+        }
+
+        return isoDate;
+    }
+}

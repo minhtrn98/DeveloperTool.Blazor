@@ -58,6 +58,7 @@ public static class ExternalApiServiceExtensions
         services.AddScoped<RouteCheckPointTemplateService>();
         services.AddScoped<PairingService>();
         services.AddScoped<PickupTaskActionService>();
+        services.AddScoped<CreatePickupTaskEventService>();
         services.AddScoped<IJsonTypeMappingStrategy, PickupTaskEventJsonMappingStrategy>();
         services.AddScoped<JsonBuilderService>();
         services.AddScoped<MyDriverService>();

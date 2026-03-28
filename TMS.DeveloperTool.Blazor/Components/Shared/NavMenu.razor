@@ -5,7 +5,10 @@
     <MudNavLink Href="/simulate-route" Match="NavLinkMatch.All">Mô phỏng lộ trình</MudNavLink>
     @* <MudNavLink Href="/request-change-driver" Match="NavLinkMatch.Prefix">Yêu cầu đổi tài</MudNavLink> *@
     @* <MudNavLink Href="/job-trigger" Match="NavLinkMatch.Prefix">Kích hoạt job</MudNavLink> *@
-    <MudNavLink Href="/pickup-tasks" Match="NavLinkMatch.All">Điều tin</MudNavLink>
+    <MudNavGroup Title="Điều tin" Expanded="true">
+        <MudNavLink Href="/pickup-tasks" Match="NavLinkMatch.All">Danh sách</MudNavLink>
+        <MudNavLink Href="/pickup-tasks/create-event" Match="NavLinkMatch.All">Tạo điều tin</MudNavLink>
+    </MudNavGroup>
     <MudNavLink Href="/json-builder" Match="NavLinkMatch.All">JSON Builder</MudNavLink>
     <MudNavLink Href="/top-moving-vehicles" Match="NavLinkMatch.All">Top xe di chuyển</MudNavLink>
     <MudNavGroup Title="Cấu hình" Expanded="true">
