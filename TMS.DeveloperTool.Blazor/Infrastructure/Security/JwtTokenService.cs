@@ -25,11 +25,6 @@ public sealed class JwtTokenService
     {
         ArgumentNullException.ThrowIfNull(driver);
 
-        if (string.IsNullOrWhiteSpace(_jwtSetting.Key))
-        {
-            throw new InvalidOperationException("Identity:Key is required.");
-        }
-
         string driverId = driver.DriverId.ToString();
 
         List<Claim> claims =
