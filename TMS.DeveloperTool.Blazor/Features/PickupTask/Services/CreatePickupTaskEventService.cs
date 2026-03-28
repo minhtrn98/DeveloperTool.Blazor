@@ -11,6 +11,7 @@ namespace TMS.DeveloperTool.Blazor.Features.PickupTask.Services;
 public sealed class CreatePickupTaskEventService(
     OrderRepository orderRepository,
     RouteRepository routeRepository,
+    PlanningRepository planningRepository,
     EventService eventService,
     IWebHostEnvironment webHostEnvironment)
 {
@@ -20,6 +21,12 @@ public sealed class CreatePickupTaskEventService(
         TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
+
+    public async Task<List<DailyPlanDto>> GetDailyPlansAsync()
+    {
+        IEnumerable<DailyPlanDto> plans = await planningRepository.GetDailyPlans(CancellationToken.None);
+        return plans.ToList();
+    }
 
     public async Task<List<PostOfficeOption>> GetPostOfficeOptionsAsync()
     {
@@ -168,6 +175,50 @@ public sealed class CreatePickupTaskEventService(
     public async Task SendAsync(string json, CancellationToken cancellationToken = default)
     {
         await eventService.PublishPickupTaskEvent(json, cancellationToken);
+    }
+
+    public List<string> BuildJsonListFromDailyPlan(
+        DailyPlanDto plan,
+        List<PostOfficeOption> postOfficeOptions,
+        CreatePickupTaskEventInput baseInput,
+        int intervalMinutes = 15)
+    {
+        List<DailyPlanDetailDto> pickupDetails = plan.Details
+            .Where(d => d.BusinessOperation is BusinessOperation.Receive or BusinessOperation.ReceiveAndDelivery)
+            .OrderBy(d => d.StepNumber)
+            .ToList();
+
+        List<string> jsonList = [];
+
+        foreach (DailyPlanDetailDto detail in pickupDetails)
+        {
+            PostOfficeOption? postOffice = postOfficeOptions
+                .FirstOrDefault(po => string.Equals(po.Code, detail.PostOfficeCode, StringComparison.OrdinalIgnoreCase));
+
+            // Generate multiple events spaced by intervalMinutes within FromTime-ToTime
+            TimeOnly current = detail.FromTime;
+            while (current < detail.ToTime)
+            {
+                CreatePickupTaskEventInput input = new()
+                {
+                    PostOfficeCode = detail.PostOfficeCode,
+                    PostOfficeName = postOffice?.Name ?? detail.PostOfficeCode,
+                    StatusId = baseInput.StatusId,
+                    StatusName = baseInput.StatusName,
+                    ServiceTypeId = baseInput.ServiceTypeId,
+                    ServiceTypeName = baseInput.ServiceTypeName,
+                    DispatchType = baseInput.DispatchType,
+                    DispatchMethod = baseInput.DispatchMethod,
+                    ScheduledPickupDate = plan.ExecutionDate.ToDateTime(current),
+                    SelectedOrders = baseInput.SelectedOrders
+                };
+
+                jsonList.Add(BuildJson(input));
+                current = current.Add(TimeSpan.FromMinutes(intervalMinutes));
+            }
+        }
+
+        return jsonList;
     }
 
     private string LoadTemplate()

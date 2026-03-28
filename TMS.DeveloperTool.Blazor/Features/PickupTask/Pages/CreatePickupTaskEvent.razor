@@ -25,14 +25,36 @@
                 <MudItem xs="12" md="5">
                     <MudText Typo="Typo.h6" Class="mb-3">Thông tin điều tin</MudText>
 
+                    <MudSelect T="DailyPlanDto" Value="selectedDailyPlan" ValueChanged="OnDailyPlanChanged"
+                               Label="Kế hoạch vận chuyển" Variant="Variant.Outlined" Class="mb-3" Clearable="true"
+                               ToStringFunc="@(x => x is null ? string.Empty : $"{x.Code} - {x.Name} ({x.Status})")">
+                        @foreach (var plan in dailyPlans)
+                        {
+                            <MudSelectItem T="DailyPlanDto" Value="@plan">@plan.Code - @plan.Name (@plan.Status)</MudSelectItem>
+                        }
+                    </MudSelect>
+
                     <MudSelect T="PostOfficeOption" Value="selectedPostOffice" ValueChanged="OnPostOfficeChanged"
                                Label="Bưu cục" Variant="Variant.Outlined" Class="mb-3" Clearable="true"
+                               Disabled="@(selectedDailyPlan is not null)"
                                ToStringFunc="@(x => x?.ToString() ?? string.Empty)">
                         @foreach (var po in postOfficeOptions)
                         {
                             <MudSelectItem T="PostOfficeOption" Value="@po">@po</MudSelectItem>
                         }
                     </MudSelect>
+
+                    <MudGrid>
+                        <MudItem xs="7">
+                            <MudDatePicker @bind-Date="scheduledPickupDate" Label="Ngày lấy hàng dự kiến" Editable="true"
+                                           Variant="Variant.Outlined" Clearable="true" DateFormat="dd/MM/yyyy"
+                                           Placeholder="Chọn ngày" Disabled="selectedDailyPlan is not null" />
+                        </MudItem>
+                        <MudItem xs="5">
+                            <MudTimePicker @bind-Time="scheduledPickupTime" Label="Giờ" Variant="Variant.Outlined" Editable="true"
+                                           Clearable="true" Disabled="selectedDailyPlan is not null" />
+                        </MudItem>
+                    </MudGrid>
 
                     <MudSelect T="EnumOption" Value="selectedStatus" ValueChanged="OnStatusChanged" Label="Trạng thái"
                                Variant="Variant.Outlined" Class="mb-3" Clearable="true"
@@ -70,18 +92,6 @@
                         }
                     </MudSelect>
 
-                    <MudGrid>
-                        <MudItem xs="7">
-                            <MudDatePicker @bind-Date="scheduledPickupDate" Label="Ngày lấy hàng dự kiến" Editable="true"
-                                           Variant="Variant.Outlined" Clearable="true" DateFormat="dd/MM/yyyy"
-                                           Placeholder="Chọn ngày" />
-                        </MudItem>
-                        <MudItem xs="5">
-                            <MudTimePicker @bind-Time="scheduledPickupTime" Label="Giờ" Variant="Variant.Outlined" Editable="true"
-                                           Clearable="true" />
-                        </MudItem>
-                    </MudGrid>
-
                     <MudDivider Class="my-4" />
 
                     <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd">
@@ -97,7 +107,7 @@
                                   Placeholder="Nhấn Build JSON để tạo..." />
                     <MudStack Row="true" Spacing="2" Class="mt-3" Justify="Justify.FlexEnd">
                         <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="SendRequest"
-                                   Disabled="@string.IsNullOrWhiteSpace(jsonOutput)" StartIcon="@Icons.Material.Filled.Send">Gửi
+                                   Disabled="@(string.IsNullOrWhiteSpace(jsonOutput) || selectedDailyPlan is not null)" StartIcon="@Icons.Material.Filled.Send">Gửi
                         </MudButton>
                         <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="CopyJson"
                                    Disabled="@string.IsNullOrWhiteSpace(jsonOutput)"
@@ -157,6 +167,7 @@
     private bool isLoading = true;
 
     // Dropdown options
+    private List<DailyPlanDto> dailyPlans = [];
     private List<PostOfficeOption> postOfficeOptions = [];
     private List<EnumOption> statusOptions = [];
     private List<EnumOption> serviceTypeOptions = [];
@@ -164,6 +175,7 @@
     private List<EnumOption> dispatchMethodOptions = [];
 
     // Selected values
+    private DailyPlanDto? selectedDailyPlan;
     private PostOfficeOption? selectedPostOffice;
     private EnumOption? selectedStatus;
     private EnumOption? selectedServiceType;
@@ -202,6 +214,7 @@
     {
         try
         {
+            dailyPlans = await Service.GetDailyPlansAsync();
             postOfficeOptions = await Service.GetPostOfficeOptionsAsync();
             statusOptions = CreatePickupTaskEventService.GetStatusOptions();
             serviceTypeOptions = CreatePickupTaskEventService.GetServiceTypeOptions();
@@ -226,6 +239,7 @@
         }
     }
 
+    private void OnDailyPlanChanged(DailyPlanDto? value) => selectedDailyPlan = value;
     private void OnPostOfficeChanged(PostOfficeOption? value) => selectedPostOffice = value;
     private void OnStatusChanged(EnumOption? value) => selectedStatus = value;
     private void OnServiceTypeChanged(EnumOption? value) => selectedServiceType = value;
@@ -236,7 +250,7 @@
     {
         try
         {
-            CreatePickupTaskEventInput input = new()
+            CreatePickupTaskEventInput baseInput = new()
             {
                 PostOfficeCode = selectedPostOffice?.Code,
                 PostOfficeName = selectedPostOffice?.Name,
@@ -250,8 +264,17 @@
                 ScheduledPickupDate = scheduledPickupDate?.Add(scheduledPickupTime ?? TimeSpan.Zero)
             };
 
-            jsonOutput = Service.BuildJson(input);
-            Snackbar.Add("Build JSON thành công.", Severity.Success);
+            if (selectedDailyPlan is not null)
+            {
+                List<string> jsonList = Service.BuildJsonListFromDailyPlan(selectedDailyPlan, postOfficeOptions, baseInput);
+                jsonOutput = $"[\n{string.Join(",\n", jsonList)}\n]";
+                Snackbar.Add($"Build {jsonList.Count} JSON từ kế hoạch thành công.", Severity.Success);
+            }
+            else
+            {
+                jsonOutput = Service.BuildJson(baseInput);
+                Snackbar.Add("Build JSON thành công.", Severity.Success);
+            }
         }
         catch (Exception ex)
         {
