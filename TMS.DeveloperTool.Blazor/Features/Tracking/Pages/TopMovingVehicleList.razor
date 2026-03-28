@@ -16,8 +16,8 @@
         </div>
 
         <MudTextField @bind-Value="searchText" Label="Tìm theo biển số" Variant="Variant.Outlined"
-                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
-                      Immediate="true" Clearable="true" Class="mb-3" />
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true" Clearable="true"
+                      Class="mb-3" />
 
         @if (isLoading)
         {
@@ -49,7 +49,8 @@
                     <MudTd DataLabel="Chênh lệch odo">@context.OdoDiff</MudTd>
                     <MudTd DataLabel="Số điểm GPS">@context.GpsPoints</MudTd>
                     <MudTd DataLabel="Điểm di chuyển">
-                        <MudChip T="double" Color="Color.Success" Variant="Variant.Outlined" Size="Size.Small" Value="@context.MovingScore">
+                        <MudChip T="double" Color="Color.Success" Variant="Variant.Outlined" Size="Size.Small"
+                                 Value="@context.MovingScore">
                             @context.MovingScore
                         </MudChip>
                     </MudTd>
@@ -78,9 +79,19 @@
     private async Task ReloadAsync()
     {
         isLoading = true;
+        vehicles = [];
+        StateHasChanged();
         try
         {
-            vehicles = (await TrackingRepository.GetTopMovingVehicleAsync()).ToList();
+            var count = 0;
+            await foreach (var vehicle in TrackingRepository.GetTopMovingVehicleAsync().WithCancellation(default))
+            {
+                vehicles.Add(vehicle);
+                if (++count % 5 == 0)
+                {
+                    StateHasChanged();
+                }
+            }
         }
         finally
         {

@@ -8,7 +8,7 @@ public sealed class TrackingRepository
         _dbQuery = dbQuery;
     }
 
-    public async Task<IEnumerable<TopMovingVehicle>> GetTopMovingVehicleAsync(CancellationToken cancellationToken = default)
+    public IAsyncEnumerable<TopMovingVehicle> GetTopMovingVehicleAsync()
     {
         const string sql = """
             WITH recent AS (
@@ -45,7 +45,7 @@ public sealed class TrackingRepository
             ORDER BY "MovingScore" DESC
             """;
 
-        return await _dbQuery.QueryAsync<TopMovingVehicle>(sql, null, cancellationToken);
+        return _dbQuery.QueryUnbufferedAsync<TopMovingVehicle>(sql);
     }
 
 }

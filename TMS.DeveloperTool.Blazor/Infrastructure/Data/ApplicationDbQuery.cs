@@ -73,6 +73,12 @@ public sealed class ApplicationDbQuery(IConfiguration configuration, string data
         return await _connection.QueryAsync(commandDefinition);
     }
 
+    public IAsyncEnumerable<T> QueryUnbufferedAsync<T>(string sql, object? parameters = null)
+    {
+        _connection ??= new NpgsqlConnection(_connectionString);
+        return _connection.QueryUnbufferedAsync<T>(sql, parameters);
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_connection != null)
