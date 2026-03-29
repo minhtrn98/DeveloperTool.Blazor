@@ -28,19 +28,29 @@
         @* Orders & Items (parent-child in one table) *@
         <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Đơn hàng và kiện hàng</MudText>
         <MudPaper Outlined="true" Class="pa-3 mb-3">
+            <div class="mb-2 d-flex align-center justify-end">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Add" OnClick="AddOrder">
+                    Thêm đơn
+                </MudButton>
+            </div>
+
             @if (!orderSelections.Any())
             {
                 <MudAlert Severity="Severity.Info" Dense="true">Không có đơn hàng nào.</MudAlert>
             }
             else
             {
-                <div class="mb-2">
-                    <MudCheckBox T="bool" Value="@AllOrdersSelected" ValueChanged="ToggleAllOrders" Dense="true" Label="Chọn tất cả đơn hàng" />
+                <div class="mb-2 d-flex align-center">
+                    <MudCheckBox T="bool" Value="@AllOrdersSelected" ValueChanged="ToggleAllOrders" Dense="true"
+                                 Label="Chọn tất cả đơn hàng" />
                 </div>
 
                 <MudSimpleTable Dense="true" Hover="true">
                     <thead>
                         <tr>
+                            <th style="width: 44px;"></th>
+                            <th style="width: 44px;"></th>
                             <th style="width: 44px;"></th>
                             <th style="width: 44px;"></th>
                             <th>Mã đơn / Mã kiện</th>
@@ -62,17 +72,31 @@
 
                             <tr>
                                 <td>
-                                    <MudIconButton Icon="@(IsOrderExpanded(order.OrderId) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
-                                                   OnClick="@(() => ToggleOrderExpanded(order.OrderId))"
-                                                   Size="Size.Small"
-                                                   Color="Color.Default" />
+                                    <MudIconButton
+                                    Icon="@(IsOrderExpanded(order.OrderId) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                    OnClick="@(() => ToggleOrderExpanded(order.OrderId))" Size="Size.Small"
+                                    Color="Color.Default" />
                                 </td>
                                 <td>
                                     <MudCheckBox T="bool" Value="@order.IsSelected"
-                                                 ValueChanged="@((bool v) => ToggleOrderSelection(order.OrderId, v))"
-                                                 Dense="true" />
+                                                 ValueChanged="@((bool v) => ToggleOrderSelection(order.OrderId, v))" Dense="true" />
                                 </td>
-                                <td><MudText Typo="Typo.subtitle2">@order.OrderId</MudText></td>
+                                <td>
+                                    <MudIconButton Icon="@Icons.Material.Filled.LibraryAdd"
+                                                   OnClick="@(() => AddItem(order.OrderId))" Size="Size.Small" Color="Color.Primary" />
+                                </td>
+                                <td>
+                                    @if (order.IsUserAdded)
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                                                       OnClick="@(() => RemoveOrder(order.OrderId))" />
+                                    }
+                                </td>
+                                <td>
+                                    <MudTextField T="string" Value="@order.OrderId"
+                                                  ValueChanged="@((string? v) => UpdateOrderId(order, v))" Variant="Variant.Text"
+                                                  Margin="Margin.Dense" />
+                                </td>
                                 <td>
                                     <MudNumericField T="decimal?" @bind-Value="order.Weight" Variant="Variant.Text"
                                                      Margin="Margin.Dense" HideSpinButtons="true" />
@@ -116,6 +140,14 @@
                                             <MudCheckBox T="bool" Value="@item.IsSelected"
                                                          ValueChanged="@((bool v) => ToggleItemSelection(item.OrderId, item.OrderItemId, v))"
                                                          Dense="true" />
+                                        </td>
+                                        <td></td>
+                                        <td>
+                                            @if (item.IsUserAdded)
+                                            {
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                                                               OnClick="@(() => RemoveItem(item.OrderId, item.OrderItemId))" />
+                                            }
                                         </td>
                                         <td>
                                             <MudText Class="pl-6">- @item.OrderItemId</MudText>
@@ -210,6 +242,7 @@
     private bool isShipmentBatch;
     private int totalOrders;
     private string validationMessage = string.Empty;
+    private int nextOrderSequence = 1;
 
     private readonly List<OrderSelection> orderSelections = [];
     private readonly List<OrderItemSelection> orderItemSelections = [];
@@ -292,7 +325,8 @@
 
     private void ToggleItemSelection(string orderId, string orderItemId, bool isSelected)
     {
-        OrderItemSelection? item = orderItemSelections.FirstOrDefault(i => i.OrderId == orderId && i.OrderItemId == orderItemId);
+        OrderItemSelection? item = orderItemSelections.FirstOrDefault(i => i.OrderId == orderId && i.OrderItemId ==
+orderItemId);
         if (item is null)
         {
             return;
@@ -324,6 +358,11 @@
     private void Submit()
     {
         validationMessage = string.Empty;
+
+        if (!ValidateSelections())
+        {
+            return;
+        }
 
         List<PickedOrderDto> pickedOrders = orderSelections
             .Where(o => o.IsSelected)
@@ -420,6 +459,208 @@
         workerSelections.Remove(worker);
     }
 
+    private void AddOrder()
+    {
+        string newOrderId = GenerateOrderId();
+
+        orderSelections.Add(new OrderSelection
+        {
+            OrderId = newOrderId,
+            IsSelected = true,
+            GoodsType = GoodsType.Document,
+            IsUserAdded = true
+        });
+
+        expandedOrderIds.Add(newOrderId);
+        totalOrders = orderSelections.Count;
+    }
+
+    private void AddItem(string orderId)
+    {
+        if (string.IsNullOrWhiteSpace(orderId))
+        {
+            return;
+        }
+
+        orderItemSelections.Add(new OrderItemSelection
+        {
+            OrderId = orderId,
+            OrderItemId = GenerateOrderItemId(orderId),
+            IsSelected = true,
+            IsUserAdded = true
+        });
+
+        expandedOrderIds.Add(orderId);
+
+        OrderSelection? order = orderSelections.FirstOrDefault(o => o.OrderId == orderId);
+        if (order is not null)
+        {
+            order.IsSelected = true;
+        }
+    }
+
+    private void RemoveOrder(string orderId)
+    {
+        OrderSelection? order = orderSelections.FirstOrDefault(o => o.OrderId == orderId);
+        if (order is null || !order.IsUserAdded)
+        {
+            return;
+        }
+
+        orderSelections.Remove(order);
+        orderItemSelections.RemoveAll(i => i.OrderId == orderId);
+        expandedOrderIds.Remove(orderId);
+        totalOrders = orderSelections.Count;
+    }
+
+    private void RemoveItem(string orderId, string orderItemId)
+    {
+        OrderItemSelection? item = orderItemSelections.FirstOrDefault(i => i.OrderId == orderId && i.OrderItemId ==
+orderItemId);
+        if (item is null || !item.IsUserAdded)
+        {
+            return;
+        }
+
+        orderItemSelections.Remove(item);
+    }
+
+    private void UpdateOrderId(OrderSelection order, string? newOrderId)
+    {
+        string oldOrderId = order.OrderId;
+        string normalizedOrderId = newOrderId?.Trim() ?? string.Empty;
+
+        if (string.Equals(oldOrderId, normalizedOrderId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (orderSelections.Any(o => !ReferenceEquals(o, order) &&
+                                     o.OrderId.Equals(normalizedOrderId, StringComparison.OrdinalIgnoreCase)))
+        {
+            validationMessage = "Mã đơn hàng bị trùng. Vui lòng kiểm tra lại.";
+            return;
+        }
+
+        order.OrderId = normalizedOrderId;
+
+        foreach (OrderItemSelection item in orderItemSelections.Where(i => i.OrderId == oldOrderId))
+        {
+            item.OrderId = normalizedOrderId;
+
+            if (item.IsUserAdded && item.OrderItemId.StartsWith($"{oldOrderId}/", StringComparison.OrdinalIgnoreCase))
+            {
+                string suffix = item.OrderItemId[(oldOrderId.Length + 1)..];
+                item.OrderItemId = $"{normalizedOrderId}/{suffix}";
+            }
+        }
+
+        if (expandedOrderIds.Remove(oldOrderId))
+        {
+            expandedOrderIds.Add(normalizedOrderId);
+        }
+
+        validationMessage = string.Empty;
+    }
+
+    private string GenerateOrderId()
+    {
+        string candidate;
+        do
+        {
+            candidate = $"NEW_ORDER_{nextOrderSequence++:000}";
+        }
+        while (orderSelections.Any(o => o.OrderId.Equals(candidate, StringComparison.OrdinalIgnoreCase)));
+
+        return candidate;
+    }
+
+    private string GenerateOrderItemId(string orderId)
+    {
+        string orderPrefix = orderId.Trim();
+
+        int nextSequence = orderItemSelections
+            .Where(i => i.OrderId == orderId)
+            .Select(i => ParseItemSequence(i.OrderItemId, orderPrefix))
+            .DefaultIfEmpty(0)
+            .Max() + 1;
+
+        string candidate = $"{orderPrefix}/{nextSequence}";
+        while (orderItemSelections.Any(i => i.OrderId == orderId && i.OrderItemId.Equals(candidate,
+StringComparison.OrdinalIgnoreCase)))
+        {
+            nextSequence++;
+            candidate = $"{orderPrefix}/{nextSequence}";
+        }
+
+        return candidate;
+    }
+
+    private static int ParseItemSequence(string? itemId, string orderPrefix)
+    {
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            return 0;
+        }
+
+        string expectedPrefix = $"{orderPrefix}/";
+        if (!itemId.StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        string suffix = itemId[expectedPrefix.Length..];
+        return int.TryParse(suffix, out int value) ? value : 0;
+    }
+
+    private bool ValidateSelections()
+    {
+        List<OrderSelection> selectedOrders = orderSelections.Where(o => o.IsSelected).ToList();
+
+        if (selectedOrders.Any(o => string.IsNullOrWhiteSpace(o.OrderId)))
+        {
+            validationMessage = "Mã đơn hàng không được để trống.";
+            return false;
+        }
+
+        int uniqueOrderCount = selectedOrders
+            .Select(o => o.OrderId.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+
+        if (uniqueOrderCount != selectedOrders.Count)
+        {
+            validationMessage = "Mã đơn hàng bị trùng. Vui lòng kiểm tra lại.";
+            return false;
+        }
+
+        foreach (OrderSelection order in selectedOrders)
+        {
+            List<OrderItemSelection> selectedItems = orderItemSelections
+                .Where(i => i.IsSelected && i.OrderId == order.OrderId)
+                .ToList();
+
+            if (selectedItems.Any(i => string.IsNullOrWhiteSpace(i.OrderItemId)))
+            {
+                validationMessage = $"Mã kiện của đơn {order.OrderId} không được để trống.";
+                return false;
+            }
+
+            int uniqueItemCount = selectedItems
+                .Select(i => i.OrderItemId.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count();
+
+            if (uniqueItemCount != selectedItems.Count)
+            {
+                validationMessage = $"Mã kiện của đơn {order.OrderId} bị trùng. Vui lòng kiểm tra lại.";
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static string GetDriverLabel(Driver? driver)
     {
         return driver is null ? string.Empty : $"{driver.Code} - {driver.Name}";
@@ -427,8 +668,9 @@
 
     private sealed class OrderSelection
     {
-        public string OrderId { get; init; } = string.Empty;
+        public string OrderId { get; set; } = string.Empty;
         public bool IsSelected { get; set; }
+        public bool IsUserAdded { get; init; }
         public decimal? Weight { get; set; }
         public decimal? L { get; set; }
         public decimal? W { get; set; }
@@ -440,9 +682,10 @@
 
     private sealed class OrderItemSelection
     {
-        public string OrderId { get; init; } = string.Empty;
-        public string OrderItemId { get; init; } = string.Empty;
+        public string OrderId { get; set; } = string.Empty;
+        public string OrderItemId { get; set; } = string.Empty;
         public bool IsSelected { get; set; }
+        public bool IsUserAdded { get; init; }
         public decimal? Weight { get; set; }
         public decimal? L { get; set; }
         public decimal? W { get; set; }
