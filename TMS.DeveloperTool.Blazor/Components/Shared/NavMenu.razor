@@ -76,32 +76,24 @@
         ApplicationConstants.MenuKeys.RoutingConfig
     ];
 
-    private HashSet<string> AllowedMenusForCurrentRequest
+    private HashSet<string> _allowedMenusForCurrentRequest = new (StringComparer.OrdinalIgnoreCase);
+
+    protected override void OnInitialized()
     {
-        get
+        bool isLocal = WebHostEnvironment.IsEnvironment(ApplicationConstants.EnvironmentNames.Local);
+        bool isLocalRequest = IsLocalRequest();
+
+        if (isLocal && !isLocalRequest)
         {
-            if (WebHostEnvironment.IsDevelopment())
-            {
-                return new HashSet<string>(_allMenuKeys, StringComparer.OrdinalIgnoreCase);
-            }
-
-            if (WebHostEnvironment.IsEnvironment(ApplicationConstants.EnvironmentNames.Local) && IsLocalRequest())
-            {
-                return new HashSet<string>(_allMenuKeys, StringComparer.OrdinalIgnoreCase);
-            }
-
-            if (WebHostEnvironment.IsEnvironment(ApplicationConstants.EnvironmentNames.Local))
-            {
-                return new HashSet<string>(MenuVisibilityOptions.LocalNonLocalIpVisibleMenus, StringComparer.OrdinalIgnoreCase);
-            }
-
-            return new HashSet<string>(_allMenuKeys, StringComparer.OrdinalIgnoreCase);
+            _allowedMenusForCurrentRequest = new HashSet<string>(MenuVisibilityOptions.LocalNonLocalIpVisibleMenus, StringComparer.OrdinalIgnoreCase);
         }
+
+        _allowedMenusForCurrentRequest = new HashSet<string>(_allMenuKeys, StringComparer.OrdinalIgnoreCase);
     }
 
     private bool ShouldShow(string menuKey)
     {
-        return AllowedMenusForCurrentRequest.Contains(menuKey);
+        return _allowedMenusForCurrentRequest.Contains(menuKey);
     }
 
     private bool IsLocalRequest()
