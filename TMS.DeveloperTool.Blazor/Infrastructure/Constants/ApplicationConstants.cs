@@ -31,11 +31,39 @@ public static class ApplicationConstants
     /// </summary>
     public static class Routes
     {
+        public const string Home = "/";
         public const string Pairing = "/pairing";
+        public const string PairingConfirmSwap = "/pairing/confirm-swap";
+        public const string SimulateRoute = "/simulate-route";
         public const string PickupTasks = "/pickup-tasks";
+        public const string PickupTasksCreateEvent = "/pickup-tasks/create-event";
+        public const string TopMovingVehicles = "/top-moving-vehicles";
+        public const string RoutingConfig = "/routing-config";
         public const string DriverChange = "/driver-change";
         public const string JsonBuilder = "/json-builder";
         public const string JobTrigger = "/job-trigger";
+    }
+
+    public static class EnvironmentNames
+    {
+        public const string Local = "Local";
+    }
+
+    public static class HttpHeaders
+    {
+        public const string XForwardedFor = "X-Forwarded-For";
+    }
+
+    public static class MenuKeys
+    {
+        public const string Home = "Home";
+        public const string Pairing = "Pairing";
+        public const string ConfirmSwap = "ConfirmSwap";
+        public const string SimulateRoute = "SimulateRoute";
+        public const string PickupTasks = "PickupTasks";
+        public const string CreatePickupTaskEvent = "CreatePickupTaskEvent";
+        public const string TopMovingVehicles = "TopMovingVehicles";
+        public const string RoutingConfig = "RoutingConfig";
     }
 
     /// <summary>

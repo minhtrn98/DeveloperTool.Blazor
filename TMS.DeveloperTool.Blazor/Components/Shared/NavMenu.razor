@@ -1,17 +1,172 @@
-﻿<MudNavMenu>
-    <MudNavLink Href="/" Match="NavLinkMatch.All">Trang chủ</MudNavLink>
-    <MudNavLink Href="/pairing" Match="NavLinkMatch.All">Ghép xe</MudNavLink>
-    <MudNavLink Href="/pairing/confirm-swap" Match="NavLinkMatch.All">Yêu cầu đổi tài</MudNavLink>
-    <MudNavLink Href="/simulate-route" Match="NavLinkMatch.All">Mô phỏng lộ trình</MudNavLink>
+﻿@using System.Net
+@using System.Net.Sockets
+@using TMS.DeveloperTool.Blazor.Infrastructure.Constants
+@inject IWebHostEnvironment WebHostEnvironment
+@inject IHttpContextAccessor HttpContextAccessor
+@inject MenuVisibilityOptions MenuVisibilityOptions
+
+<MudNavMenu>
+    @if (ShouldShow(ApplicationConstants.MenuKeys.Home))
+    {
+        <MudNavLink Href="@ApplicationConstants.Routes.Home" Match="NavLinkMatch.All">Trang chủ</MudNavLink>
+    }
+
+    @if (ShouldShow(ApplicationConstants.MenuKeys.Pairing))
+    {
+        <MudNavLink Href="@ApplicationConstants.Routes.Pairing" Match="NavLinkMatch.All">Ghép xe</MudNavLink>
+    }
+
+    @if (ShouldShow(ApplicationConstants.MenuKeys.ConfirmSwap))
+    {
+        <MudNavLink Href="@ApplicationConstants.Routes.PairingConfirmSwap" Match="NavLinkMatch.All">Yêu cầu đổi tài
+        </MudNavLink>
+    }
+
+    @if (ShouldShow(ApplicationConstants.MenuKeys.SimulateRoute))
+    {
+        <MudNavLink Href="@ApplicationConstants.Routes.SimulateRoute" Match="NavLinkMatch.All">Mô phỏng lộ trình
+        </MudNavLink>
+    }
+
     @* <MudNavLink Href="/request-change-driver" Match="NavLinkMatch.Prefix">Yêu cầu đổi tài</MudNavLink> *@
     @* <MudNavLink Href="/job-trigger" Match="NavLinkMatch.Prefix">Kích hoạt job</MudNavLink> *@
-    <MudNavGroup Title="Điều tin" Expanded="true">
-        <MudNavLink Href="/pickup-tasks" Match="NavLinkMatch.All">Danh sách</MudNavLink>
-        <MudNavLink Href="/pickup-tasks/create-event" Match="NavLinkMatch.All">Tạo điều tin</MudNavLink>
-    </MudNavGroup>
+
+    @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTasks) ||
+        ShouldShow(ApplicationConstants.MenuKeys.CreatePickupTaskEvent))
+    {
+        <MudNavGroup Title="Điều tin" Expanded="true">
+            @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTasks))
+            {
+                <MudNavLink Href="@ApplicationConstants.Routes.PickupTasks" Match="NavLinkMatch.All">Danh sách</MudNavLink>
+            }
+            @if (ShouldShow(ApplicationConstants.MenuKeys.CreatePickupTaskEvent))
+            {
+                <MudNavLink Href="@ApplicationConstants.Routes.PickupTasksCreateEvent" Match="NavLinkMatch.All">Tạo điều tin
+                </MudNavLink>
+            }
+        </MudNavGroup>
+    }
+
     @* <MudNavLink Href="/json-builder" Match="NavLinkMatch.All">JSON Builder</MudNavLink> *@
-    <MudNavLink Href="/top-moving-vehicles" Match="NavLinkMatch.All">Top xe di chuyển</MudNavLink>
-    <MudNavGroup Title="Cấu hình" Expanded="true">
-        <MudNavLink Href="/routing-config" Match="NavLinkMatch.All">Lộ trình mẫu</MudNavLink>
-    </MudNavGroup>
+
+    @if (ShouldShow(ApplicationConstants.MenuKeys.TopMovingVehicles))
+    {
+        <MudNavLink Href="@ApplicationConstants.Routes.TopMovingVehicles" Match="NavLinkMatch.All">Top xe di chuyển
+        </MudNavLink>
+    }
+
+    @if (ShouldShow(ApplicationConstants.MenuKeys.RoutingConfig))
+    {
+        <MudNavGroup Title="Cấu hình" Expanded="true">
+            <MudNavLink Href="@ApplicationConstants.Routes.RoutingConfig" Match="NavLinkMatch.All">Lộ trình mẫu</MudNavLink>
+        </MudNavGroup>
+    }
 </MudNavMenu>
+
+@code {
+    private readonly string[] _allMenuKeys =
+    [
+        ApplicationConstants.MenuKeys.Home,
+        ApplicationConstants.MenuKeys.Pairing,
+        ApplicationConstants.MenuKeys.ConfirmSwap,
+        ApplicationConstants.MenuKeys.SimulateRoute,
+        ApplicationConstants.MenuKeys.PickupTasks,
+        ApplicationConstants.MenuKeys.CreatePickupTaskEvent,
+        ApplicationConstants.MenuKeys.TopMovingVehicles,
+        ApplicationConstants.MenuKeys.RoutingConfig
+    ];
+
+    private HashSet<string> AllowedMenusForCurrentRequest
+    {
+        get
+        {
+            if (WebHostEnvironment.IsDevelopment())
+            {
+                return new HashSet<string>(_allMenuKeys, StringComparer.OrdinalIgnoreCase);
+            }
+
+            if (WebHostEnvironment.IsEnvironment(ApplicationConstants.EnvironmentNames.Local) && IsLocalRequest())
+            {
+                return new HashSet<string>(_allMenuKeys, StringComparer.OrdinalIgnoreCase);
+            }
+
+            if (WebHostEnvironment.IsEnvironment(ApplicationConstants.EnvironmentNames.Local))
+            {
+                return new HashSet<string>(MenuVisibilityOptions.LocalNonLocalIpVisibleMenus, StringComparer.OrdinalIgnoreCase);
+            }
+
+            return new HashSet<string>(_allMenuKeys, StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private bool ShouldShow(string menuKey)
+    {
+        return AllowedMenusForCurrentRequest.Contains(menuKey);
+    }
+
+    private bool IsLocalRequest()
+    {
+        IPAddress? remoteIp = ResolveClientIpAddress();
+        if (remoteIp is null)
+        {
+            return false;
+        }
+
+        remoteIp = NormalizeIp(remoteIp);
+        if (IPAddress.IsLoopback(remoteIp))
+        {
+            return true;
+        }
+
+        foreach (IPAddress serverIp in GetServerIpAddresses())
+        {
+            if (NormalizeIp(serverIp).Equals(remoteIp))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private IPAddress? ResolveClientIpAddress()
+    {
+        HttpContext? context = HttpContextAccessor.HttpContext;
+        if (context is null)
+        {
+            return null;
+        }
+
+        string? forwardedFor = context.Request.Headers[ApplicationConstants.HttpHeaders.XForwardedFor].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(forwardedFor))
+        {
+            string candidate = forwardedFor.Split(',')[0].Trim();
+            if (IPAddress.TryParse(candidate, out IPAddress? forwardedIp))
+            {
+                return forwardedIp;
+            }
+        }
+
+        return context.Connection.RemoteIpAddress;
+    }
+
+    private static IPAddress NormalizeIp(IPAddress ip)
+    {
+        return ip.IsIPv4MappedToIPv6 ? ip.MapToIPv4() : ip;
+    }
+
+    private static IEnumerable<IPAddress> GetServerIpAddresses()
+    {
+        IPAddress[] hostAddresses = Dns.GetHostAddresses(Dns.GetHostName());
+        foreach (IPAddress address in hostAddresses)
+        {
+            if (address.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6)
+            {
+                yield return address;
+            }
+        }
+
+        yield return IPAddress.Loopback;
+        yield return IPAddress.IPv6Loopback;
+    }
+}

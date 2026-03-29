@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddSettingsAndValidate<RabbitMqConfig>(config);
         services.AddSettingsAndValidate<JwtOptions>(config);
         services.AddSettingsAndValidate<ApiUrlsOptions>(config);
+        services.AddSettingsAndValidate<MenuVisibilityOptions>(config);
         return services;
     }
 
@@ -27,6 +28,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddPresentationServices(this IServiceCollection services)
     {
+        services.AddHttpContextAccessor();
         services.AddMudServices();
         services.AddRazorComponents()
             .AddInteractiveServerComponents();
