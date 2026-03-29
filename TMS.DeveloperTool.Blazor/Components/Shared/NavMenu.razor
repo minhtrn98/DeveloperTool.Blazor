@@ -63,7 +63,7 @@
     }
 </MudNavMenu>
 
-@code {
+    @code {
     private readonly string[] _allMenuKeys =
     [
         ApplicationConstants.MenuKeys.Home,
@@ -83,12 +83,13 @@
         bool isLocal = WebHostEnvironment.IsEnvironment(ApplicationConstants.EnvironmentNames.Local);
         bool isLocalRequest = IsLocalRequest();
 
-        if (isLocal && !isLocalRequest)
+        string[] allowedMenuList = (isLocal, isLocalRequest) switch
         {
-            _allowedMenusForCurrentRequest = new HashSet<string>(MenuVisibilityOptions.LocalNonLocalIpVisibleMenus, StringComparer.OrdinalIgnoreCase);
-        }
+            (true, false) => MenuVisibilityOptions.LocalNonLocalIpVisibleMenus,
+            _ => _allMenuKeys
+        };
 
-        _allowedMenusForCurrentRequest = new HashSet<string>(_allMenuKeys, StringComparer.OrdinalIgnoreCase);
+        _allowedMenusForCurrentRequest = new HashSet<string>(allowedMenuList, StringComparer.OrdinalIgnoreCase);
     }
 
     private bool ShouldShow(string menuKey)
