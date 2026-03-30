@@ -214,7 +214,7 @@
     {
         try
         {
-            dailyPlans = await Service.GetDailyPlansAsync();
+            dailyPlans = await Service.GetDailyPlansAsync(null);
             postOfficeOptions = await Service.GetPostOfficeOptionsAsync();
             statusOptions = CreatePickupTaskEventService.GetStatusOptions();
             serviceTypeOptions = CreatePickupTaskEventService.GetServiceTypeOptions();

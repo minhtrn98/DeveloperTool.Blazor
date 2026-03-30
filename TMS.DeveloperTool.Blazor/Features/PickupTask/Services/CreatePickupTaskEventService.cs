@@ -22,9 +22,9 @@ public sealed class CreatePickupTaskEventService(
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
-    public async Task<List<DailyPlanDto>> GetDailyPlansAsync()
+    public async Task<List<DailyPlanDto>> GetDailyPlansAsync(string? status)
     {
-        IEnumerable<DailyPlanDto> plans = await planningRepository.GetDailyPlans(CancellationToken.None);
+        IEnumerable<DailyPlanDto> plans = await planningRepository.GetDailyPlans(status, CancellationToken.None);
         return plans.ToList();
     }
 

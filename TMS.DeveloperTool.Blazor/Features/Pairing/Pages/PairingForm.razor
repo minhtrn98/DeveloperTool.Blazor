@@ -537,7 +537,7 @@ kvp.Value))
         isSuggesting = true;
         try
         {
-            List<DailyPlanDto> dailyPlans = (await PlanningRepository.GetDailyPlans(CancellationToken.None)).ToList();
+            List<DailyPlanDto> dailyPlans = (await PlanningRepository.GetDailyPlans("PENDING", CancellationToken.None)).ToList();
 
             DialogParameters<DailyPlanSuggestionDialog> parameters = new()
             {

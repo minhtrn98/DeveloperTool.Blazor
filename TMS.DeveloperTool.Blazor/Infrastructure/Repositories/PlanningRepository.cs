@@ -25,7 +25,7 @@ public sealed class PlanningRepository
         return records;
     }
 
-    public async Task<IEnumerable<DailyPlanDto>> GetDailyPlans(CancellationToken cancellationToken)
+    public async Task<IEnumerable<DailyPlanDto>> GetDailyPlans(string? status, CancellationToken cancellationToken)
     {
         // create gmt+7 now datetime
         DateTimeOffset utcNow = DateTimeOffset.UtcNow.AddDays(-1);
@@ -40,9 +40,9 @@ public sealed class PlanningRepository
                 , department_code as "DepartmentCode"
                 , execution_date as "ExecutionDate"
             from public.real_plans
-            where execution_date = '{todayGmt7}' and status = 'PENDING'
+            where execution_date = '{todayGmt7}' and (@Status IS NULL OR status = @Status)
         """;
-        IEnumerable<DailyPlanDto> dailyPlans = await _dbQuery.QueryAsync<DailyPlanDto>(sqlDailyPlan, null, cancellationToken);
+        IEnumerable<DailyPlanDto> dailyPlans = await _dbQuery.QueryAsync<DailyPlanDto>(sqlDailyPlan, new { Status = status }, cancellationToken);
         Guid[] dailyPlanIds = [.. dailyPlans.Select(dp => dp.Id)];
 
         const string sqlDailyPlanDetails = $"""
