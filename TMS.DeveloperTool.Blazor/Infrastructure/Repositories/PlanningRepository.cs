@@ -28,7 +28,7 @@ public sealed class PlanningRepository
     public async Task<IEnumerable<DailyPlanDto>> GetDailyPlans(string? status, CancellationToken cancellationToken)
     {
         // create gmt+7 now datetime
-        DateTimeOffset utcNow = DateTimeOffset.UtcNow.AddDays(-1);
+        DateTimeOffset utcNow = DateTimeOffset.UtcNow;
         DateTimeOffset gmt7Now = utcNow.ToOffset(TimeSpan.FromHours(7));
         string todayGmt7 = gmt7Now.ToString("yyyy-MM-dd");
 
