@@ -22,14 +22,14 @@ public static class ExternalApiServiceExtensions
         services.AddTransient<LoggingHttpHandler>();
 
         // Fleet API with custom Refit settings
-        RefitSettings fleetRefitSettings = new(new SystemTextJsonContentSerializer(
+        RefitSettings refitSettings = new(new SystemTextJsonContentSerializer(
             new System.Text.Json.JsonSerializerOptions
             {
                 PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
             }));
 
-        services.AddRefitClient<IFleetAssignmentApi>(fleetRefitSettings)
+        services.AddRefitClient<IFleetAssignmentApi>(refitSettings)
             .ConfigureHttpClient((sp, c) =>
             {
                 ApiUrlsOptions apiUrls = sp.GetRequiredService<ApiUrlsOptions>();
@@ -38,7 +38,7 @@ public static class ExternalApiServiceExtensions
             .AddHttpMessageHandler<LoggingHttpHandler>();
 
         // Pickup Task API
-        services.AddRefitClient<IPickupTaskApi>()
+        services.AddRefitClient<IPickupTaskApi>(refitSettings)
             .ConfigureHttpClient((sp, c) =>
             {
                 ApiUrlsOptions apiUrls = sp.GetRequiredService<ApiUrlsOptions>();
