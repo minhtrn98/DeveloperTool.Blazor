@@ -7,4 +7,8 @@ public sealed record OrderItemInfo(
     decimal W,
     decimal H,
     decimal L,
-    bool HasPickupTask);
+    short Status,
+    bool HasPickupTask)
+{
+    public bool IsCancel => Status == 9;
+}

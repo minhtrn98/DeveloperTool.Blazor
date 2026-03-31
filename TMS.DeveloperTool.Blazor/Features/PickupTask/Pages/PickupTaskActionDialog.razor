@@ -132,7 +132,7 @@
         {
             OrderId = item.OrderId,
             OrderItemId = item.OrderItemId,
-            IsCancelled = cancelledOrderIds.Contains(item.OrderId),
+            IsCancelled = item.IsCancel,
             IsSelected = false
         }));
 
@@ -196,7 +196,7 @@
 
     private static string GetOrderItemLabel(OrderItemSelectionItem item)
     {
-        return item.IsCancelled ? $"{item.OrderItemId} (order đã hủy)" : item.OrderItemId;
+        return item.IsCancelled ? $"{item.OrderItemId} (đã hủy)" : item.OrderItemId;
     }
 
     private static string GetDriverOptionLabel(Driver driver)

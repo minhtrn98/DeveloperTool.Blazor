@@ -61,6 +61,7 @@ public sealed class OrderRepository
                 o.w as "W",
                 o.h as "H",
                 o.l as "L",
+                o.status as "Status",
                 (po.order_item_id is not null) as "HasPickupTask"
             from public.order_items o
             left join pickup_order_items po on po.order_item_id = o.order_item_id
@@ -80,6 +81,7 @@ public sealed class OrderRepository
                 ptoi.w as "W",
                 ptoi.h as "H",
                 ptoi.l as "L",
+                ptoi.status as "Status",
                 true as "HasPickupTask"
             from public.pickup_task_order_items ptoi
             where ptoi.pickup_task_id = @PickupTaskId
