@@ -95,7 +95,7 @@
         {
             MaxWidth = MaxWidth.ExtraLarge,
             FullWidth = true,
-            CloseOnEscapeKey = false
+            CloseOnEscapeKey = true
         };
 
         IDialogReference dialog = await DialogService.ShowAsync<RouteTemplateFormDialog>("Tạo lộ trình mẫu mới", parameters, options);
@@ -123,7 +123,7 @@
         {
             MaxWidth = MaxWidth.ExtraLarge,
             FullWidth = true,
-            CloseOnEscapeKey = false
+            CloseOnEscapeKey = true
         };
 
         IDialogReference dialog = await DialogService.ShowAsync<RouteTemplateFormDialog>("Chỉnh sửa lộ trình mẫu", parameters, options);

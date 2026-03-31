@@ -340,7 +340,7 @@
         {
             MaxWidth = MaxWidth.Medium,
             FullWidth = true,
-            CloseOnEscapeKey = false
+            CloseOnEscapeKey = true
         };
 
         IDialogReference dialog = await DialogService.ShowAsync<PickupTaskActionDialog>(GetDialogTitle(action), parameters,
@@ -434,7 +434,7 @@ options);
             {
                 MaxWidth = MaxWidth.ExtraLarge,
                 FullWidth = true,
-                CloseOnEscapeKey = false
+                CloseOnEscapeKey = true
             };
 
             IDialogReference dialog = await DialogService.ShowAsync<ConfirmPickupDialog>("Xác nhận lấy đơn", parameters, options);
