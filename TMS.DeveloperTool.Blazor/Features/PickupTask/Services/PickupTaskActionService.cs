@@ -14,9 +14,9 @@ public sealed class PickupTaskActionService(IPickupTaskApi api)
         string pickupTaskId,
         string bearerToken,
         string reason,
-        string[] orderIds,
+        string[] orderItemIds,
         CancellationToken cancellationToken = default)
-        => api.DriverCancelAsync(new DriverCancelPickupTaskRequest(pickupTaskId, reason, orderIds), $"Bearer {bearerToken}", cancellationToken);
+        => api.DriverCancelAsync(new DriverCancelPickupTaskRequest(pickupTaskId, reason, orderItemIds), $"Bearer {bearerToken}", cancellationToken);
 
     public Task RescheduleAsync(
         string pickupTaskId,

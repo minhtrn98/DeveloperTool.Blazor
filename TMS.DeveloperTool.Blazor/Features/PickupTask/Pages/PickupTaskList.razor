@@ -316,10 +316,6 @@
         if (action is ActionCancel or ActionReschedule)
         {
             orders = await OrderRepository.GetOrdersByPickupTaskIdAsync(item.PickupTaskId);
-        }
-
-        if (action is ActionReschedule)
-        {
             orderItems = await OrderRepository.GetOrderItemsByPickupTaskIdAsync(item.PickupTaskId);
         }
 
@@ -470,7 +466,7 @@ options);
                         item.PickupTaskId,
                         bearerToken,
                         dialogResult!.Reason,
-                        dialogResult.OrderIds);
+                        dialogResult.OrderItemIds);
                     break;
                 case ActionReschedule:
                     await PickupTaskActionService.RescheduleAsync(

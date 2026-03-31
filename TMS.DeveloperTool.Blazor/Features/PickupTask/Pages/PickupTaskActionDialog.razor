@@ -7,28 +7,7 @@
         <MudText Typo="Typo.h6">@DialogTitle: @PickupTaskId</MudText>
     </TitleContent>
     <DialogContent>
-        @if (IsCancel)
-        {
-            @if (!orderSelections.Any())
-            {
-                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">
-                    Không có đơn hàng nào.
-                </MudAlert>
-            }
-            else
-            {
-                <MudText Typo="Typo.subtitle2" Class="mb-2">Chọn đơn hàng</MudText>
-                <MudPaper Outlined="true" Class="pa-3 mb-4">
-                    @foreach (OrderSelectionItem order in orderSelections)
-                    {
-                        <MudCheckBox T="bool" Value="@order.IsSelected" ValueChanged="@((bool value) => order.IsSelected = value)"
-                                     Label="@GetOrderLabel(order)" Dense="true" Class="mb-1" />
-                    }
-                </MudPaper>
-            }
-        }
-
-        @if (IsReschedule)
+        @if (RequiresOrderItemSelection)
         {
             @if (!orderItemSelections.Any())
             {
@@ -120,7 +99,6 @@
     [Parameter]
     public string? InitialTargetDriverId { get; set; }
 
-    private readonly List<OrderSelectionItem> orderSelections = [];
     private readonly List<OrderItemSelectionItem> orderItemSelections = [];
     private string reason = string.Empty;
     private DateTime? selectedDate;
@@ -131,6 +109,7 @@
     private bool IsReschedule => ActionName == "Reschedule";
     private bool IsCancel => ActionName == "Cancel";
     private bool IsTransfer => ActionName == "Transfer";
+    private bool RequiresOrderItemSelection => ActionName is "Cancel" or "Reschedule";
 
     private string DialogTitle => ActionName switch
     {
@@ -142,20 +121,12 @@
 
     protected override void OnInitialized()
     {
-        orderSelections.Clear();
         orderItemSelections.Clear();
 
         HashSet<string> cancelledOrderIds = Orders
             .Where(order => order.IsCancel)
             .Select(order => order.OrderId)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        orderSelections.AddRange(Orders.Select(order => new OrderSelectionItem
-        {
-            OrderId = order.OrderId,
-            IsCancelled = order.IsCancel,
-            IsSelected = false
-        }));
 
         orderItemSelections.AddRange(OrderItems.Select(item => new OrderItemSelectionItem
         {
@@ -175,24 +146,9 @@
     {
         validationMessage = string.Empty;
 
-        string[] selectedOrderIds = [];
         string[] selectedOrderItemIds = [];
 
-        if (IsCancel)
-        {
-            selectedOrderIds = orderSelections
-                .Where(order => order.IsSelected && !order.IsCancelled)
-                .Select(order => order.OrderId)
-                .ToArray();
-
-            if (selectedOrderIds.Length == 0)
-            {
-                validationMessage = "Vui lòng chọn ít nhất 1 order.";
-                return;
-            }
-        }
-
-        if (IsReschedule)
+        if (RequiresOrderItemSelection)
         {
             selectedOrderItemIds = orderItemSelections
                 .Where(item => item.IsSelected && !item.IsCancelled)
@@ -228,7 +184,7 @@
             ? null
             : selectedTargetDriverId;
 
-        PickupTaskActionDialogResult result = new(selectedOrderIds, selectedOrderItemIds, reason.Trim(), rescheduledPickupDt, targetDriverId);
+        PickupTaskActionDialogResult result = new(selectedOrderItemIds, reason.Trim(), rescheduledPickupDt, targetDriverId);
         MudDialog.Close(DialogResult.Ok(result));
         await Task.CompletedTask;
     }
@@ -236,11 +192,6 @@
     private void Cancel()
     {
         MudDialog.Cancel();
-    }
-
-    private static string GetOrderLabel(OrderSelectionItem order)
-    {
-        return order.IsCancelled ? $"{order.OrderId} (đã hủy)" : order.OrderId;
     }
 
     private static string GetOrderItemLabel(OrderItemSelectionItem item)
@@ -253,13 +204,6 @@
         return string.IsNullOrWhiteSpace(driver.Code)
             ? driver.Name
             : $"{driver.Code} - {driver.Name}";
-    }
-
-    private sealed class OrderSelectionItem
-    {
-        public string OrderId { get; init; } = string.Empty;
-        public bool IsCancelled { get; init; }
-        public bool IsSelected { get; set; }
     }
 
     private sealed class OrderItemSelectionItem
