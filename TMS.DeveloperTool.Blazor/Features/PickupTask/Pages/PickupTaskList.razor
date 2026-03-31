@@ -54,7 +54,13 @@
                     <MudTh>Hành động</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="PickupTaskId">@context.PickupTaskId</MudTd>
+                    <MudTd DataLabel="PickupTaskId">
+                        <div class="d-flex align-center ga-2">
+                            <span>@context.PickupTaskId</span>
+                            <MudIconButton Icon="@Icons.Material.Filled.FilterAlt" Color="Color.Primary" Size="Size.Small"
+                                           OnClick="@(() => ApplyTaskIdFilter(context.PickupTaskId))" title="Lọc theo mã điều tin này" />
+                        </div>
+                    </MudTd>
                     <MudTd DataLabel="Driver">
                         <div class="d-flex align-center ga-2">
                             <span>@FormatDriver(context)</span>
@@ -189,6 +195,24 @@
     private Task OnDriverChanged(Driver? driver)
     {
         SelectedDriver = driver;
+        return Task.CompletedTask;
+    }
+
+    private Task ApplyTaskIdFilter(string taskId)
+    {
+        searchId = taskId;
+
+        // Auto-select the driver of this task
+        PickupTaskInfo? task = pickupTasks.FirstOrDefault(t => t.PickupTaskId == taskId);
+        if (task is not null)
+        {
+            Driver? taskDriver = FindTaskDriver(task);
+            if (taskDriver is not null)
+            {
+                SelectedDriver = taskDriver;
+            }
+        }
+
         return Task.CompletedTask;
     }
 
