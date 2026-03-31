@@ -312,9 +312,15 @@
     private async Task<PickupTaskActionDialogResult?> ShowActionDialogAsync(PickupTaskInfo item, string action)
     {
         List<PickupTaskOrderInfo> orders = [];
+        List<OrderItemInfo> orderItems = [];
         if (action is ActionCancel or ActionReschedule)
         {
             orders = await OrderRepository.GetOrdersByPickupTaskIdAsync(item.PickupTaskId);
+        }
+
+        if (action is ActionReschedule)
+        {
+            orderItems = await OrderRepository.GetOrderItemsByPickupTaskIdAsync(item.PickupTaskId);
         }
 
         List<Driver> transferDrivers = drivers
@@ -326,6 +332,7 @@
             { nameof(PickupTaskActionDialog.ActionName), action },
             { nameof(PickupTaskActionDialog.PickupTaskId), item.PickupTaskId },
             { nameof(PickupTaskActionDialog.Orders), orders },
+            { nameof(PickupTaskActionDialog.OrderItems), orderItems },
             { nameof(PickupTaskActionDialog.InitialRescheduledPickupDt), GetSuggestedRescheduleTime(item) },
             { nameof(PickupTaskActionDialog.TransferDrivers), transferDrivers },
             { nameof(PickupTaskActionDialog.InitialTargetDriverId), string.Empty }
@@ -471,7 +478,7 @@ options);
                         bearerToken,
                         dialogResult!.RescheduledPickupDt ?? GetSuggestedRescheduleTime(item),
                         dialogResult.Reason,
-                        dialogResult.OrderIds);
+                        dialogResult.OrderItemIds);
                     break;
                 case ActionTransfer:
                     await PickupTaskActionService.TransferAsync(

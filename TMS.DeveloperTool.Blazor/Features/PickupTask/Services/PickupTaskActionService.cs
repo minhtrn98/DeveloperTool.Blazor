@@ -23,10 +23,10 @@ public sealed class PickupTaskActionService(IPickupTaskApi api)
         string bearerToken,
         DateTime rescheduledPickupDt,
         string reason,
-        string[] orderIds,
+        string[] orderItemIds,
         CancellationToken cancellationToken = default)
         => api.RescheduleAsync(
-            new ReschedulePickupTaskRequest(pickupTaskId, rescheduledPickupDt.ToUniversalTime(), reason, orderIds),
+            new ReschedulePickupTaskRequest(pickupTaskId, rescheduledPickupDt.ToUniversalTime(), reason, orderItemIds),
             $"Bearer {bearerToken}",
             cancellationToken);
 

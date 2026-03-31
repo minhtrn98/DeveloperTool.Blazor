@@ -196,6 +196,7 @@ public sealed class CreatePickupTaskEventService(
                 .FirstOrDefault(po => string.Equals(po.Code, detail.PostOfficeCode, StringComparison.OrdinalIgnoreCase));
 
             // Generate multiple events spaced by intervalMinutes within FromTime-ToTime
+            int count = 0;
             TimeOnly current = detail.FromTime;
             while (current < detail.ToTime)
             {
@@ -215,6 +216,10 @@ public sealed class CreatePickupTaskEventService(
 
                 jsonList.Add(BuildJson(input));
                 current = current.Add(TimeSpan.FromMinutes(intervalMinutes));
+                if (++count > 2)
+                {
+                    break; // Prevent infinite loop in case of data issues
+                }
             }
         }
 

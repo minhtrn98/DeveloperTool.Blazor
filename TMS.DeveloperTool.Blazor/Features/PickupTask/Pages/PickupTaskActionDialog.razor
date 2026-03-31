@@ -1,12 +1,13 @@
 @using TMS.DeveloperTool.Blazor.Features.PickupTask.Models
 @using TMS.DeveloperTool.Blazor.Domain
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
 
 <MudDialog>
     <TitleContent>
         <MudText Typo="Typo.h6">@DialogTitle: @PickupTaskId</MudText>
     </TitleContent>
     <DialogContent>
-        @if (RequiresOrderSelection)
+        @if (IsCancel)
         {
             @if (!orderSelections.Any())
             {
@@ -22,6 +23,31 @@
                     {
                         <MudCheckBox T="bool" Value="@order.IsSelected" ValueChanged="@((bool value) => order.IsSelected = value)"
                                      Label="@GetOrderLabel(order)" Dense="true" Class="mb-1" />
+                    }
+                </MudPaper>
+            }
+        }
+
+        @if (IsReschedule)
+        {
+            @if (!orderItemSelections.Any())
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">
+                    Không có item đơn hàng nào.
+                </MudAlert>
+            }
+            else
+            {
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Chọn item đơn hàng</MudText>
+                <MudPaper Outlined="true" Class="pa-3 mb-4">
+                    @foreach (IGrouping<string, OrderItemSelectionItem> orderGroup in orderItemSelections.GroupBy(item => item.OrderId))
+                    {
+                        <MudText Typo="Typo.subtitle2" Class="mb-1">Order: @orderGroup.Key</MudText>
+                        @foreach (OrderItemSelectionItem item in orderGroup)
+                        {
+                            <MudCheckBox T="bool" Value="@item.IsSelected" ValueChanged="@((bool value) => item.IsSelected = value)"
+                                         Disabled="@item.IsCancelled" Label="@GetOrderItemLabel(item)" Dense="true" Class="mb-1 pl-4" />
+                        }
                     }
                 </MudPaper>
             }
@@ -83,6 +109,9 @@
     public List<PickupTaskOrderInfo> Orders { get; set; } = [];
 
     [Parameter]
+    public List<OrderItemInfo> OrderItems { get; set; } = [];
+
+    [Parameter]
     public DateTime? InitialRescheduledPickupDt { get; set; }
 
     [Parameter]
@@ -92,6 +121,7 @@
     public string? InitialTargetDriverId { get; set; }
 
     private readonly List<OrderSelectionItem> orderSelections = [];
+    private readonly List<OrderItemSelectionItem> orderItemSelections = [];
     private string reason = string.Empty;
     private DateTime? selectedDate;
     private TimeSpan? selectedTime;
@@ -99,8 +129,8 @@
     private string validationMessage = string.Empty;
 
     private bool IsReschedule => ActionName == "Reschedule";
+    private bool IsCancel => ActionName == "Cancel";
     private bool IsTransfer => ActionName == "Transfer";
-    private bool RequiresOrderSelection => ActionName is "Cancel" or "Reschedule";
 
     private string DialogTitle => ActionName switch
     {
@@ -113,10 +143,25 @@
     protected override void OnInitialized()
     {
         orderSelections.Clear();
+        orderItemSelections.Clear();
+
+        HashSet<string> cancelledOrderIds = Orders
+            .Where(order => order.IsCancel)
+            .Select(order => order.OrderId)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         orderSelections.AddRange(Orders.Select(order => new OrderSelectionItem
         {
             OrderId = order.OrderId,
             IsCancelled = order.IsCancel,
+            IsSelected = false
+        }));
+
+        orderItemSelections.AddRange(OrderItems.Select(item => new OrderItemSelectionItem
+        {
+            OrderId = item.OrderId,
+            OrderItemId = item.OrderItemId,
+            IsCancelled = cancelledOrderIds.Contains(item.OrderId),
             IsSelected = false
         }));
 
@@ -131,7 +176,9 @@
         validationMessage = string.Empty;
 
         string[] selectedOrderIds = [];
-        if (RequiresOrderSelection)
+        string[] selectedOrderItemIds = [];
+
+        if (IsCancel)
         {
             selectedOrderIds = orderSelections
                 .Where(order => order.IsSelected && !order.IsCancelled)
@@ -141,6 +188,20 @@
             if (selectedOrderIds.Length == 0)
             {
                 validationMessage = "Vui lòng chọn ít nhất 1 order.";
+                return;
+            }
+        }
+
+        if (IsReschedule)
+        {
+            selectedOrderItemIds = orderItemSelections
+                .Where(item => item.IsSelected && !item.IsCancelled)
+                .Select(item => item.OrderItemId)
+                .ToArray();
+
+            if (selectedOrderItemIds.Length == 0)
+            {
+                validationMessage = "Vui lòng chọn ít nhất 1 item đơn hàng.";
                 return;
             }
         }
@@ -167,7 +228,7 @@
             ? null
             : selectedTargetDriverId;
 
-        PickupTaskActionDialogResult result = new(selectedOrderIds, reason.Trim(), rescheduledPickupDt, targetDriverId);
+        PickupTaskActionDialogResult result = new(selectedOrderIds, selectedOrderItemIds, reason.Trim(), rescheduledPickupDt, targetDriverId);
         MudDialog.Close(DialogResult.Ok(result));
         await Task.CompletedTask;
     }
@@ -182,6 +243,11 @@
         return order.IsCancelled ? $"{order.OrderId} (đã hủy)" : order.OrderId;
     }
 
+    private static string GetOrderItemLabel(OrderItemSelectionItem item)
+    {
+        return item.IsCancelled ? $"{item.OrderItemId} (order đã hủy)" : item.OrderItemId;
+    }
+
     private static string GetDriverOptionLabel(Driver driver)
     {
         return string.IsNullOrWhiteSpace(driver.Code)
@@ -192,6 +258,14 @@
     private sealed class OrderSelectionItem
     {
         public string OrderId { get; init; } = string.Empty;
+        public bool IsCancelled { get; init; }
+        public bool IsSelected { get; set; }
+    }
+
+    private sealed class OrderItemSelectionItem
+    {
+        public string OrderId { get; init; } = string.Empty;
+        public string OrderItemId { get; init; } = string.Empty;
         public bool IsCancelled { get; init; }
         public bool IsSelected { get; set; }
     }
