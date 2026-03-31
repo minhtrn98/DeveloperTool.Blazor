@@ -61,7 +61,6 @@ public sealed class OrderRepository
                 o.w as "W",
                 o.h as "H",
                 o.l as "L",
-                o.status as "Status",
                 (po.order_item_id is not null) as "HasPickupTask"
             from public.order_items o
             left join pickup_order_items po on po.order_item_id = o.order_item_id
@@ -71,7 +70,7 @@ public sealed class OrderRepository
         return orderItems.ToList();
     }
 
-    public async Task<List<OrderItemInfo>> GetOrderItemsByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
+    public async Task<List<PickupTaskOrderItemInfo>> GetOrderItemsByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
     {
         const string sql = """
             select
@@ -87,7 +86,7 @@ public sealed class OrderRepository
             where ptoi.pickup_task_id = @PickupTaskId
             order by ptoi.order_id, ptoi.order_item_id;
             """;
-        IEnumerable<OrderItemInfo> orderItems = await _dbQuery.QueryAsync<OrderItemInfo>(sql, new { PickupTaskId = pickupTaskId }, cancellationToken);
+        IEnumerable<PickupTaskOrderItemInfo> orderItems = await _dbQuery.QueryAsync<PickupTaskOrderItemInfo>(sql, new { PickupTaskId = pickupTaskId }, cancellationToken);
         return orderItems.ToList();
     }
 

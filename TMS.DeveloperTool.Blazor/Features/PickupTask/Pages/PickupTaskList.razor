@@ -312,7 +312,7 @@
     private async Task<PickupTaskActionDialogResult?> ShowActionDialogAsync(PickupTaskInfo item, string action)
     {
         List<PickupTaskOrderInfo> orders = [];
-        List<OrderItemInfo> orderItems = [];
+        List<PickupTaskOrderItemInfo> orderItems = [];
         if (action is ActionCancel or ActionReschedule)
         {
             orders = await OrderRepository.GetOrdersByPickupTaskIdAsync(item.PickupTaskId);
@@ -387,7 +387,7 @@ options);
             }
 
             List<PickupTaskOrderInfo> orders = await OrderRepository.GetOrdersByPickupTaskIdAsync(item.PickupTaskId);
-            List<OrderItemInfo> orderItems = await OrderRepository.GetOrderItemsByPickupTaskIdAsync(item.PickupTaskId);
+            List<PickupTaskOrderItemInfo> orderItems = await OrderRepository.GetOrderItemsByPickupTaskIdAsync(item.PickupTaskId);
 
             DialogParameters parameters = new()
             {
