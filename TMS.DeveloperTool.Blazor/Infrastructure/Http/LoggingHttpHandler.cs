@@ -16,6 +16,21 @@ public sealed class LoggingHttpHandler(ILogger<LoggingHttpHandler> logger) : Del
             request.RequestUri,
             body);
 
-        return await base.SendAsync(request, cancellationToken);
+        HttpResponseMessage response = await base.SendAsync(request, cancellationToken);
+
+        // log response
+        string responseBody = string.Empty;
+        if (response.Content is not null)
+        {
+            responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        }
+        logger.LogInformation(
+            "[Refit] {Method} {Url} responded with {StatusCode}\nBody: {Body}",
+            request.Method,
+            request.RequestUri,
+            response.StatusCode,
+            responseBody);
+
+        return response;
     }
 }
