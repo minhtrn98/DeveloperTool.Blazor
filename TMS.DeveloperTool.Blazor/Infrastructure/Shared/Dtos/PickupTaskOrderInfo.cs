@@ -1,9 +1,11 @@
+using TMS.DeveloperTool.Blazor.Domain.Enums;
+
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
 public sealed record PickupTaskOrderInfo(
     string PickupTaskId,
     string OrderId,
-    short Status)
+    PickupTaskOrderStatus Status)
 {
-    public bool IsCancel => Status == 9;
+    public bool IsCancel => Status == PickupTaskOrderStatus.Cancelled;
 }

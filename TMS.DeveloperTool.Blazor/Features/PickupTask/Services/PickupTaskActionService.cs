@@ -46,4 +46,7 @@ public sealed class PickupTaskActionService(IPickupTaskApi api)
         string bearerToken,
         CancellationToken cancellationToken = default)
         => api.ConfirmPickupAsync(request, $"Bearer {bearerToken}", cancellationToken);
+
+    public Task CompletePickupAsync(string pickupTaskId, string bearerToken, CancellationToken cancellationToken = default)
+        => api.CompletePickupAsync(new CompletePickupRequest(pickupTaskId), $"Bearer {bearerToken}", cancellationToken);
 }

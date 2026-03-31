@@ -1,3 +1,5 @@
+using TMS.DeveloperTool.Blazor.Domain.Enums;
+
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
 public sealed record PickupTaskOrderItemInfo(
@@ -7,8 +9,8 @@ public sealed record PickupTaskOrderItemInfo(
     decimal W,
     decimal H,
     decimal L,
-    short Status,
+    PickupTaskOrderItemStatus Status,
     bool HasPickupTask)
 {
-    public bool IsCancel => Status == 9;
+    public bool IsCancel => Status == PickupTaskOrderItemStatus.Cancelled;
 }

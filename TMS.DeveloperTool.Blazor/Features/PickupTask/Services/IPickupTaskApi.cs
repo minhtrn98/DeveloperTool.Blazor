@@ -22,4 +22,7 @@ public interface IPickupTaskApi
 
     [Post("/api/v1/pickup-tasks/confirm-pickup")]
     Task ConfirmPickupAsync([Body] ConfirmPickupRequest request, [Header("Authorization")] string authorization, CancellationToken cancellationToken = default);
+
+    [Put("/api/v1/pickup-tasks/complete-pickup")]
+    Task CompletePickupAsync([Body] CompletePickupRequest request, [Header("Authorization")] string authorization, CancellationToken cancellationToken = default);
 }
