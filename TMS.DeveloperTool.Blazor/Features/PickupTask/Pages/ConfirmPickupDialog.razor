@@ -567,7 +567,16 @@ orderItemId);
         {
             item.OrderId = normalizedOrderId;
 
-            if (item.IsUserAdded && item.OrderItemId.StartsWith($"{oldOrderId}/", StringComparison.OrdinalIgnoreCase))
+            if (!item.IsUserAdded)
+            {
+                continue;
+            }
+
+            if (item.OrderItemId.Equals(oldOrderId, StringComparison.OrdinalIgnoreCase))
+            {
+                item.OrderItemId = normalizedOrderId;
+            }
+            else if (item.OrderItemId.StartsWith($"{oldOrderId}/", StringComparison.OrdinalIgnoreCase))
             {
                 string suffix = item.OrderItemId[(oldOrderId.Length + 1)..];
                 item.OrderItemId = $"{normalizedOrderId}/{suffix}";
@@ -604,12 +613,16 @@ orderItemId);
             .DefaultIfEmpty(0)
             .Max() + 1;
 
-        string candidate = $"{orderPrefix}/{nextSequence}";
+        string candidate = nextSequence == 1
+            ? orderPrefix
+            : $"{orderPrefix}/{nextSequence}";
         while (orderItemSelections.Any(i => i.OrderId == orderId && i.OrderItemId.Equals(candidate,
 StringComparison.OrdinalIgnoreCase)))
         {
             nextSequence++;
-            candidate = $"{orderPrefix}/{nextSequence}";
+            candidate = nextSequence == 1
+                ? orderPrefix
+                : $"{orderPrefix}/{nextSequence}";
         }
 
         return candidate;
@@ -622,6 +635,11 @@ StringComparison.OrdinalIgnoreCase)))
             return 0;
         }
 
+        if (itemId.Equals(orderPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return 1;
+        }
+
         string expectedPrefix = $"{orderPrefix}/";
         if (!itemId.StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase))
         {
@@ -629,7 +647,7 @@ StringComparison.OrdinalIgnoreCase)))
         }
 
         string suffix = itemId[expectedPrefix.Length..];
-        return int.TryParse(suffix, out int value) ? value : 0;
+        return int.TryParse(suffix, out int value) && value >= 1 ? value : 0;
     }
 
     private bool ValidateSelections()
