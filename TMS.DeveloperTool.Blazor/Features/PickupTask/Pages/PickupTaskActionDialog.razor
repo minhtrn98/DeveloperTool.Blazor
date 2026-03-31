@@ -1,5 +1,6 @@
 @using TMS.DeveloperTool.Blazor.Features.PickupTask.Models
 @using TMS.DeveloperTool.Blazor.Domain
+@using TMS.DeveloperTool.Blazor.Domain.Enums
 @using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
 
 <MudDialog>
@@ -25,7 +26,16 @@
                         @foreach (OrderItemSelectionItem item in orderGroup)
                         {
                             <MudCheckBox T="bool" Value="@item.IsSelected" ValueChanged="@((bool value) => item.IsSelected = value)"
-                                         Disabled="@item.IsCancelled" Label="@GetOrderItemLabel(item)" Dense="true" Class="mb-1 pl-4" />
+                                         Dense="true" Class="mb-1 pl-4">
+                                <ChildContent>
+                                    <div class="d-flex align-center ga-2">
+                                        <span>@item.OrderItemId</span>
+                                        <MudChip T="string" Color="@GetItemStatusColor(item.Status)" Variant="Variant.Outlined" Size="Size.Small">
+                                            @GetItemStatusLabel(item.Status)
+                                        </MudChip>
+                                    </div>
+                                </ChildContent>
+                            </MudCheckBox>
                         }
                     }
                 </MudPaper>
@@ -133,7 +143,8 @@
             OrderId = item.OrderId,
             OrderItemId = item.OrderItemId,
             IsCancelled = item.IsCancel,
-            IsSelected = false
+            IsSelected = false,
+            Status = item.Status
         }));
 
         DateTime defaultDateTime = InitialRescheduledPickupDt ?? DateTime.Now.AddHours(2);
@@ -194,10 +205,20 @@
         MudDialog.Cancel();
     }
 
-    private static string GetOrderItemLabel(OrderItemSelectionItem item)
+    private static string GetItemStatusLabel(PickupTaskOrderItemStatus status) => status switch
     {
-        return item.IsCancelled ? $"{item.OrderItemId} (đã hủy)" : item.OrderItemId;
-    }
+        PickupTaskOrderItemStatus.New => "Mới",
+        PickupTaskOrderItemStatus.Picked => "Đã lấy",
+        PickupTaskOrderItemStatus.Cancelled => "Đã hủy",
+        _ => status.ToString()
+    };
+
+    private static Color GetItemStatusColor(PickupTaskOrderItemStatus status) => status switch
+    {
+        PickupTaskOrderItemStatus.Picked => Color.Success,
+        PickupTaskOrderItemStatus.Cancelled => Color.Error,
+        _ => Color.Default
+    };
 
     private static string GetDriverOptionLabel(Driver driver)
     {
@@ -212,5 +233,6 @@
         public string OrderItemId { get; init; } = string.Empty;
         public bool IsCancelled { get; init; }
         public bool IsSelected { get; set; }
+        public PickupTaskOrderItemStatus Status { get; init; }
     }
 }

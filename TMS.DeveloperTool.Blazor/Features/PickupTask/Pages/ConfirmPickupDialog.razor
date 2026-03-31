@@ -54,6 +54,7 @@
                             <th style="width: 44px;"></th>
                             <th style="width: 44px;"></th>
                             <th>Mã đơn / Mã kiện</th>
+                            <th>Trạng thái</th>
                             <th>Weight</th>
                             <th>L</th>
                             <th>W</th>
@@ -96,6 +97,14 @@
                                     <MudTextField T="string" Value="@order.OrderId"
                                                   ValueChanged="@((string? v) => UpdateOrderId(order, v))" Variant="Variant.Text"
                                                   Margin="Margin.Dense" />
+                                </td>
+                                <td>
+                                    @if (order.Status.HasValue)
+                                    {
+                                        <MudChip T="string" Color="@GetOrderStatusColor(order.Status.Value)" Variant="Variant.Outlined" Size="Size.Small">
+                                            @GetOrderStatusLabel(order.Status.Value)
+                                        </MudChip>
+                                    }
                                 </td>
                                 <td>
                                     <MudNumericField T="decimal?" @bind-Value="order.Weight" Variant="Variant.Text"
@@ -151,6 +160,14 @@
                                         </td>
                                         <td>
                                             <MudText Class="pl-6">- @item.OrderItemId</MudText>
+                                        </td>
+                                        <td>
+                                            @if (item.Status.HasValue)
+                                            {
+                                                <MudChip T="string" Color="@GetItemStatusColor(item.Status.Value)" Variant="Variant.Outlined" Size="Size.Small">
+                                                    @GetItemStatusLabel(item.Status.Value)
+                                                </MudChip>
+                                            }
                                         </td>
                                         <td>
                                             <MudNumericField T="decimal?" @bind-Value="item.Weight" Variant="Variant.Text"
@@ -257,7 +274,8 @@
         orderSelections.AddRange(Orders.Select(o => new OrderSelection
         {
             OrderId = o.OrderId,
-            IsSelected = true
+            IsSelected = true,
+            Status = o.Status
         }));
 
         orderItemSelections.Clear();
@@ -269,7 +287,8 @@
             L = oi.L,
             W = oi.W,
             H = oi.H,
-            IsSelected = true
+            IsSelected = true,
+            Status = oi.Status
         }));
 
         expandedOrderIds.Clear();
@@ -666,11 +685,42 @@ StringComparison.OrdinalIgnoreCase)))
         return driver is null ? string.Empty : $"{driver.Code} - {driver.Name}";
     }
 
+    private static string GetOrderStatusLabel(PickupTaskOrderStatus status) => status switch
+    {
+        PickupTaskOrderStatus.New => "Mới",
+        PickupTaskOrderStatus.Picked => "Đã lấy",
+        PickupTaskOrderStatus.Cancelled => "Đã hủy",
+        _ => status.ToString()
+    };
+
+    private static Color GetOrderStatusColor(PickupTaskOrderStatus status) => status switch
+    {
+        PickupTaskOrderStatus.Picked => Color.Success,
+        PickupTaskOrderStatus.Cancelled => Color.Error,
+        _ => Color.Default
+    };
+
+    private static string GetItemStatusLabel(PickupTaskOrderItemStatus status) => status switch
+    {
+        PickupTaskOrderItemStatus.New => "Mới",
+        PickupTaskOrderItemStatus.Picked => "Đã lấy",
+        PickupTaskOrderItemStatus.Cancelled => "Đã hủy",
+        _ => status.ToString()
+    };
+
+    private static Color GetItemStatusColor(PickupTaskOrderItemStatus status) => status switch
+    {
+        PickupTaskOrderItemStatus.Picked => Color.Success,
+        PickupTaskOrderItemStatus.Cancelled => Color.Error,
+        _ => Color.Default
+    };
+
     private sealed class OrderSelection
     {
         public string OrderId { get; set; } = string.Empty;
         public bool IsSelected { get; set; }
         public bool IsUserAdded { get; init; }
+        public PickupTaskOrderStatus? Status { get; init; }
         public decimal? Weight { get; set; }
         public decimal? L { get; set; }
         public decimal? W { get; set; }
@@ -686,6 +736,7 @@ StringComparison.OrdinalIgnoreCase)))
         public string OrderItemId { get; set; } = string.Empty;
         public bool IsSelected { get; set; }
         public bool IsUserAdded { get; init; }
+        public PickupTaskOrderItemStatus? Status { get; init; }
         public decimal? Weight { get; set; }
         public decimal? L { get; set; }
         public decimal? W { get; set; }
