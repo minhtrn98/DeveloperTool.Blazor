@@ -110,6 +110,7 @@ public sealed class CreatePickupTaskEventService(
         {
             SetValue(jsonNode, "pickupPostOfficeCode", input.PostOfficeCode);
             SetValue(jsonNode, "pickupPostOfficeName", input.PostOfficeName ?? string.Empty);
+            SetValue(jsonNode, "pickupPostOfficeId", input.PostOfficeCode);
             UpdatePickupTaskIdPrefix(jsonNode, input.PostOfficeCode);
         }
 
