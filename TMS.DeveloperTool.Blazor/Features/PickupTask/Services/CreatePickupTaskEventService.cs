@@ -2,6 +2,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using System.Security.Cryptography;
 using TMS.DeveloperTool.Blazor.Domain.Enums;
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Models;
 using TMS.DeveloperTool.Blazor.Features.Routing.Models;
@@ -15,6 +16,10 @@ public sealed class CreatePickupTaskEventService(
     EventService eventService,
     IWebHostEnvironment webHostEnvironment)
 {
+    private const string RandomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static readonly Lock PickupTaskIdLock = new();
+    private static readonly HashSet<string> GeneratedPickupTaskIds = [];
+
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true,
@@ -282,15 +287,34 @@ public sealed class CreatePickupTaskEventService(
         }
 
         string currentPickupTaskId = obj["pickupTaskId"]?.GetValue<string>() ?? string.Empty;
-        int firstDashIndex = currentPickupTaskId.IndexOf('-');
-        if (firstDashIndex < 0 || firstDashIndex >= currentPickupTaskId.Length - 1)
+        string[] parts = currentPickupTaskId.Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        string datePart = parts.Length >= 2 && parts[1].Length == 8
+            ? parts[1]
+            : DateTimeOffset.Now.ToString("yyyyMMdd");
+
+        string newPickupTaskId = BuildUniquePickupTaskId(newPrefix, datePart);
+        obj["pickupTaskId"] = JsonValue.Create(newPickupTaskId);
+    }
+
+    private static string BuildUniquePickupTaskId(string postOfficeCode, string datePart)
+    {
+        for (int i = 0; i < 20; i++)
         {
-            obj["pickupTaskId"] = JsonValue.Create(newPrefix);
-            return;
+            string randomSuffix = RandomNumberGenerator.GetString(RandomChars, 6);
+            string candidate = $"{postOfficeCode}-{datePart}-{randomSuffix}";
+
+            lock (PickupTaskIdLock)
+            {
+                if (GeneratedPickupTaskIds.Add(candidate))
+                {
+                    return candidate;
+                }
+            }
         }
 
-        string suffix = currentPickupTaskId[(firstDashIndex + 1)..];
-        obj["pickupTaskId"] = JsonValue.Create($"{newPrefix}-{suffix}");
+        string fallbackSuffix = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
+        return $"{postOfficeCode}-{datePart}-{fallbackSuffix}";
     }
 }
 

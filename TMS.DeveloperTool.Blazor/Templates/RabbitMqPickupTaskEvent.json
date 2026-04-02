@@ -3,7 +3,7 @@
   "eventId": "00000000-0000-0000-0000-000000000000",
   "createdAt": "{{datetime}}",
   "pickupTaskId": "HBH-{{yyyyMMdd}}-000001",
-  "pickupPostOfficeId": "00000000-0000-0000-0000-000000000000",
+  "pickupPostOfficeId": "HBH",
   "pickupPostOfficeName": "Hòa Bình",
   "pickupPostOfficeCode": "HBH",
   "pickupAddress": "100 Đường số 49, Khu phố 8, Phường Bình Tân, HỒ CHÍ MINH",
