@@ -1,4 +1,5 @@
 @page "/pickup-tasks/create-event"
+@using System.Text.Json.Nodes
 @using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Models
 @using TMS.DeveloperTool.Blazor.Features.PickupTask.Services
 @inject CreatePickupTaskEventService Service
@@ -83,7 +84,7 @@
                                   Placeholder="Nhấn Build JSON để tạo..." />
                     <MudStack Row="true" Spacing="2" Class="mt-3" Justify="Justify.FlexEnd">
                         <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="SendRequest"
-                                   Disabled="@(string.IsNullOrWhiteSpace(jsonOutput) || selectedDailyPlan is not null)" StartIcon="@Icons.Material.Filled.Send">Gửi
+                                   Disabled="@string.IsNullOrWhiteSpace(jsonOutput)" StartIcon="@Icons.Material.Filled.Send">Gửi
                         </MudButton>
                         <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="CopyJson"
                                    Disabled="@string.IsNullOrWhiteSpace(jsonOutput)"
@@ -334,14 +335,44 @@
             return;
         }
 
+        JsonNode? rootNode = JsonNode.Parse(jsonOutput);
+        if (rootNode is null)
+        {
+            Snackbar.Add("JSON không hợp lệ.", Severity.Warning);
+            return;
+        }
+
+        if (rootNode is JsonArray jsonArray)
+        {
+            foreach (JsonNode? item in jsonArray)
+            {
+                if (item is null)
+                {
+                    continue;
+                }
+
+                await TrySendOneAsync(item);
+            }
+        }
+        else
+        {
+            await TrySendOneAsync(rootNode);
+        }
+    }
+
+    private async Task<bool> TrySendOneAsync(JsonNode jsonNode)
+    {
         try
         {
-            await Service.SendAsync(jsonOutput);
-            Snackbar.Add("Gửi thành công.", Severity.Success);
+            string pickupTaskId = jsonNode["pickupTaskId"]?.ToString() ?? "Unknown";
+            await Service.SendAsync(jsonNode.ToJsonString());
+            Snackbar.Add($"Gửi thành công điều tin {pickupTaskId}.", Severity.Success);
+            return true;
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Gửi thất bại: {ex.Message}", Severity.Error);
+            return false;
         }
     }
 
