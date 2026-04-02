@@ -25,24 +25,16 @@
                 <MudItem xs="12" md="5">
                     <MudText Typo="Typo.h6" Class="mb-3">Thông tin điều tin</MudText>
 
-                    <MudSelect T="DailyPlanDto" Value="selectedDailyPlan" ValueChanged="OnDailyPlanChanged"
-                               Label="Kế hoạch vận chuyển" Variant="Variant.Outlined" Class="mb-3" Clearable="true"
-                               ToStringFunc="@(x => x is null ? string.Empty : $"{x.Code} - {x.Name} ({x.Status})")">
-                        @foreach (var plan in dailyPlans)
-                        {
-                            <MudSelectItem T="DailyPlanDto" Value="@plan">@plan.Code - @plan.Name (@plan.Status)</MudSelectItem>
-                        }
-                    </MudSelect>
+                    <MudAutocomplete T="DailyPlanDto" Value="selectedDailyPlan" ValueChanged="OnDailyPlanChanged"
+                                     SearchFunc="SearchDailyPlans" Label="Kế hoạch vận chuyển" Variant="Variant.Outlined"
+                                     Class="mb-3" Clearable="true" MaxItems="20"
+                                     ToStringFunc="@(x => x is null ? string.Empty : $"{x.Code} - {x.Name} ({x.Status})")" />
 
-                    <MudSelect T="PostOfficeOption" Value="selectedPostOffice" ValueChanged="OnPostOfficeChanged"
-                               Label="Bưu cục" Variant="Variant.Outlined" Class="mb-3" Clearable="true"
-                               Disabled="@(selectedDailyPlan is not null)"
-                               ToStringFunc="@(x => x?.ToString() ?? string.Empty)">
-                        @foreach (var po in postOfficeOptions)
-                        {
-                            <MudSelectItem T="PostOfficeOption" Value="@po">@po</MudSelectItem>
-                        }
-                    </MudSelect>
+                    <MudAutocomplete T="PostOfficeOption" Value="selectedPostOffice" ValueChanged="OnPostOfficeChanged"
+                                     SearchFunc="SearchPostOfficeOptions" Label="Bưu cục" Variant="Variant.Outlined"
+                                     Class="mb-3" Clearable="true" MaxItems="20"
+                                     Disabled="@(selectedDailyPlan is not null)"
+                                     ToStringFunc="@(x => x?.ToString() ?? string.Empty)" />
 
                     <MudGrid>
                         <MudItem xs="7">
@@ -56,41 +48,25 @@
                         </MudItem>
                     </MudGrid>
 
-                    <MudSelect T="EnumOption" Value="selectedStatus" ValueChanged="OnStatusChanged" Label="Trạng thái"
-                               Variant="Variant.Outlined" Class="mb-3" Clearable="true"
-                               ToStringFunc="@(x => x?.ToString() ?? string.Empty)">
-                        @foreach (var s in statusOptions)
-                        {
-                            <MudSelectItem T="EnumOption" Value="@s">@s</MudSelectItem>
-                        }
-                    </MudSelect>
+                    <MudAutocomplete T="EnumOption" Value="selectedStatus" ValueChanged="OnStatusChanged"
+                                     SearchFunc="SearchStatusOptions" Label="Trạng thái" Variant="Variant.Outlined"
+                                     Class="mb-3" Clearable="true" MaxItems="20"
+                                     ToStringFunc="@(x => x?.ToString() ?? string.Empty)" />
 
-                    <MudSelect T="EnumOption" Value="selectedServiceType" ValueChanged="OnServiceTypeChanged"
-                               Label="Loại dịch vụ" Variant="Variant.Outlined" Class="mb-3" Clearable="true"
-                               ToStringFunc="@(x => x?.ToString() ?? string.Empty)">
-                        @foreach (var st in serviceTypeOptions)
-                        {
-                            <MudSelectItem T="EnumOption" Value="@st">@st</MudSelectItem>
-                        }
-                    </MudSelect>
+                    <MudAutocomplete T="EnumOption" Value="selectedServiceType" ValueChanged="OnServiceTypeChanged"
+                                     SearchFunc="SearchServiceTypeOptions" Label="Loại dịch vụ" Variant="Variant.Outlined"
+                                     Class="mb-3" Clearable="true" MaxItems="20"
+                                     ToStringFunc="@(x => x?.ToString() ?? string.Empty)" />
 
-                    <MudSelect T="EnumOption" Value="selectedDispatchType" ValueChanged="OnDispatchTypeChanged"
-                               Label="Loại điều tin" Variant="Variant.Outlined" Class="mb-3" Clearable="true"
-                               ToStringFunc="@(x => x?.ToString() ?? string.Empty)">
-                        @foreach (var dt in dispatchTypeOptions)
-                        {
-                            <MudSelectItem T="EnumOption" Value="@dt">@dt</MudSelectItem>
-                        }
-                    </MudSelect>
+                    <MudAutocomplete T="EnumOption" Value="selectedDispatchType" ValueChanged="OnDispatchTypeChanged"
+                                     SearchFunc="SearchDispatchTypeOptions" Label="Loại điều tin" Variant="Variant.Outlined"
+                                     Class="mb-3" Clearable="true" MaxItems="20"
+                                     ToStringFunc="@(x => x?.ToString() ?? string.Empty)" />
 
-                    <MudSelect T="EnumOption" Value="selectedDispatchMethod" ValueChanged="OnDispatchMethodChanged"
-                               Label="Phương thức điều tin" Variant="Variant.Outlined" Class="mb-3" Clearable="true"
-                               ToStringFunc="@(x => x?.ToString() ?? string.Empty)">
-                        @foreach (var dm in dispatchMethodOptions)
-                        {
-                            <MudSelectItem T="EnumOption" Value="@dm">@dm</MudSelectItem>
-                        }
-                    </MudSelect>
+                    <MudAutocomplete T="EnumOption" Value="selectedDispatchMethod" ValueChanged="OnDispatchMethodChanged"
+                                     SearchFunc="SearchDispatchMethodOptions" Label="Phương thức điều tin" Variant="Variant.Outlined"
+                                     Class="mb-3" Clearable="true" MaxItems="20"
+                                     ToStringFunc="@(x => x?.ToString() ?? string.Empty)" />
 
                     <MudDivider Class="my-4" />
 
@@ -245,6 +221,74 @@
     private void OnServiceTypeChanged(EnumOption? value) => selectedServiceType = value;
     private void OnDispatchTypeChanged(EnumOption? value) => selectedDispatchType = value;
     private void OnDispatchMethodChanged(EnumOption? value) => selectedDispatchMethod = value;
+
+    private Task<IEnumerable<DailyPlanDto>> SearchDailyPlans(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<DailyPlanDto>>(dailyPlans);
+
+        IEnumerable<DailyPlanDto> results = dailyPlans.OrderByDescending(x =>
+            x.Code.Contains(value, StringComparison.OrdinalIgnoreCase)
+            || x.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(results);
+    }
+
+    private Task<IEnumerable<PostOfficeOption>> SearchPostOfficeOptions(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<PostOfficeOption>>(postOfficeOptions);
+
+        IEnumerable<PostOfficeOption> results = postOfficeOptions.OrderByDescending(x =>
+            x.Code.Contains(value, StringComparison.OrdinalIgnoreCase)
+            || x.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(results);
+    }
+
+    private Task<IEnumerable<EnumOption>> SearchStatusOptions(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<EnumOption>>(statusOptions);
+
+        IEnumerable<EnumOption> results = statusOptions.OrderByDescending(x =>
+            x.Description.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(results);
+    }
+
+    private Task<IEnumerable<EnumOption>> SearchServiceTypeOptions(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<EnumOption>>(serviceTypeOptions);
+
+        IEnumerable<EnumOption> results = serviceTypeOptions.OrderByDescending(x =>
+            x.Description.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(results);
+    }
+
+    private Task<IEnumerable<EnumOption>> SearchDispatchTypeOptions(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<EnumOption>>(dispatchTypeOptions);
+
+        IEnumerable<EnumOption> results = dispatchTypeOptions.OrderByDescending(x =>
+            x.Description.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(results);
+    }
+
+    private Task<IEnumerable<EnumOption>> SearchDispatchMethodOptions(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<EnumOption>>(dispatchMethodOptions);
+
+        IEnumerable<EnumOption> results = dispatchMethodOptions.OrderByDescending(x =>
+            x.Description.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(results);
+    }
 
     private void BuildJson()
     {
