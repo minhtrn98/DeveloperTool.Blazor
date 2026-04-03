@@ -1,4 +1,4 @@
-﻿using DriverRecord = (System.Guid Id, string Name);
+﻿using DriverRecord = (System.Guid Id, string Name, string Code);
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 
@@ -14,7 +14,7 @@ public sealed class DriverRepository
     public async Task<Dictionary<Guid, string>> GetDriverNamesAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
     {
         const string sql = @"
-            SELECT id, name
+            SELECT id, name, code
             FROM public.employees
             WHERE id = ANY(@Ids)
         ";
@@ -25,10 +25,21 @@ public sealed class DriverRepository
     public async Task<List<DropdownItem<string>>> GetAllDriversAsync(CancellationToken cancellationToken)
     {
         const string sql = @"
-            SELECT id, name
+            SELECT id, name, code
             FROM public.employees
         ";
         IEnumerable<DriverRecord> drivers = await _dbQuery.QueryAsync<DriverRecord>(sql, null, cancellationToken);
         return drivers.Select(d => new DropdownItem<string>(d.Id.ToString(), d.Id.ToString(), d.Name)).ToList();
+    }
+
+    public async Task<DriverRecord?> GetDriverByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        const string sql = @"
+            SELECT id, name, code
+            FROM public.employees
+            WHERE id = @Id
+        ";
+        DriverRecord? driver = await _dbQuery.FirstOrDefaultAsync<DriverRecord>(sql, new { Id = id }, cancellationToken);
+        return driver;
     }
 }

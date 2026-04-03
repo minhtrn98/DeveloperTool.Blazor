@@ -106,4 +106,16 @@ public sealed class OrderRepository
         IEnumerable<PickupTaskInfo> pickupTasks = await _dbQuery.QueryAsync<PickupTaskInfo>(sql, null, cancellationToken);
         return pickupTasks.ToList();
     }
+
+    public async Task<List<Guid>> GetPickupTaskAssignedDriverIdsAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            select distinct assigned_driver_id
+            from public.pickup_tasks
+            where assigned_driver_id is not null
+            order by assigned_driver_id;
+            """;
+        IEnumerable<Guid> driverIds = await _dbQuery.QueryAsync<Guid>(sql, null, cancellationToken);
+        return driverIds.ToList();
+    }
 }

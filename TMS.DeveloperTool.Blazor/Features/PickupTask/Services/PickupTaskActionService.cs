@@ -1,5 +1,5 @@
-using TMS.DeveloperTool.Blazor.Features.PickupTask.Contracts;
 using System.Text.Json;
+using TMS.DeveloperTool.Blazor.Features.PickupTask.Contracts;
 
 namespace TMS.DeveloperTool.Blazor.Features.PickupTask.Services;
 
