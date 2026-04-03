@@ -21,11 +21,11 @@
             @if (_isSyncingDrivers)
             {
                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
-                <MudText>Đang sync driver</MudText>
+                <MudText>Đang đồng bộ tài xế</MudText>
             }
             else
             {
-                <MudText>Sync driver</MudText>
+                <MudText>Đồng bộ tài xế</MudText>
             }
         </MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_isGeneratingTokens || _isSyncingDrivers)"
@@ -129,15 +129,15 @@
             int insertedCount = await MyDriverService.SyncMissingDriversFromPickupTaskAsync();
             if (insertedCount == 0)
             {
-                Snackbar.Add("Không có tài xế mới để sync.", Severity.Info);
+                Snackbar.Add("Không có tài xế mới để đồng bộ.", Severity.Info);
                 return;
             }
 
-            Snackbar.Add($"Đã sync {insertedCount} tài xế vào DeveloperDB.", Severity.Success);
+            Snackbar.Add($"Đã đồng bộ {insertedCount} tài xế.", Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Không sync được driver: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Không đồng bộ được tài xế: {ex.Message}", Severity.Error);
         }
         finally
         {

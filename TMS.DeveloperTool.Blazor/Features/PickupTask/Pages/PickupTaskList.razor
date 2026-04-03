@@ -94,7 +94,7 @@
                             <MudButton Color="Color.Success" Disabled="@IsBusy(context.PickupTaskId)"
                                        OnClick="@(() => HandleCompletePickupAsync(context))">Hoàn tất</MudButton>
                             <MudButton Color="Color.Info" Disabled="@IsBusy(context.PickupTaskId)"
-                                       OnClick="@(() => HandlePreCheckCompleteAsync(context))">Pre-check</MudButton>
+                                       OnClick="@(() => HandlePreCheckCompleteAsync(context))">Complete preparation</MudButton>
                         </MudButtonGroup>
                     </MudTd>
                 </RowTemplate>
