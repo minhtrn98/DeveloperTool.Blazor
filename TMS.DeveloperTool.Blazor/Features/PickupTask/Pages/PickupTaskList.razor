@@ -445,7 +445,7 @@ options);
                 return;
             }
 
-            JsonElement response = await PickupTaskActionService.PreCheckCompleteAsync(item.PickupTaskId, bearerToken);
+            JsonElement response = await PickupTaskActionService.GetCompletePreparationAsync(item.PickupTaskId, bearerToken);
 
             DialogParameters parameters = new()
             {
@@ -460,11 +460,11 @@ options);
                 CloseOnEscapeKey = true
             };
 
-            await DialogService.ShowAsync<PreCheckCompleteResponseDialog>("Pre-check complete", parameters, options);
+            await DialogService.ShowAsync<PreCheckCompleteResponseDialog>("Complete preparation data", parameters, options);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Có lỗi khi gọi pre-check complete: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Có lỗi khi get complete preparation: {ex.Message}", Severity.Error);
         }
         finally
         {
