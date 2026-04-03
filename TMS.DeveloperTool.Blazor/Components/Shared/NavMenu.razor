@@ -55,6 +55,11 @@
         </MudNavLink>
     }
 
+    @if (ShouldShow(ApplicationConstants.MenuKeys.ApiRequest))
+    {
+        <MudNavLink Href="@ApplicationConstants.Routes.ApiRequest" Match="NavLinkMatch.All">API Request</MudNavLink>
+    }
+
     @if (ShouldShow(ApplicationConstants.MenuKeys.RoutingConfig))
     {
         <MudNavGroup Title="Cấu hình" Expanded="false">
@@ -73,7 +78,8 @@
         ApplicationConstants.MenuKeys.PickupTasks,
         ApplicationConstants.MenuKeys.CreatePickupTaskEvent,
         ApplicationConstants.MenuKeys.TopMovingVehicles,
-        ApplicationConstants.MenuKeys.RoutingConfig
+        ApplicationConstants.MenuKeys.RoutingConfig,
+        ApplicationConstants.MenuKeys.ApiRequest
     ];
 
     private HashSet<string> _allowedMenusForCurrentRequest = new (StringComparer.OrdinalIgnoreCase);

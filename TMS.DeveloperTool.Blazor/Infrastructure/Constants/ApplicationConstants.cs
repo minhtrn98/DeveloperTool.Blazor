@@ -42,6 +42,7 @@ public static class ApplicationConstants
         public const string DriverChange = "/driver-change";
         public const string JsonBuilder = "/json-builder";
         public const string JobTrigger = "/job-trigger";
+        public const string ApiRequest = "/api-request";
     }
 
     public static class EnvironmentNames
@@ -64,6 +65,7 @@ public static class ApplicationConstants
         public const string CreatePickupTaskEvent = "CreatePickupTaskEvent";
         public const string TopMovingVehicles = "TopMovingVehicles";
         public const string RoutingConfig = "RoutingConfig";
+        public const string ApiRequest = "ApiRequest";
     }
 
     /// <summary>

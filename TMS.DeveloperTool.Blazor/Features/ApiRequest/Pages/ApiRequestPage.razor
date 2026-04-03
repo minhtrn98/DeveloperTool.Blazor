@@ -1,0 +1,341 @@
+@page "/api-request"
+@using System.Diagnostics
+@using System.Net.Http.Headers
+@using System.Text
+@using TMS.DeveloperTool.Blazor.Services
+@inject IHttpClientFactory HttpClientFactory
+@inject MyDriverService MyDriverService
+@inject ApiUrlsOptions ApiUrlsOptions
+@inject ISnackbar Snackbar
+
+<AppPageTitle MenuName="API Request" />
+
+<MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-4 request-panel">
+                <MudText Typo="Typo.h5" Class="mb-4">Request</MudText>
+
+                <MudGrid Class="mb-3">
+                    <MudItem xs="12" md="2">
+                        <MudSelect T="string" @bind-Value="selectedMethod" Label="Method" Variant="Variant.Outlined" FullWidth="true">
+                            @foreach (string method in methodOptions)
+                            {
+                                <MudSelectItem Value="@method">@method</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="2">
+                        <MudSelect T="string" @bind-Value="selectedService" Label="Service" Variant="Variant.Outlined"
+                                   FullWidth="true" @bind-Value:after="OnServiceChanged">
+                            @foreach (ServiceOption service in serviceOptions)
+                            {
+                                <MudSelectItem Value="@service.Name">@service.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudTextField Value="@selectedDomain" Label="Domain" Variant="Variant.Outlined" FullWidth="true" ReadOnly="true" />
+                    </MudItem>
+                    <MudItem xs="12" md="5">
+                        <MudTextField @bind-Value="endpoint" Label="Endpoint" Variant="Variant.Outlined" FullWidth="true" />
+                    </MudItem>
+                </MudGrid>
+
+                <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
+                                 ToStringFunc="GetDriverLabel" Label="Driver" Variant="Variant.Outlined" FullWidth="true"
+                                 Clearable="true" MaxItems="20" Class="mb-3" />
+
+                <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="3" Class="mb-3" />
+
+                <MudTextField @bind-Value="requestBody" Label="Body (JSON)" Variant="Variant.Outlined" FullWidth="true"
+                              Lines="12" AutoGrow="true" Class="mb-4" />
+
+                <div class="d-flex align-center ga-3">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSubmitting" OnClick="SendRequestAsync">
+                        @if (isSubmitting)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                            <MudText>Sending...</MudText>
+                        }
+                        else
+                        {
+                            <MudText>Send Request</MudText>
+                        }
+                    </MudButton>
+                </div>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="2" Class="pa-4 response-panel">
+                <MudText Typo="Typo.h5" Class="mb-4">Response</MudText>
+
+                <MudGrid Class="mb-3">
+                    <MudItem xs="12" sm="4">
+                        <MudText Typo="Typo.caption">Status</MudText>
+                        <MudText Typo="Typo.subtitle2">@responseStatus</MudText>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudText Typo="Typo.caption">Duration</MudText>
+                        <MudText Typo="Typo.subtitle2">@responseDuration</MudText>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudText Typo="Typo.caption">Content-Type</MudText>
+                        <MudText Typo="Typo.subtitle2">@responseContentType</MudText>
+                    </MudItem>
+                </MudGrid>
+
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Headers</MudText>
+                <MudPaper Outlined="true" Class="pa-3 response-block mb-3">
+                    <pre>@responseHeaders</pre>
+                </MudPaper>
+
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Body</MudText>
+                <MudPaper Outlined="true" Class="pa-3 response-block">
+                    <pre>@responseBody</pre>
+                </MudPaper>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+<style>
+    .request-panel,
+    .response-panel {
+        min-height: 80vh;
+    }
+
+    .response-block {
+        min-height: 180px;
+        max-height: 32vh;
+        overflow: auto;
+    }
+
+    .response-block pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+</style>
+
+@code {
+    private const string ApiPrefix = "/api/v1/";
+    private readonly List<string> methodOptions = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+    private readonly List<ServiceOption> serviceOptions = [];
+    private List<Driver> drivers = [];
+
+    private Driver? selectedDriver;
+    private string selectedMethod = "POST";
+    private string selectedService = string.Empty;
+    private string selectedDomain = string.Empty;
+    private string endpoint = ApiPrefix;
+    private string requestBody = string.Empty;
+    private string accessToken = string.Empty;
+    private bool isSubmitting;
+
+    private string responseStatus = "-";
+    private string responseDuration = "-";
+    private string responseContentType = "-";
+    private string responseHeaders = "(empty)";
+    private string responseBody = "(empty)";
+
+    private string resolvedUrl => BuildRequestUrl();
+
+    protected override async Task OnInitializedAsync()
+    {
+        drivers = (await MyDriverService.GetAllDriversAsync(CancellationToken.None))
+            .OrderBy(x => x.Code)
+            .ThenBy(x => x.Name)
+            .ToList();
+
+        serviceOptions.AddRange([
+            new ServiceOption("Fleet", ApiUrlsOptions.Fleet),
+            new ServiceOption("Driver", ApiUrlsOptions.Driver),
+            new ServiceOption("Cost", ApiUrlsOptions.Cost),
+            new ServiceOption("Route", ApiUrlsOptions.Route),
+            new ServiceOption("Order", ApiUrlsOptions.Order),
+            new ServiceOption("Planning", ApiUrlsOptions.Planning),
+            new ServiceOption("Tracking", ApiUrlsOptions.Tracking),
+            new ServiceOption("Notification", ApiUrlsOptions.Notification),
+            new ServiceOption("Audit", ApiUrlsOptions.Audit),
+            new ServiceOption("File", ApiUrlsOptions.File),
+            new ServiceOption("Report", ApiUrlsOptions.Report)
+        ]);
+
+        selectedService = serviceOptions.FirstOrDefault()?.Name ?? string.Empty;
+        selectedDomain = serviceOptions.FirstOrDefault()?.Domain ?? string.Empty;
+    }
+
+    private Driver? SelectedDriver
+    {
+        get => selectedDriver;
+        set
+        {
+            selectedDriver = value;
+            accessToken = value?.BearerToken ?? string.Empty;
+        }
+    }
+
+    private Task OnDriverChanged(Driver? value)
+    {
+        SelectedDriver = value;
+        return Task.CompletedTask;
+    }
+
+    private Task OnServiceChanged()
+    {
+        selectedDomain = serviceOptions.FirstOrDefault(x => x.Name == selectedService)?.Domain ?? string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private Task<IEnumerable<Driver>> SearchDrivers(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return Task.FromResult<IEnumerable<Driver>>(drivers);
+        }
+
+        IEnumerable<Driver> results = drivers.Where(driver =>
+            driver.Code.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            driver.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(results);
+    }
+
+    private static string GetDriverLabel(Driver? driver)
+    {
+        return driver == null ? string.Empty : $"{driver.Code} - {driver.Name}";
+    }
+
+    private async Task SendRequestAsync()
+    {
+        if (string.IsNullOrWhiteSpace(selectedDomain))
+        {
+            Snackbar.Add("Please select a service to determine the domain.", Severity.Warning);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(endpoint))
+        {
+            Snackbar.Add("Please enter an endpoint.", Severity.Warning);
+            return;
+        }
+
+        string requestUrl = BuildRequestUrl();
+        if (string.IsNullOrWhiteSpace(requestUrl))
+        {
+            Snackbar.Add("Invalid URL.", Severity.Warning);
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            using HttpClient client = HttpClientFactory.CreateClient();
+            using HttpRequestMessage request = new(new HttpMethod(selectedMethod), requestUrl);
+
+            string normalizedToken = NormalizeToken(accessToken);
+            if (!string.IsNullOrWhiteSpace(normalizedToken))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", normalizedToken);
+            }
+
+            if (ShouldIncludeBody(selectedMethod) && !string.IsNullOrWhiteSpace(requestBody))
+            {
+                request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+            }
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            using HttpResponseMessage response = await client.SendAsync(request);
+            stopwatch.Stop();
+
+            string content = await response.Content.ReadAsStringAsync();
+            responseStatus = $"{(int)response.StatusCode} {response.ReasonPhrase}";
+            responseDuration = $"{stopwatch.ElapsedMilliseconds} ms";
+            responseContentType = response.Content.Headers.ContentType?.ToString() ?? "-";
+
+            List<string> headerLines = [];
+            headerLines.AddRange(response.Headers.SelectMany(h => h.Value.Select(v => $"{h.Key}: {v}")));
+            headerLines.AddRange(response.Content.Headers.SelectMany(h => h.Value.Select(v => $"{h.Key}: {v}")));
+            responseHeaders = headerLines.Count == 0 ? "(empty)" : string.Join(Environment.NewLine, headerLines);
+            responseBody = string.IsNullOrWhiteSpace(content) ? "(empty)" : content;
+
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Request sent successfully.", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add($"Request failed: {responseStatus}", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            responseStatus = "Exception";
+            responseDuration = "-";
+            responseContentType = "-";
+            responseHeaders = "(empty)";
+            responseBody = ex.ToString();
+            Snackbar.Add($"Request error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private string BuildRequestUrl()
+    {
+        string endpointValue = endpoint.Trim();
+        if (string.IsNullOrWhiteSpace(endpointValue))
+        {
+            return string.Empty;
+        }
+
+        if (Uri.TryCreate(endpointValue, UriKind.Absolute, out Uri? absoluteUri))
+        {
+            return absoluteUri.ToString();
+        }
+
+        string domain = selectedDomain.Trim().TrimEnd('/');
+        string normalizedEndpoint = NormalizeRelativeEndpoint(endpointValue);
+        return string.IsNullOrWhiteSpace(domain) ? string.Empty : $"{domain}{normalizedEndpoint}";
+    }
+
+    private static string NormalizeRelativeEndpoint(string endpointValue)
+    {
+        string normalized = endpointValue.Trim();
+        if (!normalized.StartsWith('/'))
+        {
+            normalized = $"/{normalized}";
+        }
+
+        if (normalized.StartsWith(ApiPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return normalized;
+        }
+
+        return normalized == "/"
+            ? ApiPrefix
+            : $"{ApiPrefix}{normalized}";
+    }
+
+    private static bool ShouldIncludeBody(string method)
+    {
+        return method is "POST" or "PUT" or "PATCH" or "DELETE";
+    }
+
+    private static string NormalizeToken(string token)
+    {
+        string trimmed = token.Trim();
+        if (trimmed.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed[7..].Trim();
+        }
+
+        return trimmed;
+    }
+
+    private sealed record ServiceOption(string Name, string Domain);
+}
