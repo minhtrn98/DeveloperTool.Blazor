@@ -1,6 +1,7 @@
 @page "/pickup-tasks"
 @using TMS.DeveloperTool.Blazor.Domain.Enums
 @using TMS.DeveloperTool.Blazor.Infrastructure.Extensions
+@using System.Text.Json
 @using TMS.DeveloperTool.Blazor.Features.PickupTask.Contracts
 @using TMS.DeveloperTool.Blazor.Features.PickupTask.Models
 @using TMS.DeveloperTool.Blazor.Features.PickupTask.Services
@@ -92,6 +93,8 @@
                                        OnClick="@(() => HandleConfirmPickupAsync(context))">Xác nhận lấy đơn</MudButton>
                             <MudButton Color="Color.Success" Disabled="@IsBusy(context.PickupTaskId)"
                                        OnClick="@(() => HandleCompletePickupAsync(context))">Hoàn tất</MudButton>
+                            <MudButton Color="Color.Info" Disabled="@IsBusy(context.PickupTaskId)"
+                                       OnClick="@(() => HandlePreCheckCompleteAsync(context))">Pre-check</MudButton>
                         </MudButtonGroup>
                     </MudTd>
                 </RowTemplate>
@@ -424,6 +427,57 @@ options);
         {
             processingTaskIds.Remove(item.PickupTaskId);
         }
+    }
+
+    private async Task HandlePreCheckCompleteAsync(PickupTaskInfo item)
+    {
+        if (!processingTaskIds.Add(item.PickupTaskId))
+        {
+            return;
+        }
+
+        try
+        {
+            string bearerToken = selectedDriver?.BearerToken ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(bearerToken))
+            {
+                Snackbar.Add("Vui lòng chọn tài xế có Bearer token trước khi thao tác.", Severity.Warning);
+                return;
+            }
+
+            JsonElement response = await PickupTaskActionService.PreCheckCompleteAsync(item.PickupTaskId, bearerToken);
+
+            DialogParameters parameters = new()
+            {
+                { nameof(PreCheckCompleteResponseDialog.PickupTaskId), item.PickupTaskId },
+                { nameof(PreCheckCompleteResponseDialog.ResponseJson), FormatResponseJson(response) }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Large,
+                FullWidth = true,
+                CloseOnEscapeKey = true
+            };
+
+            await DialogService.ShowAsync<PreCheckCompleteResponseDialog>("Pre-check complete", parameters, options);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Có lỗi khi gọi pre-check complete: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            processingTaskIds.Remove(item.PickupTaskId);
+        }
+    }
+
+    private static string FormatResponseJson(JsonElement response)
+    {
+        return JsonSerializer.Serialize(response, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
     }
 
     private async Task HandleConfirmPickupAsync(PickupTaskInfo item)

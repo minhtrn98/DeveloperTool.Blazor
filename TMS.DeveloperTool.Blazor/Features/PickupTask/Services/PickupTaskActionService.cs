@@ -1,4 +1,5 @@
 using TMS.DeveloperTool.Blazor.Features.PickupTask.Contracts;
+using System.Text.Json;
 
 namespace TMS.DeveloperTool.Blazor.Features.PickupTask.Services;
 
@@ -49,4 +50,7 @@ public sealed class PickupTaskActionService(IPickupTaskApi api)
 
     public Task CompletePickupAsync(string pickupTaskId, string bearerToken, CancellationToken cancellationToken = default)
         => api.CompletePickupAsync(new CompletePickupRequest(pickupTaskId), $"Bearer {bearerToken}", cancellationToken);
+
+    public Task<JsonElement> PreCheckCompleteAsync(string pickupTaskId, string bearerToken, CancellationToken cancellationToken = default)
+        => api.PreCheckCompleteAsync(pickupTaskId, $"Bearer {bearerToken}", cancellationToken);
 }
