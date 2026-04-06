@@ -27,6 +27,6 @@ public interface IPickupTaskApi
     [Put("/api/v1/pickup-tasks/complete-pickup")]
     Task CompletePickupAsync([Body] CompletePickupRequest request, [Header("Authorization")] string authorization, CancellationToken cancellationToken = default);
 
-    [Get("/api/v1/pickup-tasks/complete-preparation")]
+    [Get("/api/v1/pickup-tasks/validate-completion")]
     Task<JsonElement> GetCompletePreparationAsync([Query] string pickupTaskId, [Header("Authorization")] string authorization, CancellationToken cancellationToken = default);
 }

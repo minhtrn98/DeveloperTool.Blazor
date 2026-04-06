@@ -344,8 +344,7 @@
 
     private void ToggleItemSelection(string orderId, string orderItemId, bool isSelected)
     {
-        OrderItemSelection? item = orderItemSelections.FirstOrDefault(i => i.OrderId == orderId && i.OrderItemId ==
-orderItemId);
+        OrderItemSelection? item = orderItemSelections.FirstOrDefault(i => i.OrderId == orderId && i.OrderItemId == orderItemId);
         if (item is null)
         {
             return;
@@ -593,10 +592,11 @@ orderItemId);
 
     private string GenerateOrderId()
     {
+        string orderPrefix = PickupTaskId[^6..^0];
         string candidate;
         do
         {
-            candidate = $"NEW_ORDER_{nextOrderSequence++:000}";
+            candidate = $"{orderPrefix}_{nextOrderSequence++:000}";
         }
         while (orderSelections.Any(o => o.OrderId.Equals(candidate, StringComparison.OrdinalIgnoreCase)));
 
@@ -616,8 +616,7 @@ orderItemId);
         string candidate = nextSequence == 1
             ? orderPrefix
             : $"{orderPrefix}/{nextSequence}";
-        while (orderItemSelections.Any(i => i.OrderId == orderId && i.OrderItemId.Equals(candidate,
-StringComparison.OrdinalIgnoreCase)))
+        while (orderItemSelections.Any(i => i.OrderId == orderId && i.OrderItemId.Equals(candidate, StringComparison.OrdinalIgnoreCase)))
         {
             nextSequence++;
             candidate = nextSequence == 1
