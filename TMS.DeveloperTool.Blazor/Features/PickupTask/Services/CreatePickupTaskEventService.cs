@@ -175,6 +175,9 @@ public sealed class CreatePickupTaskEventService(
             SetValue(jsonNode, "w", totalW);
         }
 
+        // set created at to now
+        SetValue(jsonNode, "createdAt", DateTimeOffset.Now.ToString("O"));
+
         return jsonNode.ToJsonString(JsonOptions);
     }
 
