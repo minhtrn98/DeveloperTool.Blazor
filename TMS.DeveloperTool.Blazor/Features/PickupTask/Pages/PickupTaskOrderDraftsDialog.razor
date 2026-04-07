@@ -1,0 +1,59 @@
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Đơn đã lấy: @PickupTaskId</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (!Drafts.Any())
+        {
+            <MudAlert Severity="Severity.Info">Không có dữ liệu đơn đã lấy cho điều tin này.</MudAlert>
+        }
+        else
+        {
+            <MudExpansionPanels MultiExpansion="true" Elevation="0" Outlined="true">
+                @foreach (PickupTaskOrderDraft draft in Drafts)
+                {
+                    int itemCount = draft.Items?.Count ?? 0;
+                    <MudExpansionPanel Text="@($"Draft: {draft.DraftId} ({itemCount} kiện)")" Expanded="true">
+                        @if (itemCount == 0)
+                        {
+                            <MudAlert Severity="Severity.Info" Dense="true">Draft này chưa có kiện nào.</MudAlert>
+                        }
+                        else
+                        {
+                            <MudTable Items="@draft.Items" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                                <HeaderContent>
+                                    <MudTh>PickupTaskId</MudTh>
+                                    <MudTh>DraftId</MudTh>
+                                    <MudTh>DraftItemId</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="PickupTaskId">@context.PickupTaskId</MudTd>
+                                    <MudTd DataLabel="DraftId">@context.DraftId</MudTd>
+                                    <MudTd DataLabel="DraftItemId">@context.DraftItemId</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        }
+                    </MudExpansionPanel>
+                }
+            </MudExpansionPanels>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined" OnClick="Close">Đóng</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string PickupTaskId { get; set; } = string.Empty;
+    [Parameter] public List<PickupTaskOrderDraft> Drafts { get; set; } = [];
+
+    private void Close()
+    {
+        MudDialog.Close();
+    }
+}

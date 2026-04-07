@@ -118,4 +118,36 @@ public sealed class OrderRepository
         IEnumerable<Guid> driverIds = await _dbQuery.QueryAsync<Guid>(sql, null, cancellationToken);
         return driverIds.ToList();
     }
+
+    public async Task<List<PickupTaskOrderDraft>> GetPickupTaskOrderDraftsByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
+    {
+        const string sqlItem = """
+            select
+                pickup_task_id as "PickupTaskId",
+                draft_id as "DraftId",
+                draft_item_id as "DraftItemId"
+            from public.pickup_task_order_item_drafts
+            where pickup_task_id = @PickupTaskId
+            order by draft_item_id;
+            """;
+
+        IEnumerable<PickupTaskOrderItemDraft> items = await _dbQuery.QueryAsync<PickupTaskOrderItemDraft>(sqlItem, new { PickupTaskId = pickupTaskId }, cancellationToken);
+
+        List<string> draftIds = items.Select(i => i.DraftId).Distinct().ToList();
+
+        const string sqlDraft = """
+            select
+                draft_id as "DraftId"
+            from public.pickup_task_order_drafts
+            join UNNEST(@DraftIds) as d(id) on draft_id = d.id
+            order by draft_id;
+            """;
+        IEnumerable<PickupTaskOrderDraft> drafts = await _dbQuery.QueryAsync<PickupTaskOrderDraft>(sqlDraft, new { DraftIds = draftIds }, cancellationToken);
+        foreach (var draft in drafts)
+        {
+            draft.Items = items.Where(i => i.DraftId == draft.DraftId).ToList();
+        }
+
+        return drafts.ToList();
+    }
 }

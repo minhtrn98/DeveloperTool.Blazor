@@ -91,6 +91,8 @@
                                        OnClick="@(() => HandleActionAsync(context, ActionTransfer))">Chuyển tiếp</MudButton>
                             <MudButton Color="Color.Tertiary" Disabled="@IsBusy(context.PickupTaskId)"
                                        OnClick="@(() => HandleConfirmPickupAsync(context))">Xác nhận lấy đơn</MudButton>
+                            <MudButton Color="Color.Default" Disabled="@IsBusy(context.PickupTaskId)"
+                                       OnClick="@(() => HandleShowPickedOrdersAsync(context))">Đơn đã lấy</MudButton>
                             <MudButton Color="Color.Info" Disabled="@IsBusy(context.PickupTaskId)"
                                        OnClick="@(() => HandlePreCheckCompleteAsync(context))">Hoàn tất</MudButton>
                         </MudButtonGroup>
@@ -506,6 +508,43 @@ options);
         catch (Exception ex)
         {
             Snackbar.Add($"Có lỗi khi xác nhận lấy đơn: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            processingTaskIds.Remove(item.PickupTaskId);
+        }
+    }
+
+    private async Task HandleShowPickedOrdersAsync(PickupTaskInfo item)
+    {
+        if (!processingTaskIds.Add(item.PickupTaskId))
+        {
+            return;
+        }
+
+        try
+        {
+            List<PickupTaskOrderDraft> drafts = await OrderRepository.GetPickupTaskOrderDraftsByPickupTaskIdAsync(item.PickupTaskId);
+
+            DialogParameters parameters = new()
+            {
+                { nameof(PickupTaskOrderDraftsDialog.PickupTaskId), item.PickupTaskId },
+                { nameof(PickupTaskOrderDraftsDialog.Drafts), drafts }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Large,
+                FullWidth = true,
+                CloseOnEscapeKey = true
+            };
+
+            IDialogReference dialog = await DialogService.ShowAsync<PickupTaskOrderDraftsDialog>("Đơn đã lấy", parameters, options);
+            await dialog.Result;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Có lỗi khi tải dữ liệu đơn đã lấy: {ex.Message}", Severity.Error);
         }
         finally
         {
