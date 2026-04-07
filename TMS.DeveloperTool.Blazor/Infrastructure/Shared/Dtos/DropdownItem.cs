@@ -1,7 +1,9 @@
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
-public record DropdownItem<TKey>(TKey Id, string Code, string Name)
+public record DropdownItem<TKey>(TKey Id, string Code, string Name) : Interfaces.IDisplaySearchItem
 {
+    public virtual string GetDisplayString() => Name;
+
     public virtual bool Like(string searchTerm)
     {
         return Code.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
@@ -10,11 +12,16 @@ public record DropdownItem<TKey>(TKey Id, string Code, string Name)
 }
 
 public sealed record DropdownItemPlanning(Guid Id, string Code, string Name, string Status)
-    : DropdownItem<Guid>(Id, Code, Name);
+    : DropdownItem<Guid>(Id, Code, Name)
+{
+    public override string GetDisplayString() => $"[{Status}] {Name}";
+}
 
 public sealed record VehicleDropdownItem(Guid Id, string Code, string LicensePlate, string DeptManagerCode)
-    : DropdownItem<Guid>(Id, Code, $"[{DeptManagerCode}] {LicensePlate}")
+    : DropdownItem<Guid>(Id, Code, LicensePlate)
 {
+    public override string GetDisplayString() => $"[{DeptManagerCode}] {LicensePlate}";
+
     public override bool Like(string searchTerm)
     {
         string formatValue = searchTerm.Replace(".", "").Replace("-", "");

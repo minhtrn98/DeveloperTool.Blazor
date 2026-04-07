@@ -4,6 +4,7 @@
 @using TMS.DeveloperTool.Blazor.Features.Pairing.Models
 @using TMS.DeveloperTool.Blazor.Features.Pairing.Services
 @using TMS.DeveloperTool.Blazor.Features.Routing.Models
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Interfaces
 @using TMS.DeveloperTool.Blazor.Services
 @inject FleetRepository FleetRepository
 @inject RouteRepository RouteRepository
@@ -29,7 +30,7 @@
         {
             <MudForm>
                 <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
-                                 ToStringFunc="GetDriverLabel" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Driver>" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true"
                                  Clearable="true" MaxItems="20" Class="mb-3" />
 
                 <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true"
@@ -47,7 +48,7 @@
                 </MudGrid> *@
 
                 <MudAutocomplete T="VehicleDropdownItem" Value="SelectedVehicleOption" ValueChanged="OnVehicleChanged"
-                                 SearchFunc="SearchVehicleOptions" ToStringFunc="GetVehicleDropdownLabel" Label="Xe"
+                                 SearchFunc="SearchVehicleOptions" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<VehicleDropdownItem>" Label="Xe"
                                  Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
 
                 <MudSelect T="Guid" @bind-Value="pairingReasonTypeId" Label="Lý do ghép xe" Variant="Variant.Outlined"
@@ -77,7 +78,7 @@
                 @if (actionType is ActionType.SwapMainDriver or ActionType.SwapSubDriver)
                 {
                     <MudAutocomplete T="Driver" @bind-Value="selectedSwapDriver" SearchFunc="SearchDrivers"
-                                     ToStringFunc="GetDriverLabel" Label="Tài xế cần đổi" Variant="Variant.Outlined" FullWidth="true"
+                                     ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Driver>" Label="Tài xế cần đổi" Variant="Variant.Outlined" FullWidth="true"
                                      Clearable="true" MaxItems="20" Class="mb-3" />
                 }
 
@@ -95,7 +96,7 @@
                     <MudItem xs="12" md="6">
                         <div class="d-flex align-end gap-2">
                             <MudAutocomplete T="DropdownItemPlanning" @bind-Value="SelectedPlanningOption"
-                                             SearchFunc="SearchPlanningOptions" ToStringFunc="GetDropdownLabel" Label="Kế hoạch"
+                                             SearchFunc="SearchPlanningOptions" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<DropdownItemPlanning>" Label="Kế hoạch"
                                              Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
                             @if (planningType == AssignmentPlanType.DailyPlan)
                             {
@@ -116,7 +117,7 @@
                 </MudGrid>
 
                 <MudAutocomplete T="PostOffice" @bind-Value="SelectedPostOffice" SearchFunc="SearchPostOffices"
-                                 ToStringFunc="GetPostOfficeLabel" Label="Bưu cục" Variant="Variant.Outlined" FullWidth="true"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<PostOffice>" Label="Bưu cục" Variant="Variant.Outlined" FullWidth="true"
                                  Clearable="true" MaxItems="20" Class="mb-3" />
 
                 <MudSwitch @bind-Value="autoCreateMaintenancePlan" Color="Color.Primary"
@@ -305,53 +306,15 @@
         }
     }
 
-    private string GetPostOfficeLabel(PostOffice? postOffice)
-    {
-        if (postOffice == null)
-        {
-            return string.Empty;
-        }
-
-        return $"{postOffice.PostOfficeCode} - {postOffice.PostOfficeName}";
-    }
-
-    private string GetDropdownLabel(DropdownItemPlanning? item)
-    {
-        return item == null ? string.Empty : $"[{item.Status}] {item.Code} - {item.Name}";
-    }
-
-    private string GetVehicleDropdownLabel(DropdownItem<Guid>? item)
-    {
-        return item == null ? string.Empty : item.Name;
-    }
-
-    private string GetDriverLabel(Driver? driver)
-    {
-        return driver == null ? string.Empty : $"{driver.Code} - {driver.Name}";
-    }
-
     private Task<IEnumerable<VehicleDropdownItem>> SearchVehicleOptions(string value, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return Task.FromResult<IEnumerable<VehicleDropdownItem>>(vehicleOptions);
-        }
-
-        IEnumerable<VehicleDropdownItem> results = vehicleOptions
-            .OrderByDescending(item => item.Like(value));
-
+        IEnumerable<VehicleDropdownItem> results = AutocompleteSearchHelper.SearchByLike(vehicleOptions, value);
         return Task.FromResult(results);
     }
 
     private Task<IEnumerable<DropdownItemPlanning>> SearchPlanningOptions(string value, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return Task.FromResult<IEnumerable<DropdownItemPlanning>>(planningOptions);
-        }
-
-        IEnumerable<DropdownItemPlanning> results = planningOptions.OrderByDescending(item => item.Like(value));
-
+        IEnumerable<DropdownItemPlanning> results = AutocompleteSearchHelper.SearchByLike(planningOptions, value);
         return Task.FromResult(results);
     }
 
@@ -383,25 +346,13 @@
 
     private Task<IEnumerable<PostOffice>> SearchPostOffices(string value, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return Task.FromResult<IEnumerable<PostOffice>>(postOffices);
-        }
-
-        IEnumerable<PostOffice> results = postOffices.OrderByDescending(postOffice => postOffice.Like(value));
-
+        IEnumerable<PostOffice> results = AutocompleteSearchHelper.SearchByLike(postOffices, value);
         return Task.FromResult(results);
     }
 
     private Task<IEnumerable<Driver>> SearchDrivers(string value, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return Task.FromResult<IEnumerable<Driver>>(drivers);
-        }
-
-        IEnumerable<Driver> results = drivers.OrderByDescending(driver => driver.Like(value));
-
+        IEnumerable<Driver> results = AutocompleteSearchHelper.SearchByLike(drivers, value);
         return Task.FromResult(results);
     }
 

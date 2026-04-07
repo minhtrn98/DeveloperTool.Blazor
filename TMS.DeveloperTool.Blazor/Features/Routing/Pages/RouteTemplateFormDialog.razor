@@ -52,7 +52,7 @@
                             Value="@(GetSelectedPostOffice(context))"
                             ValueChanged="@(postOffice => OnPostOfficeSelected(context, postOffice))"
                             SearchFunc="@SearchPostOffices"
-                            ToStringFunc="@GetPostOfficeLabel"
+                            ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<PostOffice>"
                             Variant="Variant.Outlined"
                             Margin="Margin.Dense"
                             Clearable="true"
@@ -233,30 +233,9 @@
         MudDialog.Cancel();
     }
 
-    private string GetPostOfficeLabel(PostOffice? postOffice)
-    {
-        if (postOffice == null)
-        {
-            return string.Empty;
-        }
-
-        return $"{postOffice.PostOfficeCode} - {postOffice.PostOfficeName}";
-    }
-
     private Task<IEnumerable<PostOffice>> SearchPostOffices(string value, CancellationToken cancellationToken)
     {
-        if (postOffices.Count == 0)
-        {
-            return Task.FromResult<IEnumerable<PostOffice>>(Array.Empty<PostOffice>());
-        }
-
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return Task.FromResult<IEnumerable<PostOffice>>(postOffices);
-        }
-
-        IEnumerable<PostOffice> results = postOffices.OrderByDescending(postOffice => postOffice.Like(value));
-
+        IEnumerable<PostOffice> results = AutocompleteSearchHelper.SearchByLike(postOffices, value);
         return Task.FromResult(results);
     }
 

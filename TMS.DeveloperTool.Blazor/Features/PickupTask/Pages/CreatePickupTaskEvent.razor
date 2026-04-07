@@ -29,13 +29,13 @@
                     <MudAutocomplete T="DailyPlanDto" Value="selectedDailyPlan" ValueChanged="OnDailyPlanChanged"
                                      SearchFunc="SearchDailyPlans" Label="Kế hoạch vận chuyển" Variant="Variant.Outlined"
                                      Class="mb-3" Clearable="true" MaxItems="20"
-                                     ToStringFunc="@(x => x is null ? string.Empty : $"{x.Code} - {x.Name} ({x.Status})")" />
+                                     ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<DailyPlanDto>" />
 
                     <MudAutocomplete T="PostOfficeOption" Value="selectedPostOffice" ValueChanged="OnPostOfficeChanged"
                                      SearchFunc="SearchPostOfficeOptions" Label="Bưu cục" Variant="Variant.Outlined"
                                      Class="mb-3" Clearable="true" MaxItems="20"
                                      Disabled="@(selectedDailyPlan is not null)"
-                                     ToStringFunc="@(x => x?.ToString() ?? string.Empty)" />
+                                     ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<PostOfficeOption>" />
 
                     <MudGrid>
                         <MudItem xs="7">
@@ -52,22 +52,22 @@
                     <MudAutocomplete T="EnumOption" Value="selectedStatus" ValueChanged="OnStatusChanged"
                                      SearchFunc="SearchStatusOptions" Label="Trạng thái" Variant="Variant.Outlined"
                                      Class="mb-3" Clearable="true" MaxItems="20"
-                                     ToStringFunc="@(x => x?.ToString() ?? string.Empty)" />
+                                     ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<EnumOption>" />
 
                     <MudAutocomplete T="EnumOption" Value="selectedServiceType" ValueChanged="OnServiceTypeChanged"
                                      SearchFunc="SearchServiceTypeOptions" Label="Loại dịch vụ" Variant="Variant.Outlined"
                                      Class="mb-3" Clearable="true" MaxItems="20"
-                                     ToStringFunc="@(x => x?.ToString() ?? string.Empty)" />
+                                     ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<EnumOption>" />
 
                     <MudAutocomplete T="EnumOption" Value="selectedDispatchType" ValueChanged="OnDispatchTypeChanged"
                                      SearchFunc="SearchDispatchTypeOptions" Label="Loại điều tin" Variant="Variant.Outlined"
                                      Class="mb-3" Clearable="true" MaxItems="20"
-                                     ToStringFunc="@(x => x?.ToString() ?? string.Empty)" />
+                                     ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<EnumOption>" />
 
                     <MudAutocomplete T="EnumOption" Value="selectedDispatchMethod" ValueChanged="OnDispatchMethodChanged"
                                      SearchFunc="SearchDispatchMethodOptions" Label="Phương thức điều tin" Variant="Variant.Outlined"
                                      Class="mb-3" Clearable="true" MaxItems="20"
-                                     ToStringFunc="@(x => x?.ToString() ?? string.Empty)" />
+                                     ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<EnumOption>" />
 
                     <MudDivider Class="my-4" />
 
@@ -258,65 +258,37 @@
 
     private Task<IEnumerable<DailyPlanDto>> SearchDailyPlans(string value, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return Task.FromResult<IEnumerable<DailyPlanDto>>(dailyPlans);
-
-        IEnumerable<DailyPlanDto> results = dailyPlans.OrderByDescending(x => x.Like(value));
-
+        IEnumerable<DailyPlanDto> results = AutocompleteSearchHelper.SearchByLike(dailyPlans, value);
         return Task.FromResult(results);
     }
 
     private Task<IEnumerable<PostOfficeOption>> SearchPostOfficeOptions(string value, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return Task.FromResult<IEnumerable<PostOfficeOption>>(postOfficeOptions);
-
-        IEnumerable<PostOfficeOption> results = postOfficeOptions.OrderByDescending(x => x.Like(value));
-
+        IEnumerable<PostOfficeOption> results = AutocompleteSearchHelper.SearchByLike(postOfficeOptions, value);
         return Task.FromResult(results);
     }
 
     private Task<IEnumerable<EnumOption>> SearchStatusOptions(string value, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return Task.FromResult<IEnumerable<EnumOption>>(statusOptions);
-
-        IEnumerable<EnumOption> results = statusOptions.OrderByDescending(x =>
-            x.Description.Contains(value, StringComparison.OrdinalIgnoreCase));
-
+        IEnumerable<EnumOption> results = AutocompleteSearchHelper.SearchByLike(statusOptions, value);
         return Task.FromResult(results);
     }
 
     private Task<IEnumerable<EnumOption>> SearchServiceTypeOptions(string value, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return Task.FromResult<IEnumerable<EnumOption>>(serviceTypeOptions);
-
-        IEnumerable<EnumOption> results = serviceTypeOptions.OrderByDescending(x =>
-            x.Description.Contains(value, StringComparison.OrdinalIgnoreCase));
-
+        IEnumerable<EnumOption> results = AutocompleteSearchHelper.SearchByLike(serviceTypeOptions, value);
         return Task.FromResult(results);
     }
 
     private Task<IEnumerable<EnumOption>> SearchDispatchTypeOptions(string value, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return Task.FromResult<IEnumerable<EnumOption>>(dispatchTypeOptions);
-
-        IEnumerable<EnumOption> results = dispatchTypeOptions.OrderByDescending(x =>
-            x.Description.Contains(value, StringComparison.OrdinalIgnoreCase));
-
+        IEnumerable<EnumOption> results = AutocompleteSearchHelper.SearchByLike(dispatchTypeOptions, value);
         return Task.FromResult(results);
     }
 
     private Task<IEnumerable<EnumOption>> SearchDispatchMethodOptions(string value, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return Task.FromResult<IEnumerable<EnumOption>>(dispatchMethodOptions);
-
-        IEnumerable<EnumOption> results = dispatchMethodOptions.OrderByDescending(x =>
-            x.Description.Contains(value, StringComparison.OrdinalIgnoreCase));
-
+        IEnumerable<EnumOption> results = AutocompleteSearchHelper.SearchByLike(dispatchMethodOptions, value);
         return Task.FromResult(results);
     }
 

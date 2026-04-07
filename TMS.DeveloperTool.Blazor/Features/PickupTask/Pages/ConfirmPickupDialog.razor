@@ -227,7 +227,7 @@
                 </RowTemplate>
             </MudTable>
 
-            <MudAutocomplete T="Driver" SearchFunc="SearchAvailableDrivers" ToStringFunc="GetDriverLabel"
+            <MudAutocomplete T="Driver" SearchFunc="SearchAvailableDrivers" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Driver>"
                              Label="Thêm tài xế" Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20"
                              Class="mt-3" ResetValueOnEmptyText="true" ValueChanged="OnAddWorkerDriver" />
         </MudPaper>
@@ -444,13 +444,8 @@
     {
         HashSet<Guid> existingIds = workerSelections.Select(w => w.EmployeeId).ToHashSet();
         IEnumerable<Driver> available = AllDrivers.Where(d => !existingIds.Contains(d.DriverId));
-
-        if (!string.IsNullOrWhiteSpace(value))
-        {
-            available = available.Where(d => d.Like(value));
-        }
-
-        return Task.FromResult(available);
+        IEnumerable<Driver> results = AutocompleteSearchHelper.SearchByLike(available, value, orderByRelevance: false);
+        return Task.FromResult(results);
     }
 
     private void OnAddWorkerDriver(Driver? driver)
@@ -693,11 +688,6 @@ orderItemId);
         }
 
         return true;
-    }
-
-    private static string GetDriverLabel(Driver? driver)
-    {
-        return driver is null ? string.Empty : $"{driver.Code} - {driver.Name}";
     }
 
     private static string GetOrderStatusLabel(PickupTaskOrderStatus status) => status switch

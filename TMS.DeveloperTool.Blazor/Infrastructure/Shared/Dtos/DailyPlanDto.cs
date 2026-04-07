@@ -1,8 +1,9 @@
 using TMS.DeveloperTool.Blazor.Domain.Enums;
+using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Interfaces;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
-public sealed record DailyPlanDto
+public sealed record DailyPlanDto : IDisplaySearchItem
 {
     public required Guid Id { get; init; }
     public required string Code { get; init; }
@@ -12,6 +13,11 @@ public sealed record DailyPlanDto
     public required string Status { get; init; }
 
     public List<DailyPlanDetailDto> Details { get; set; } = [];
+
+    public string GetDisplayString()
+    {
+        return $"{Code} - {Name} ({Status})";
+    }
 
     public bool Like(string searchTerm)
     {

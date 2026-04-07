@@ -31,7 +31,7 @@
                       Class="mb-3" />
 
         <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
-                         ToStringFunc="GetDriverLabel" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true" Clearable="true"
+                         ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Driver>" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true" Clearable="true"
                          MaxItems="20" Class="mb-3" />
 
         @if (isLoading)
@@ -174,21 +174,9 @@
         return $"{code} - {name}".Trim(' ', '-');
     }
 
-    private string GetDriverLabel(Driver? driver)
-    {
-        return driver == null ? string.Empty : $"{driver.Code} - {driver.Name}";
-    }
-
     private Task<IEnumerable<Driver>> SearchDrivers(string value, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return Task.FromResult<IEnumerable<Driver>>(drivers);
-        }
-
-        IEnumerable<Driver> results = drivers
-            .OrderByDescending(driver => driver.Like(value));
-
+        IEnumerable<Driver> results = AutocompleteSearchHelper.SearchByLike(drivers, value);
         return Task.FromResult(results);
     }
 

@@ -6,3 +6,4 @@ global using TMS.DeveloperTool.Blazor.Infrastructure.Extensions;
 global using TMS.DeveloperTool.Blazor.Infrastructure.Messaging;
 global using TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 global using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
+global using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Helpers;

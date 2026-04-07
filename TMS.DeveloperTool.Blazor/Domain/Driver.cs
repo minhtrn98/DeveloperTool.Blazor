@@ -1,8 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Interfaces;
 
 namespace TMS.DeveloperTool.Blazor.Domain;
 
-public sealed class Driver
+public sealed class Driver : IDisplaySearchItem
 {
     [Key]
     public Guid DriverId { get; set; } = Guid.CreateVersion7();
@@ -11,6 +12,11 @@ public sealed class Driver
     public DateTimeOffset? TokenExpiredAt { get; set; }
     public string Email { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
+
+    public string GetDisplayString()
+    {
+        return $"{Code} - {Name}";
+    }
 
     public bool Like(string searchTerm)
     {
