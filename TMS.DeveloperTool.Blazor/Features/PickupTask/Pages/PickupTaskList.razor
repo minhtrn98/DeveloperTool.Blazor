@@ -78,24 +78,25 @@
                     </MudTd>
                     <MudTd DataLabel="Scheduled Pickup Date">@FormatDate(context.ScheduledPickupDate)</MudTd>
                     <MudTd DataLabel="Actions">
-                        <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small" Class="flex-wrap">
-                            <MudButton Color="Color.Success" Disabled="@IsBusy(context.PickupTaskId)"
-                                       OnClick="@(() => HandleActionAsync(context, ActionAccept))">Chấp nhận</MudButton>
-                            <MudButton Color="Color.Primary" Disabled="@IsBusy(context.PickupTaskId)"
-                                       OnClick="@(() => HandleActionAsync(context, ActionArrived))">Đã tới nơi</MudButton>
-                            <MudButton Color="Color.Dark" Disabled="@IsBusy(context.PickupTaskId)"
-                                       OnClick="@(() => HandleActionAsync(context, ActionCancel))">Hủy</MudButton>
-                            <MudButton Color="Color.Warning" Disabled="@IsBusy(context.PickupTaskId)"
-                                       OnClick="@(() => HandleActionAsync(context, ActionReschedule))">Hẹn lấy lại</MudButton>
-                            <MudButton Color="Color.Secondary" Disabled="@IsBusy(context.PickupTaskId)"
-                                       OnClick="@(() => HandleActionAsync(context, ActionTransfer))">Chuyển tiếp</MudButton>
-                            <MudButton Color="Color.Tertiary" Disabled="@IsBusy(context.PickupTaskId)"
-                                       OnClick="@(() => HandleConfirmPickupAsync(context))">Xác nhận lấy đơn</MudButton>
-                            <MudButton Color="Color.Default" Disabled="@IsBusy(context.PickupTaskId)"
-                                       OnClick="@(() => HandleShowPickedOrdersAsync(context))">Đơn đã lấy</MudButton>
-                            <MudButton Color="Color.Info" Disabled="@IsBusy(context.PickupTaskId)"
-                                       OnClick="@(() => HandlePreCheckCompleteAsync(context))">Hoàn tất</MudButton>
-                        </MudButtonGroup>
+                        <MudMenu Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+                                 Disabled="@IsBusy(context.PickupTaskId)">
+                            <ActivatorContent>
+                                <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Primary" Size="Size.Small"
+                                               Disabled="@IsBusy(context.PickupTaskId)" />
+                            </ActivatorContent>
+
+                            <ChildContent>
+                                <MudMenuItem OnClick="@(() => HandleActionAsync(context, ActionAccept))">Chấp nhận</MudMenuItem>
+                                <MudMenuItem OnClick="@(() => HandleActionAsync(context, ActionArrived))">Đã tới nơi</MudMenuItem>
+                                <MudMenuItem OnClick="@(() => HandleActionAsync(context, ActionCancel))">Hủy</MudMenuItem>
+                                <MudMenuItem OnClick="@(() => HandleActionAsync(context, ActionReschedule))">Hẹn lấy lại</MudMenuItem>
+                                <MudMenuItem OnClick="@(() => HandleActionAsync(context, ActionTransfer))">Chuyển tiếp</MudMenuItem>
+                                <MudDivider />
+                                <MudMenuItem OnClick="@(() => HandleConfirmPickupAsync(context))">Xác nhận lấy đơn</MudMenuItem>
+                                <MudMenuItem OnClick="@(() => HandleShowPickedOrdersAsync(context))">Đơn đã lấy</MudMenuItem>
+                                <MudMenuItem OnClick="@(() => HandlePreCheckCompleteAsync(context))">Hoàn tất</MudMenuItem>
+                            </ChildContent>
+                        </MudMenu>
                     </MudTd>
                 </RowTemplate>
             </MudTable>
