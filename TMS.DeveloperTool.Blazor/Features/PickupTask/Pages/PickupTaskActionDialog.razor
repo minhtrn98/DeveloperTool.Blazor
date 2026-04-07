@@ -165,12 +165,6 @@
                 .Where(item => item.IsSelected && !item.IsCancelled)
                 .Select(item => item.OrderItemId)
                 .ToArray();
-
-            if (selectedOrderItemIds.Length == 0)
-            {
-                validationMessage = "Vui lòng chọn ít nhất 1 item đơn hàng.";
-                return;
-            }
         }
 
         if (string.IsNullOrWhiteSpace(reason))
