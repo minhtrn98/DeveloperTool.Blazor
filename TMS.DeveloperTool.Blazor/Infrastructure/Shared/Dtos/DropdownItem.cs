@@ -11,10 +11,17 @@ public record DropdownItem<TKey>(TKey Id, string Code, string Name) : Interfaces
     }
 }
 
-public sealed record DropdownItemPlanning(Guid Id, string Code, string Name, string Status)
+public sealed record DropdownItemPlanning(Guid Id, string Code, string Name, string Status, string DepartmentCode)
     : DropdownItem<Guid>(Id, Code, Name)
 {
-    public override string GetDisplayString() => $"[{Status}] {Name}";
+    public override string GetDisplayString() => $"[{DepartmentCode}] [{Status}] {Name}";
+
+    public override bool Like(string searchTerm)
+    {
+        return base.Like(searchTerm) ||
+               DepartmentCode.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+               Status.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
+    }
 }
 
 public sealed record VehicleDropdownItem(Guid Id, string Code, string LicensePlate, string DeptManagerCode)

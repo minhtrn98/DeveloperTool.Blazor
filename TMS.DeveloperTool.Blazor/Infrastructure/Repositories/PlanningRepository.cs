@@ -17,7 +17,7 @@ public sealed class PlanningRepository
         string todayGmt7 = gmt7Now.ToString("yyyy-MM-dd");
 
         string sql = $"""
-            select id as "Id", code as "Code", name as "Name", status as "Status"
+            select id as "Id", code as "Code", name as "Name", status as "Status", department_code as "DepartmentCode"
             from public.real_plans
             where execution_date = '{todayGmt7}'
         """;

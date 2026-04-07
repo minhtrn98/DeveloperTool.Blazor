@@ -120,7 +120,7 @@ public sealed class FleetRepository
     public async Task<IEnumerable<DropdownItemPlanning>> GetInspectionPlansByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT "Id", "Code", "Name", "Status"
+            SELECT "Id", "Code", "Name", "Status", "DeptManagerCode" as "DepartmentCode"
             FROM public."InspectionPlans"
             WHERE "VehicleId" = @VehicleId and "Status" = Any(@Statuses)
         """;
@@ -134,7 +134,7 @@ public sealed class FleetRepository
     public async Task<IEnumerable<DropdownItemPlanning>> GetMaintenancePlanByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT "Id", "Code", "Name", "Status"
+            SELECT "Id", "Code", "Name", "Status", "DeptManagerCode" as "DepartmentCode"
             FROM public."MaintenancePlans"
             WHERE "VehicleId" = @VehicleId and "Status" = Any(@Statuses)
         """;

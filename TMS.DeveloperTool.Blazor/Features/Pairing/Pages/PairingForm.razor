@@ -485,14 +485,13 @@
                 FullWidth = true
             };
 
-            IDialogReference dialog = await DialogService.ShowAsync<DailyPlanSuggestionDialog>("Gợi ý kế hoạch ngày", parameters,
-options);
+            IDialogReference dialog = await DialogService.ShowAsync<DailyPlanSuggestionDialog>("Gợi ý kế hoạch ngày", parameters, options);
             DialogResult? dialogResult = await dialog.Result;
 
             if (dialogResult is { Canceled: false, Data: DailyPlanDto selectedPlan })
             {
                 SelectedPlanningOption = planningOptions.FirstOrDefault(p => p.Id == selectedPlan.Id)
-                    ?? new DropdownItemPlanning(selectedPlan.Id, selectedPlan.Code, selectedPlan.Name, selectedPlan.Status);
+                    ?? new DropdownItemPlanning(selectedPlan.Id, selectedPlan.Code, selectedPlan.Name, selectedPlan.Status, selectedPlan.DepartmentCode);
             }
         }
         catch (Exception ex)
