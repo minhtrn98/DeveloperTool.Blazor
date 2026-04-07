@@ -46,7 +46,7 @@
                     </MudItem>
                 </MudGrid> *@
 
-                <MudAutocomplete T="DropdownItem<Guid>" Value="SelectedVehicleOption" ValueChanged="OnVehicleChanged"
+                <MudAutocomplete T="VehicleDropdownItem" Value="SelectedVehicleOption" ValueChanged="OnVehicleChanged"
                                  SearchFunc="SearchVehicleOptions" ToStringFunc="GetVehicleDropdownLabel" Label="Xe"
                                  Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
 
@@ -151,7 +151,7 @@
     private double odometer = 0;
     private bool autoCreateMaintenancePlan;
 
-    private List<DropdownItem<Guid>> vehicleOptions = [];
+    private List<VehicleDropdownItem> vehicleOptions = [];
     private List<DropdownItem<Guid>> pairingReasonTypes = [];
     private List<DropdownItem<ActionType>> actionTypes = [];
     private List<DropdownItem<AssignmentPlanType>> planningTypes = [];
@@ -159,7 +159,7 @@
     private List<PostOffice> postOffices = [];
     private List<Driver> drivers = [];
 
-    private DropdownItem<Guid>? selectedVehicleOption;
+    private VehicleDropdownItem? selectedVehicleOption;
     private DropdownItemPlanning? selectedPlanningOption;
     private PostOffice? selectedPostOffice;
     private Driver? selectedDriver;
@@ -183,13 +183,7 @@
         {
             CancellationToken cancellationToken = CancellationToken.None;
 
-            Dictionary<Guid, string> vehicleMap = await FleetRepository.GetAllVehiclePlateAsync(isPairingAllowed: true,
-cancellationToken);
-            vehicleOptions = vehicleMap
-                .OrderBy(kvp => kvp.Value)
-                .Select(kvp => new DropdownItem<Guid>(kvp.Key, kvp.Value.Replace(".", "").Replace("-", "").ToLowerInvariant(),
-kvp.Value))
-                .ToList();
+            vehicleOptions = await FleetRepository.GetAllVehiclePlateAsync(isPairingAllowed: true, cancellationToken);
 
             pairingReasonTypes = (await FleetRepository.GetPairingReasonTypes(cancellationToken)).ToList();
             actionTypes = FleetRepository.GetActionTypes().ToList();
@@ -217,7 +211,7 @@ kvp.Value))
         }
     }
 
-    private DropdownItem<Guid>? SelectedVehicleOption
+    private VehicleDropdownItem? SelectedVehicleOption
     {
         get => selectedVehicleOption;
         set
@@ -227,7 +221,7 @@ kvp.Value))
         }
     }
 
-    private async Task OnVehicleChanged(DropdownItem<Guid>? value)
+    private async Task OnVehicleChanged(VehicleDropdownItem? value)
     {
         SelectedVehicleOption = value;
 
@@ -336,17 +330,15 @@ kvp.Value))
         return driver == null ? string.Empty : $"{driver.Code} - {driver.Name}";
     }
 
-    private Task<IEnumerable<DropdownItem<Guid>>> SearchVehicleOptions(string value, CancellationToken cancellationToken)
+    private Task<IEnumerable<VehicleDropdownItem>> SearchVehicleOptions(string value, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return Task.FromResult<IEnumerable<DropdownItem<Guid>>>(vehicleOptions);
+            return Task.FromResult<IEnumerable<VehicleDropdownItem>>(vehicleOptions);
         }
 
-        string formatValue = value.Replace(".", "").Replace("-", "");
-
-        IEnumerable<DropdownItem<Guid>> results = vehicleOptions
-            .OrderByDescending(item => item.Code.Contains(formatValue, StringComparison.OrdinalIgnoreCase));
+        IEnumerable<VehicleDropdownItem> results = vehicleOptions
+            .OrderByDescending(item => item.Like(value));
 
         return Task.FromResult(results);
     }
@@ -358,9 +350,7 @@ kvp.Value))
             return Task.FromResult<IEnumerable<DropdownItemPlanning>>(planningOptions);
         }
 
-        IEnumerable<DropdownItemPlanning> results = planningOptions.OrderByDescending(item =>
-            item.Name.Contains(value, StringComparison.OrdinalIgnoreCase)
-            || item.Code.Contains(value, StringComparison.OrdinalIgnoreCase));
+        IEnumerable<DropdownItemPlanning> results = planningOptions.OrderByDescending(item => item.Like(value));
 
         return Task.FromResult(results);
     }
@@ -398,9 +388,7 @@ kvp.Value))
             return Task.FromResult<IEnumerable<PostOffice>>(postOffices);
         }
 
-        IEnumerable<PostOffice> results = postOffices.OrderByDescending(postOffice =>
-            postOffice.PostOfficeCode.Contains(value, StringComparison.OrdinalIgnoreCase)
-            || postOffice.PostOfficeName.Contains(value, StringComparison.OrdinalIgnoreCase));
+        IEnumerable<PostOffice> results = postOffices.OrderByDescending(postOffice => postOffice.Like(value));
 
         return Task.FromResult(results);
     }
@@ -412,11 +400,7 @@ kvp.Value))
             return Task.FromResult<IEnumerable<Driver>>(drivers);
         }
 
-        IEnumerable<Driver> results = drivers
-            .OrderByDescending(driver =>
-                    driver.Name.Contains(value, StringComparison.OrdinalIgnoreCase)
-                    || driver.Code.Contains(value, StringComparison.OrdinalIgnoreCase)
-                    || driver.Email.Contains(value, StringComparison.OrdinalIgnoreCase));
+        IEnumerable<Driver> results = drivers.OrderByDescending(driver => driver.Like(value));
 
         return Task.FromResult(results);
     }

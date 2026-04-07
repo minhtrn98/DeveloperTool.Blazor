@@ -12,6 +12,12 @@ public sealed record DailyPlanDto
     public required string Status { get; init; }
 
     public List<DailyPlanDetailDto> Details { get; set; } = [];
+
+    public bool Like(string searchTerm)
+    {
+        return Code.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+               Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
+    }
 }
 
 public sealed record DailyPlanDetailDto

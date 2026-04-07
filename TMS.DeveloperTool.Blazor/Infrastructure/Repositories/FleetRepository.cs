@@ -23,22 +23,23 @@ public sealed class FleetRepository
         return vehicles.ToDictionary(d => d.Id, d => d.LicensePlate);
     }
 
-    public async Task<Dictionary<Guid, string>> GetAllVehiclePlateAsync(bool? isPairingAllowed, CancellationToken cancellationToken = default)
+    public async Task<List<VehicleDropdownItem>> GetAllVehiclePlateAsync(bool? isPairingAllowed, CancellationToken cancellationToken = default)
     {
         string sql = isPairingAllowed.HasValue ? """
-            SELECT "Id", "LicensePlate"
+            SELECT "Id", "Code", "LicensePlate", "DeptManagerCode"
             FROM public.mv_vehicles_with_status
             WHERE "IsPairingAllowed" = @IsPairingAllowed
+            order by "DeptManagerCode" nulls last, "LicensePlate"
         """ : """
-            SELECT "Id", "LicensePlate"
+            SELECT "Id", "Code", "LicensePlate", "DeptManagerCode"
             FROM public.mv_vehicles_with_status
+            order by "DeptManagerCode" nulls last, "LicensePlate"
         """;
 
-        IEnumerable<VehicleRecord> vehicles = isPairingAllowed.HasValue
-            ? await _dbQuery.QueryAsync<VehicleRecord>(sql, new { IsPairingAllowed = isPairingAllowed }, cancellationToken)
-            : await _dbQuery.QueryAsync<VehicleRecord>(sql, null, cancellationToken);
+        object? parameters = isPairingAllowed.HasValue ? new { IsPairingAllowed = isPairingAllowed } : null;
+        IEnumerable<VehicleDropdownItem> vehicles = await _dbQuery.QueryAsync<VehicleDropdownItem>(sql, parameters, cancellationToken);
 
-        return vehicles.ToDictionary(d => d.Id, d => d.LicensePlate);
+        return vehicles.ToList();
     }
 
     public async Task<IEnumerable<Guid>> GetAllVehicleIdsAsync(CancellationToken cancellationToken = default)

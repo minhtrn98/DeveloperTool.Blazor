@@ -196,9 +196,7 @@
             return Task.FromResult<IEnumerable<Driver>>(drivers);
         }
 
-        IEnumerable<Driver> results = drivers.Where(driver =>
-            driver.Code.Contains(value, StringComparison.OrdinalIgnoreCase) ||
-            driver.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+        IEnumerable<Driver> results = drivers.Where(driver => driver.Like(value));
 
         return Task.FromResult(results);
     }

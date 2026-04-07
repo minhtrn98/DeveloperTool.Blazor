@@ -447,9 +447,7 @@
 
         if (!string.IsNullOrWhiteSpace(value))
         {
-            available = available.Where(d =>
-                d.Code.Contains(value, StringComparison.OrdinalIgnoreCase) ||
-                d.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+            available = available.Where(d => d.Like(value));
         }
 
         return Task.FromResult(available);

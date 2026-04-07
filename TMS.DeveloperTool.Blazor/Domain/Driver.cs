@@ -11,4 +11,11 @@ public sealed class Driver
     public DateTimeOffset? TokenExpiredAt { get; set; }
     public string Email { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
+
+    public bool Like(string searchTerm)
+    {
+        return Code.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+               Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+               Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
+    }
 }

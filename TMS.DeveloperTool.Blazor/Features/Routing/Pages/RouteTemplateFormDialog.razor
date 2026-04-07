@@ -255,11 +255,7 @@
             return Task.FromResult<IEnumerable<PostOffice>>(postOffices);
         }
 
-        IEnumerable<PostOffice> results = postOffices.OrderByDescending(postOffice =>
-            (!string.IsNullOrWhiteSpace(postOffice.PostOfficeCode)
-                && postOffice.PostOfficeCode.Contains(value, StringComparison.OrdinalIgnoreCase))
-            || (!string.IsNullOrWhiteSpace(postOffice.PostOfficeName)
-                && postOffice.PostOfficeName.Contains(value, StringComparison.OrdinalIgnoreCase)));
+        IEnumerable<PostOffice> results = postOffices.OrderByDescending(postOffice => postOffice.Like(value));
 
         return Task.FromResult(results);
     }

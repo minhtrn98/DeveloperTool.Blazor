@@ -261,9 +261,7 @@
         if (string.IsNullOrWhiteSpace(value))
             return Task.FromResult<IEnumerable<DailyPlanDto>>(dailyPlans);
 
-        IEnumerable<DailyPlanDto> results = dailyPlans.OrderByDescending(x =>
-            x.Code.Contains(value, StringComparison.OrdinalIgnoreCase)
-            || x.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+        IEnumerable<DailyPlanDto> results = dailyPlans.OrderByDescending(x => x.Like(value));
 
         return Task.FromResult(results);
     }
@@ -273,9 +271,7 @@
         if (string.IsNullOrWhiteSpace(value))
             return Task.FromResult<IEnumerable<PostOfficeOption>>(postOfficeOptions);
 
-        IEnumerable<PostOfficeOption> results = postOfficeOptions.OrderByDescending(x =>
-            x.Code.Contains(value, StringComparison.OrdinalIgnoreCase)
-            || x.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+        IEnumerable<PostOfficeOption> results = postOfficeOptions.OrderByDescending(x => x.Like(value));
 
         return Task.FromResult(results);
     }

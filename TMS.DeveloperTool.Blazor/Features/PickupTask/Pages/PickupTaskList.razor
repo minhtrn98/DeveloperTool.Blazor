@@ -187,10 +187,7 @@
         }
 
         IEnumerable<Driver> results = drivers
-            .OrderByDescending(driver =>
-                driver.Name.Contains(value, StringComparison.OrdinalIgnoreCase)
-                || driver.Code.Contains(value, StringComparison.OrdinalIgnoreCase)
-                || driver.Email.Contains(value, StringComparison.OrdinalIgnoreCase));
+            .OrderByDescending(driver => driver.Like(value));
 
         return Task.FromResult(results);
     }
