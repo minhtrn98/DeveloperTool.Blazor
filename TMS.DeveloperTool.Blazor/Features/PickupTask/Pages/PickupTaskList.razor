@@ -91,10 +91,8 @@
                                        OnClick="@(() => HandleActionAsync(context, ActionTransfer))">Chuyển tiếp</MudButton>
                             <MudButton Color="Color.Tertiary" Disabled="@IsBusy(context.PickupTaskId)"
                                        OnClick="@(() => HandleConfirmPickupAsync(context))">Xác nhận lấy đơn</MudButton>
-                            <MudButton Color="Color.Success" Disabled="@IsBusy(context.PickupTaskId)"
-                                       OnClick="@(() => HandleCompletePickupAsync(context))">Hoàn tất</MudButton>
                             <MudButton Color="Color.Info" Disabled="@IsBusy(context.PickupTaskId)"
-                                       OnClick="@(() => HandlePreCheckCompleteAsync(context))">Complete preparation</MudButton>
+                                       OnClick="@(() => HandlePreCheckCompleteAsync(context))">Hoàn tất</MudButton>
                         </MudButtonGroup>
                     </MudTd>
                 </RowTemplate>
@@ -399,36 +397,6 @@ options);
         };
     }
 
-    private async Task HandleCompletePickupAsync(PickupTaskInfo item)
-    {
-        if (!processingTaskIds.Add(item.PickupTaskId))
-        {
-            return;
-        }
-
-        try
-        {
-            string bearerToken = selectedDriver?.BearerToken ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(bearerToken))
-            {
-                Snackbar.Add("Vui lòng chọn tài xế có Bearer token trước khi thao tác.", Severity.Warning);
-                return;
-            }
-
-            await PickupTaskActionService.CompletePickupAsync(item.PickupTaskId, bearerToken);
-            await ReloadAsync();
-            Snackbar.Add($"Hoàn tất điều tin {item.PickupTaskId} thành công.", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Có lỗi khi hoàn tất điều tin: {ex.Message}", Severity.Error);
-        }
-        finally
-        {
-            processingTaskIds.Remove(item.PickupTaskId);
-        }
-    }
-
     private async Task HandlePreCheckCompleteAsync(PickupTaskInfo item)
     {
         if (!processingTaskIds.Add(item.PickupTaskId))
@@ -460,7 +428,15 @@ options);
                 CloseOnEscapeKey = true
             };
 
-            await DialogService.ShowAsync<PreCheckCompleteResponseDialog>("Complete preparation data", parameters, options);
+            IDialogReference dialog = await DialogService.ShowAsync<PreCheckCompleteResponseDialog>("Complete preparation data", parameters, options);
+            DialogResult? result = await dialog.Result;
+
+            if (result?.Canceled == false && result.Data is bool shouldComplete && shouldComplete)
+            {
+                await PickupTaskActionService.CompletePickupAsync(item.PickupTaskId, bearerToken);
+                await ReloadAsync();
+                Snackbar.Add($"Hoàn tất điều tin {item.PickupTaskId} thành công.", Severity.Success);
+            }
         }
         catch (Exception ex)
         {

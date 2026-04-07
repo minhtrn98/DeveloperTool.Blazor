@@ -10,6 +10,7 @@
         </MudPaper>
     </DialogContent>
     <DialogActions>
+        <MudButton OnClick="Complete" Variant="Variant.Filled" Color="Color.Success">Hoàn tất</MudButton>
         <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary">Close</MudButton>
     </DialogActions>
 </MudDialog>
@@ -27,5 +28,10 @@
     private void Close()
     {
         MudDialog.Close();
+    }
+
+    private void Complete()
+    {
+        MudDialog.Close(DialogResult.Ok(true));
     }
 }
