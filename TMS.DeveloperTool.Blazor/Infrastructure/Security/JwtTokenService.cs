@@ -21,7 +21,7 @@ public sealed class JwtTokenService
         _jwtSetting = jwtOptions;
     }
 
-    public string CreateToken(Driver driver)
+    public string CreateToken(Driver driver, List<string> permissions)
     {
         ArgumentNullException.ThrowIfNull(driver);
 
@@ -46,7 +46,7 @@ public sealed class JwtTokenService
             new("roleNames", "SA")
         ];
 
-        foreach (string permission in _jwtSetting.Permissions)
+        foreach (string permission in permissions)
         {
             claims.Add(new Claim("permissions", permission));
         }

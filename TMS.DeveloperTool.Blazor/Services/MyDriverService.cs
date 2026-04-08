@@ -82,6 +82,7 @@ public sealed class MyDriverService
 
     public async Task<int> GenerateTokensForAllDriversAsync(CancellationToken cancellationToken = default)
     {
+        List<string> permissions = await _driverRepository.GetAllPermissionsAsync(cancellationToken);
         List<Driver> drivers = await _dbContext.Drivers.ToListAsync(cancellationToken);
         DateTimeOffset utcNow = DateTimeOffset.UtcNow;
 
@@ -96,7 +97,7 @@ public sealed class MyDriverService
                 continue;
             }
 
-            driver.BearerToken = _jwtTokenService.CreateToken(driver);
+            driver.BearerToken = _jwtTokenService.CreateToken(driver, permissions);
             driver.TokenExpiredAt = _jwtTokenService.GetDefaultExpiresAtUtc(utcNow);
         }
 

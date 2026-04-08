@@ -42,4 +42,14 @@ public sealed class DriverRepository
         DriverRecord? driver = await _dbQuery.FirstOrDefaultAsync<DriverRecord>(sql, new { Id = id }, cancellationToken);
         return driver;
     }
+
+    public async Task<List<string>> GetAllPermissionsAsync(CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT key as "Value"
+            FROM public.app_permissions
+        """;
+        IEnumerable<string> permissions = await _dbQuery.QueryAsync<string>(sql, null, cancellationToken);
+        return permissions.ToList();
+    }
 }
