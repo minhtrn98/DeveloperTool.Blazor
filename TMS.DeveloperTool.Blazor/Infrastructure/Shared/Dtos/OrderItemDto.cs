@@ -1,6 +1,6 @@
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
-public sealed record OrderItemInfo(
+public sealed record OrderItemDto(
     string OrderId,
     string OrderItemId,
     decimal Weight,

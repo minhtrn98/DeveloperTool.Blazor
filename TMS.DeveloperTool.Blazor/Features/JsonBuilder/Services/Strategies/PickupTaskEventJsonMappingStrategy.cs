@@ -157,8 +157,8 @@ public sealed class PickupTaskEventJsonMappingStrategy(
 
     private static async Task<object> BuildOrdersValueAsync(OrderRepository orderRepository)
     {
-        List<OrderInfo> orders = await orderRepository.GetAllOrdersAsync();
-        List<OrderItemInfo> orderItems = await orderRepository.GetAllOrderItemsAsync();
+        List<OrderDto> orders = await orderRepository.GetAllOrdersAsync();
+        List<OrderItemDto> orderItems = await orderRepository.GetAllOrderItemsAsync();
 
         Dictionary<string, List<PickupTaskEventOrderItemDto>> orderItemsByOrderId = orderItems
             .Where(orderItem => !string.IsNullOrWhiteSpace(orderItem.OrderId))

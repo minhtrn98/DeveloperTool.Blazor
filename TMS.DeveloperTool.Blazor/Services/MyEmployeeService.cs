@@ -85,9 +85,9 @@ public sealed class MyEmployeeService
         List<Employee> employees = await _dbContext.Employees.ToListAsync(cancellationToken);
         List<Guid> employeeIds = employees.Select(e => e.EmployeeId).ToList();
 
-        Dictionary<Guid, EmployeeContactDto> empContactInfos = await _driverRepository.GetEmpContactAsync(employeeIds, cancellationToken);
-        Dictionary<Guid, RoleDto[]> empRoles = await _driverRepository.GetEmpRolesAsync(employeeIds, cancellationToken);
-        Dictionary<Guid, string[]> empDepts = await _driverRepository.GetEmpDeptsAsync(employeeIds, cancellationToken);
+        Dictionary<Guid, EmployeeContactDto> empContactInfos = await _driverRepository.GetEmployeeContactsAsync(employeeIds, cancellationToken);
+        Dictionary<Guid, RoleDto[]> empRoles = await _driverRepository.GetEmployeeRolesAsync(employeeIds, cancellationToken);
+        Dictionary<Guid, string[]> empDepts = await _driverRepository.GetEmployeeDepartmentsAsync(employeeIds, cancellationToken);
         Dictionary<Guid, string[]> rolePermissions = await _driverRepository.GetAllRolePermissionsAsync(cancellationToken);
 
         DateTimeOffset utcNow = DateTimeOffset.UtcNow;

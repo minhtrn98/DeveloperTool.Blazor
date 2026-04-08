@@ -25,7 +25,7 @@ public sealed class DriverRepository
         return drivers.ToDictionary(d => d.Id, d => d.Name);
     }
 
-    public async Task<Dictionary<Guid, EmployeeContactDto>> GetEmpContactAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
+    public async Task<Dictionary<Guid, EmployeeContactDto>> GetEmployeeContactsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
     {
         const string sql = """
             SELECT id as "Id", email as "Email", phone as "Phone"
@@ -47,7 +47,7 @@ public sealed class DriverRepository
         return driver;
     }
 
-    public async Task<Dictionary<Guid, RoleDto[]>> GetEmpRolesAsync(IEnumerable<Guid> driverIds, CancellationToken cancellationToken)
+    public async Task<Dictionary<Guid, RoleDto[]>> GetEmployeeRolesAsync(IEnumerable<Guid> driverIds, CancellationToken cancellationToken)
     {
         const string sql = """
             SELECT e.id as "DriverId", r.id as "RoleId", r.name as "RoleName", r.permissions_version as "PermissionsVersion"
@@ -62,7 +62,7 @@ public sealed class DriverRepository
             .ToDictionary(g => g.Key, g => g.Select(dr => new RoleDto(dr.RoleId, dr.RoleName, dr.PermissionsVersion)).ToArray());
     }
 
-    public async Task<Dictionary<Guid, string[]>> GetEmpDeptsAsync(IEnumerable<Guid> driverIds, CancellationToken cancellationToken)
+    public async Task<Dictionary<Guid, string[]>> GetEmployeeDepartmentsAsync(IEnumerable<Guid> driverIds, CancellationToken cancellationToken)
     {
         const string sql = """
             SELECT e.id as "DriverId", d.code as "DeptCode"

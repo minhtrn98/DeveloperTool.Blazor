@@ -12,7 +12,7 @@
         else
         {
             <MudExpansionPanels MultiExpansion="true" Elevation="0" Outlined="true">
-                @foreach (PickupTaskOrderDraft draft in Drafts)
+                @foreach (PickupTaskOrderDraftDto draft in Drafts)
                 {
                     int itemCount = draft.Items?.Count ?? 0;
                     <MudExpansionPanel Text="@($"Draft: {draft.DraftId} ({itemCount} kiện)")" Expanded="true">
@@ -50,7 +50,7 @@
     IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter] public string PickupTaskId { get; set; } = string.Empty;
-    [Parameter] public List<PickupTaskOrderDraft> Drafts { get; set; } = [];
+    [Parameter] public List<PickupTaskOrderDraftDto> Drafts { get; set; } = [];
 
     private void Close()
     {

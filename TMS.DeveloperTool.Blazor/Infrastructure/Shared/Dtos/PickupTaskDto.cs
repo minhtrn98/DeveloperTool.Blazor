@@ -1,6 +1,6 @@
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
-public sealed record PickupTaskInfo
+public sealed record PickupTaskDto
 {
     public string PickupTaskId { get; set; } = string.Empty;
     public string? AssignedDriverId { get; set; }

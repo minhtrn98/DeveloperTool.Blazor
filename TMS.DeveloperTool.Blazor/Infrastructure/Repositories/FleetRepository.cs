@@ -12,7 +12,7 @@ public sealed class FleetRepository
         _dbQuery = dbQuery;
     }
 
-    public async Task<Dictionary<Guid, string>> GetVehiclePlateAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
+    public async Task<Dictionary<Guid, string>> GetVehiclePlatesAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
     {
         const string sql = """
             SELECT "Id", "LicensePlate"
@@ -23,7 +23,7 @@ public sealed class FleetRepository
         return vehicles.ToDictionary(d => d.Id, d => d.LicensePlate);
     }
 
-    public async Task<List<VehicleDropdownItem>> GetAllVehiclePlateAsync(bool? isPairingAllowed, CancellationToken cancellationToken = default)
+    public async Task<List<VehicleDropdownItemDto>> GetVehicleDropdownItemsAsync(bool? isPairingAllowed, CancellationToken cancellationToken = default)
     {
         string sql = isPairingAllowed.HasValue ? """
             SELECT "Id", "Code", "LicensePlate", "DeptManagerCode"
@@ -37,7 +37,7 @@ public sealed class FleetRepository
         """;
 
         object? parameters = isPairingAllowed.HasValue ? new { IsPairingAllowed = isPairingAllowed } : null;
-        IEnumerable<VehicleDropdownItem> vehicles = await _dbQuery.QueryAsync<VehicleDropdownItem>(sql, parameters, cancellationToken);
+        IEnumerable<VehicleDropdownItemDto> vehicles = await _dbQuery.QueryAsync<VehicleDropdownItemDto>(sql, parameters, cancellationToken);
 
         return vehicles.ToList();
     }
@@ -51,14 +51,14 @@ public sealed class FleetRepository
         return await _dbQuery.QueryAsync<Guid>(sql, null, cancellationToken);
     }
 
-    public async Task<IEnumerable<DropdownItem<Guid>>> GetPairingReasonTypes(CancellationToken cancellationToken)
+    public async Task<IEnumerable<DropdownItemDto<Guid>>> GetPairingReasonTypesAsync(CancellationToken cancellationToken)
     {
         const string sql = """
             select  "Id" ,"Code" ,"Name"
             from public."PairingReasonTypes"
             where "IsDeleted" = false
         """;
-        IEnumerable<DropdownItem<Guid>> records = await _dbQuery.QueryAsync<DropdownItem<Guid>>(sql, null, cancellationToken);
+        IEnumerable<DropdownItemDto<Guid>> records = await _dbQuery.QueryAsync<DropdownItemDto<Guid>>(sql, null, cancellationToken);
         return records;
     }
 
@@ -84,19 +84,19 @@ public sealed class FleetRepository
         return odometer ?? 0;
     }
 
-    public static IEnumerable<DropdownItem<ActionType>> GetActionTypes()
+    public static IEnumerable<DropdownItemDto<ActionType>> GetActionTypes()
     {
         return EnumExtensions.ToList<ActionType>()
-            .Select(e => new DropdownItem<ActionType>((ActionType)e.Value, e.Code, e.Description));
+            .Select(e => new DropdownItemDto<ActionType>((ActionType)e.Value, e.Code, e.Description));
     }
 
-    public static IEnumerable<DropdownItem<AssignmentPlanType>> GetAssignmentPlanTypes()
+    public static IEnumerable<DropdownItemDto<AssignmentPlanType>> GetAssignmentPlanTypes()
     {
         return EnumExtensions.ToList<AssignmentPlanType>()
-            .Select(e => new DropdownItem<AssignmentPlanType>((AssignmentPlanType)e.Value, e.Code, e.Description));
+            .Select(e => new DropdownItemDto<AssignmentPlanType>((AssignmentPlanType)e.Value, e.Code, e.Description));
     }
 
-    public async Task<LatestAssignmentResponse?> GetLatestAssignmentAsync(Guid vehicleId, CancellationToken cancellationToken = default)
+    public async Task<LatestAssignmentDto?> GetLatestAssignmentAsync(Guid vehicleId, CancellationToken cancellationToken = default)
     {
         const string sql = """
             SELECT
@@ -114,31 +114,31 @@ public sealed class FleetRepository
             ORDER BY vd."Code" DESC
             LIMIT 1
         """;
-        return await _dbQuery.SingleOrDefaultAsync<LatestAssignmentResponse>(sql, new { VehicleId = vehicleId }, cancellationToken);
+        return await _dbQuery.SingleOrDefaultAsync<LatestAssignmentDto>(sql, new { VehicleId = vehicleId }, cancellationToken);
     }
 
-    public async Task<IEnumerable<DropdownItemPlanning>> GetInspectionPlansByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<PlanningDropdownItemDto>> GetInspectionPlansByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
     {
         const string sql = """
             SELECT "Id", "Code", "Name", "Status", "DeptManagerCode" as "DepartmentCode"
             FROM public."InspectionPlans"
             WHERE "VehicleId" = @VehicleId and "Status" = Any(@Statuses)
         """;
-        IEnumerable<DropdownItemPlanning> records = await _dbQuery.QueryAsync<DropdownItemPlanning>(
+        IEnumerable<PlanningDropdownItemDto> records = await _dbQuery.QueryAsync<PlanningDropdownItemDto>(
             sql,
             new { VehicleId = vehicleId, Statuses = new[] { (int)InspectionPlanStatus.WaitingForInspection, (int)InspectionPlanStatus.InProgress } },
             cancellationToken);
         return records;
     }
 
-    public async Task<IEnumerable<DropdownItemPlanning>> GetMaintenancePlanByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<PlanningDropdownItemDto>> GetMaintenancePlansByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
     {
         const string sql = """
             SELECT "Id", "Code", "Name", "Status", "DeptManagerCode" as "DepartmentCode"
             FROM public."MaintenancePlans"
             WHERE "VehicleId" = @VehicleId and "Status" = Any(@Statuses)
         """;
-        IEnumerable<DropdownItemPlanning> records = await _dbQuery.QueryAsync<DropdownItemPlanning>(
+        IEnumerable<PlanningDropdownItemDto> records = await _dbQuery.QueryAsync<PlanningDropdownItemDto>(
             sql,
             new { VehicleId = vehicleId, Statuses = new[] { (int)MaintenancePlanStatus.Pending, (int)MaintenancePlanStatus.InTransit, (int)MaintenancePlanStatus.InProgress } },
             cancellationToken);

@@ -1,6 +1,6 @@
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
-public sealed class TopMovingVehicle
+public sealed class TopMovingVehicleDto
 {
     public string ActualPlate { get; set; } = string.Empty;
     public string Plate { get; set; } = string.Empty;

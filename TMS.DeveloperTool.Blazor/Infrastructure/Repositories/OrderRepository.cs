@@ -9,7 +9,7 @@ public sealed class OrderRepository
         _dbQuery = dbQuery;
     }
 
-    public async Task<List<OrderInfo>> GetAllOrdersAsync(CancellationToken cancellationToken = default)
+    public async Task<List<OrderDto>> GetAllOrdersAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """
             with pickup_orders as (
@@ -29,11 +29,11 @@ public sealed class OrderRepository
             left join pickup_orders po on po.order_id = o.order_id
             order by o.order_id;
             """;
-        IEnumerable<OrderInfo> orders = await _dbQuery.QueryAsync<OrderInfo>(sql, null, cancellationToken);
+        IEnumerable<OrderDto> orders = await _dbQuery.QueryAsync<OrderDto>(sql, null, cancellationToken);
         return orders.ToList();
     }
 
-    public async Task<List<PickupTaskOrderInfo>> GetOrdersByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
+    public async Task<List<PickupTaskOrderDto>> GetOrdersByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
     {
         const string sql = """
             select
@@ -44,11 +44,11 @@ public sealed class OrderRepository
             where o.pickup_task_id = @PickupTaskId
             order by o.order_id;
             """;
-        IEnumerable<PickupTaskOrderInfo> orders = await _dbQuery.QueryAsync<PickupTaskOrderInfo>(sql, new { PickupTaskId = pickupTaskId }, cancellationToken);
+        IEnumerable<PickupTaskOrderDto> orders = await _dbQuery.QueryAsync<PickupTaskOrderDto>(sql, new { PickupTaskId = pickupTaskId }, cancellationToken);
         return orders.ToList();
     }
 
-    public async Task<List<OrderItemInfo>> GetAllOrderItemsAsync(CancellationToken cancellationToken = default)
+    public async Task<List<OrderItemDto>> GetAllOrderItemsAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """
             with pickup_order_items as (
@@ -66,11 +66,11 @@ public sealed class OrderRepository
             left join pickup_order_items po on po.order_item_id = o.order_item_id
             order by o.order_item_id;
             """;
-        IEnumerable<OrderItemInfo> orderItems = await _dbQuery.QueryAsync<OrderItemInfo>(sql, null, cancellationToken);
+        IEnumerable<OrderItemDto> orderItems = await _dbQuery.QueryAsync<OrderItemDto>(sql, null, cancellationToken);
         return orderItems.ToList();
     }
 
-    public async Task<List<PickupTaskOrderItemInfo>> GetOrderItemsByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
+    public async Task<List<PickupTaskOrderItemDto>> GetOrderItemsByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
     {
         const string sql = """
             select
@@ -86,11 +86,11 @@ public sealed class OrderRepository
             where ptoi.pickup_task_id = @PickupTaskId
             order by ptoi.order_id, ptoi.order_item_id;
             """;
-        IEnumerable<PickupTaskOrderItemInfo> orderItems = await _dbQuery.QueryAsync<PickupTaskOrderItemInfo>(sql, new { PickupTaskId = pickupTaskId }, cancellationToken);
+        IEnumerable<PickupTaskOrderItemDto> orderItems = await _dbQuery.QueryAsync<PickupTaskOrderItemDto>(sql, new { PickupTaskId = pickupTaskId }, cancellationToken);
         return orderItems.ToList();
     }
 
-    public async Task<List<PickupTaskInfo>> GetAllPickupTaskAsync(CancellationToken cancellationToken = default)
+    public async Task<List<PickupTaskDto>> GetAllPickupTasksAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """
             select
@@ -103,7 +103,7 @@ public sealed class OrderRepository
             from public.pickup_tasks p
             order by p.scheduled_pickup_date desc nulls last, p.pickup_task_id;
             """;
-        IEnumerable<PickupTaskInfo> pickupTasks = await _dbQuery.QueryAsync<PickupTaskInfo>(sql, null, cancellationToken);
+        IEnumerable<PickupTaskDto> pickupTasks = await _dbQuery.QueryAsync<PickupTaskDto>(sql, null, cancellationToken);
         return pickupTasks.ToList();
     }
 
@@ -119,7 +119,7 @@ public sealed class OrderRepository
         return driverIds.ToList();
     }
 
-    public async Task<List<PickupTaskOrderDraft>> GetPickupTaskOrderDraftsByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
+    public async Task<List<PickupTaskOrderDraftDto>> GetPickupTaskOrderDraftsByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
     {
         const string sqlItem = """
             select
@@ -131,7 +131,7 @@ public sealed class OrderRepository
             order by draft_item_id;
             """;
 
-        IEnumerable<PickupTaskOrderItemDraft> items = await _dbQuery.QueryAsync<PickupTaskOrderItemDraft>(sqlItem, new { PickupTaskId = pickupTaskId }, cancellationToken);
+        IEnumerable<PickupTaskOrderDraftItemDto> items = await _dbQuery.QueryAsync<PickupTaskOrderDraftItemDto>(sqlItem, new { PickupTaskId = pickupTaskId }, cancellationToken);
 
         List<string> draftIds = items.Select(i => i.DraftId).Distinct().ToList();
 
@@ -142,7 +142,7 @@ public sealed class OrderRepository
             join UNNEST(@DraftIds) as d(id) on draft_id = d.id
             order by draft_id;
             """;
-        IEnumerable<PickupTaskOrderDraft> drafts = await _dbQuery.QueryAsync<PickupTaskOrderDraft>(sqlDraft, new { DraftIds = draftIds }, cancellationToken);
+        IEnumerable<PickupTaskOrderDraftDto> drafts = await _dbQuery.QueryAsync<PickupTaskOrderDraftDto>(sqlDraft, new { DraftIds = draftIds }, cancellationToken);
         foreach (var draft in drafts)
         {
             draft.Items = items.Where(i => i.DraftId == draft.DraftId).ToList();

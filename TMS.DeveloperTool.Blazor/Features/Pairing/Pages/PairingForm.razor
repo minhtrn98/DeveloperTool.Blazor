@@ -4,6 +4,7 @@
 @using TMS.DeveloperTool.Blazor.Features.Pairing.Models
 @using TMS.DeveloperTool.Blazor.Features.Pairing.Services
 @using TMS.DeveloperTool.Blazor.Features.Routing.Models
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
 @using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Interfaces
 @using TMS.DeveloperTool.Blazor.Services
 @inject FleetRepository FleetRepository
@@ -47,8 +48,8 @@
                     </MudItem>
                 </MudGrid> *@
 
-                <MudAutocomplete T="VehicleDropdownItem" Value="SelectedVehicleOption" ValueChanged="OnVehicleChanged"
-                                 SearchFunc="SearchVehicleOptions" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<VehicleDropdownItem>" Label="Xe"
+                <MudAutocomplete T="VehicleDropdownItemDto" Value="SelectedVehicleOption" ValueChanged="OnVehicleChanged"
+                                 SearchFunc="SearchVehicleOptions" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<VehicleDropdownItemDto>" Label="Xe"
                                  Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
 
                 <MudSelect T="Guid" @bind-Value="pairingReasonTypeId" Label="Lý do ghép xe" Variant="Variant.Outlined"
@@ -95,8 +96,8 @@
                     </MudItem>
                     <MudItem xs="12" md="6">
                         <div class="d-flex align-end gap-2">
-                            <MudAutocomplete T="DropdownItemPlanning" @bind-Value="SelectedPlanningOption"
-                                             SearchFunc="SearchPlanningOptions" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<DropdownItemPlanning>" Label="Kế hoạch"
+                            <MudAutocomplete T="PlanningDropdownItemDto" @bind-Value="SelectedPlanningOption"
+                                             SearchFunc="SearchPlanningOptions" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<PlanningDropdownItemDto>" Label="Kế hoạch"
                                              Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
                             @if (planningType == AssignmentPlanType.DailyPlan)
                             {
@@ -152,16 +153,16 @@
     private double odometer = 0;
     private bool autoCreateMaintenancePlan;
 
-    private List<VehicleDropdownItem> vehicleOptions = [];
-    private List<DropdownItem<Guid>> pairingReasonTypes = [];
-    private List<DropdownItem<ActionType>> actionTypes = [];
-    private List<DropdownItem<AssignmentPlanType>> planningTypes = [];
-    private List<DropdownItemPlanning> planningOptions = [];
+    private List<VehicleDropdownItemDto> vehicleOptions = [];
+    private List<DropdownItemDto<Guid>> pairingReasonTypes = [];
+    private List<DropdownItemDto<ActionType>> actionTypes = [];
+    private List<DropdownItemDto<AssignmentPlanType>> planningTypes = [];
+    private List<PlanningDropdownItemDto> planningOptions = [];
     private List<PostOffice> postOffices = [];
     private List<Employee> emps = [];
 
-    private VehicleDropdownItem? selectedVehicleOption;
-    private DropdownItemPlanning? selectedPlanningOption;
+    private VehicleDropdownItemDto? selectedVehicleOption;
+    private PlanningDropdownItemDto? selectedPlanningOption;
     private PostOffice? selectedPostOffice;
     private Employee? selectedDriver;
     private Employee? selectedSwapDriver;
@@ -184,9 +185,9 @@
         {
             CancellationToken cancellationToken = CancellationToken.None;
 
-            vehicleOptions = await FleetRepository.GetAllVehiclePlateAsync(isPairingAllowed: true, cancellationToken);
+            vehicleOptions = await FleetRepository.GetVehicleDropdownItemsAsync(isPairingAllowed: true, cancellationToken);
 
-            pairingReasonTypes = (await FleetRepository.GetPairingReasonTypes(cancellationToken)).ToList();
+            pairingReasonTypes = (await FleetRepository.GetPairingReasonTypesAsync(cancellationToken)).ToList();
             actionTypes = FleetRepository.GetActionTypes().ToList();
             planningTypes = FleetRepository.GetAssignmentPlanTypes().ToList();
             postOffices = (await RouteRepository.GetPostOfficesAsync(cancellationToken))
@@ -212,7 +213,7 @@
         }
     }
 
-    private VehicleDropdownItem? SelectedVehicleOption
+    private VehicleDropdownItemDto? SelectedVehicleOption
     {
         get => selectedVehicleOption;
         set
@@ -222,7 +223,7 @@
         }
     }
 
-    private async Task OnVehicleChanged(VehicleDropdownItem? value)
+    private async Task OnVehicleChanged(VehicleDropdownItemDto? value)
     {
         SelectedVehicleOption = value;
 
@@ -234,7 +235,7 @@
 
         try
         {
-            LatestAssignmentResponse? latestAssignment = await FleetRepository.GetLatestAssignmentAsync(vehicleId);
+            LatestAssignmentDto? latestAssignment = await FleetRepository.GetLatestAssignmentAsync(vehicleId);
 
             if (latestAssignment?.Odometer is not null)
             {
@@ -275,7 +276,7 @@
         }
     }
 
-    private DropdownItemPlanning? SelectedPlanningOption
+    private PlanningDropdownItemDto? SelectedPlanningOption
     {
         get => selectedPlanningOption;
         set
@@ -306,15 +307,15 @@
         }
     }
 
-    private Task<IEnumerable<VehicleDropdownItem>> SearchVehicleOptions(string value, CancellationToken cancellationToken)
+    private Task<IEnumerable<VehicleDropdownItemDto>> SearchVehicleOptions(string value, CancellationToken cancellationToken)
     {
-        IEnumerable<VehicleDropdownItem> results = AutocompleteSearchHelper.SearchByLike(vehicleOptions, value);
+        IEnumerable<VehicleDropdownItemDto> results = AutocompleteSearchHelper.SearchByLike(vehicleOptions, value);
         return Task.FromResult(results);
     }
 
-    private Task<IEnumerable<DropdownItemPlanning>> SearchPlanningOptions(string value, CancellationToken cancellationToken)
+    private Task<IEnumerable<PlanningDropdownItemDto>> SearchPlanningOptions(string value, CancellationToken cancellationToken)
     {
-        IEnumerable<DropdownItemPlanning> results = AutocompleteSearchHelper.SearchByLike(planningOptions, value);
+        IEnumerable<PlanningDropdownItemDto> results = AutocompleteSearchHelper.SearchByLike(planningOptions, value);
         return Task.FromResult(results);
     }
 
@@ -331,13 +332,13 @@
         switch (planningType)
         {
             case AssignmentPlanType.DailyPlan:
-                planningOptions = (await PlanningRepository.GetDailyPlansDropdown(cancellationToken)).ToList();
+                planningOptions = (await PlanningRepository.GetDailyPlanDropdownItemsAsync(cancellationToken)).ToList();
                 break;
             case AssignmentPlanType.Inspection when vehicleId != Guid.Empty:
                 planningOptions = (await FleetRepository.GetInspectionPlansByVehicleAsync(vehicleId, cancellationToken)).ToList();
                 break;
             case AssignmentPlanType.Maintenance when vehicleId != Guid.Empty:
-                planningOptions = (await FleetRepository.GetMaintenancePlanByVehicleAsync(vehicleId, cancellationToken)).ToList();
+                planningOptions = (await FleetRepository.GetMaintenancePlansByVehicleAsync(vehicleId, cancellationToken)).ToList();
                 break;
             default:
                 break;
@@ -472,7 +473,7 @@
         isSuggesting = true;
         try
         {
-            List<DailyPlanDto> dailyPlans = (await PlanningRepository.GetDailyPlans("PENDING", CancellationToken.None)).ToList();
+            List<DailyPlanDto> dailyPlans = (await PlanningRepository.GetDailyPlansAsync("PENDING", CancellationToken.None)).ToList();
 
             DialogParameters<DailyPlanSuggestionDialog> parameters = new()
             {
@@ -491,7 +492,7 @@
             if (dialogResult is { Canceled: false, Data: DailyPlanDto selectedPlan })
             {
                 SelectedPlanningOption = planningOptions.FirstOrDefault(p => p.Id == selectedPlan.Id)
-                    ?? new DropdownItemPlanning(selectedPlan.Id, selectedPlan.Code, selectedPlan.Name, selectedPlan.Status, selectedPlan.DepartmentCode);
+                    ?? new PlanningDropdownItemDto(selectedPlan.Id, selectedPlan.Code, selectedPlan.Name, selectedPlan.Status, selectedPlan.DepartmentCode);
             }
         }
         catch (Exception ex)

@@ -95,10 +95,10 @@
     public string PickupTaskId { get; set; } = string.Empty;
 
     [Parameter]
-    public List<PickupTaskOrderInfo> Orders { get; set; } = [];
+    public List<PickupTaskOrderDto> Orders { get; set; } = [];
 
     [Parameter]
-    public List<PickupTaskOrderItemInfo> OrderItems { get; set; } = [];
+    public List<PickupTaskOrderItemDto> OrderItems { get; set; } = [];
 
     [Parameter]
     public DateTime? InitialRescheduledPickupDt { get; set; }

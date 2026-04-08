@@ -8,7 +8,7 @@ public sealed class TrackingRepository
         _dbQuery = dbQuery;
     }
 
-    public IAsyncEnumerable<TopMovingVehicle> GetTopMovingVehicleAsync()
+    public IAsyncEnumerable<TopMovingVehicleDto> GetTopMovingVehiclesAsync()
     {
         const string sql = """
             WITH recent AS (
@@ -45,7 +45,7 @@ public sealed class TrackingRepository
             ORDER BY "MovingScore" DESC
             """;
 
-        return _dbQuery.QueryUnbufferedAsync<TopMovingVehicle>(sql);
+        return _dbQuery.QueryUnbufferedAsync<TopMovingVehicleDto>(sql);
     }
 
 }

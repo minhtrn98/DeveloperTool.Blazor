@@ -2,7 +2,7 @@ using TMS.DeveloperTool.Blazor.Domain.Enums;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
-public sealed record PickupTaskOrderItemInfo(
+public sealed record PickupTaskOrderItemDto(
     string OrderId,
     string OrderItemId,
     decimal Weight,

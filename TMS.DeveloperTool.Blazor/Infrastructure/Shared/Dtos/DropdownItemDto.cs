@@ -1,6 +1,6 @@
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
-public record DropdownItem<TKey>(TKey Id, string Code, string Name) : Interfaces.IDisplaySearchItem
+public record DropdownItemDto<TKey>(TKey Id, string Code, string Name) : Interfaces.IDisplaySearchItem
 {
     public virtual string GetDisplayString() => Name;
 
@@ -11,8 +11,8 @@ public record DropdownItem<TKey>(TKey Id, string Code, string Name) : Interfaces
     }
 }
 
-public sealed record DropdownItemPlanning(Guid Id, string Code, string Name, string Status, string DepartmentCode)
-    : DropdownItem<Guid>(Id, Code, Name)
+public sealed record PlanningDropdownItemDto(Guid Id, string Code, string Name, string Status, string DepartmentCode)
+    : DropdownItemDto<Guid>(Id, Code, Name)
 {
     public override string GetDisplayString() => $"[{DepartmentCode}] [{Status}] {Name}";
 
@@ -24,8 +24,8 @@ public sealed record DropdownItemPlanning(Guid Id, string Code, string Name, str
     }
 }
 
-public sealed record VehicleDropdownItem(Guid Id, string Code, string LicensePlate, string DeptManagerCode)
-    : DropdownItem<Guid>(Id, Code, LicensePlate)
+public sealed record VehicleDropdownItemDto(Guid Id, string Code, string LicensePlate, string DeptManagerCode)
+    : DropdownItemDto<Guid>(Id, Code, LicensePlate)
 {
     public override string GetDisplayString() => $"[{DeptManagerCode}] {LicensePlate}";
 

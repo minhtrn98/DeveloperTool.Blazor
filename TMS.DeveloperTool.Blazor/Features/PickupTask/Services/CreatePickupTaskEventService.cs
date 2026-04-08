@@ -29,7 +29,7 @@ public sealed class CreatePickupTaskEventService(
 
     public async Task<List<DailyPlanDto>> GetDailyPlansAsync(string? status)
     {
-        IEnumerable<DailyPlanDto> plans = await planningRepository.GetDailyPlans(status, CancellationToken.None);
+        IEnumerable<DailyPlanDto> plans = await planningRepository.GetDailyPlansAsync(status, CancellationToken.None);
         return plans.ToList();
     }
 
@@ -79,8 +79,8 @@ public sealed class CreatePickupTaskEventService(
 
     public async Task<List<PickupTaskEventOrderDto>> GetOrdersAsync()
     {
-        List<OrderInfo> orders = await orderRepository.GetAllOrdersAsync();
-        List<OrderItemInfo> orderItems = await orderRepository.GetAllOrderItemsAsync();
+        List<OrderDto> orders = await orderRepository.GetAllOrdersAsync();
+        List<OrderItemDto> orderItems = await orderRepository.GetAllOrderItemsAsync();
 
         Dictionary<string, List<PickupTaskEventOrderItemDto>> orderItemsByOrderId = orderItems
             .Where(oi => !string.IsNullOrWhiteSpace(oi.OrderId))

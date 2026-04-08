@@ -250,8 +250,8 @@
     IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter] public string PickupTaskId { get; set; } = string.Empty;
-    [Parameter] public List<PickupTaskOrderInfo> Orders { get; set; } = [];
-    [Parameter] public List<PickupTaskOrderItemInfo> OrderItems { get; set; } = [];
+    [Parameter] public List<PickupTaskOrderDto> Orders { get; set; } = [];
+    [Parameter] public List<PickupTaskOrderItemDto> OrderItems { get; set; } = [];
     [Parameter] public List<Employee> AllEmps { get; set; } = [];
     [Parameter] public Employee? CurrentEmp { get; set; }
 

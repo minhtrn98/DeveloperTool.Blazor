@@ -110,14 +110,14 @@
     private const string ActionReschedule = "Reschedule";
     private const string ActionTransfer = "Transfer";
 
-    private List<PickupTaskInfo> pickupTasks = [];
+    private List<PickupTaskDto> pickupTasks = [];
     private List<Employee> emps = [];
     private Employee? selectedEmp;
     private string searchId = string.Empty;
     private readonly HashSet<string> processingTaskIds = [];
     private bool isLoading = true;
 
-    private IEnumerable<PickupTaskInfo> FilteredPickupTasks =>
+    private IEnumerable<PickupTaskDto> FilteredPickupTasks =>
         pickupTasks
             .Where(task => string.IsNullOrWhiteSpace(searchId)
                 || task.PickupTaskId.Contains(searchId, StringComparison.OrdinalIgnoreCase))
@@ -154,7 +154,7 @@
         isLoading = true;
         try
         {
-            pickupTasks = await OrderRepository.GetAllPickupTaskAsync();
+            pickupTasks = await OrderRepository.GetAllPickupTasksAsync();
         }
         finally
         {
@@ -162,7 +162,7 @@
         }
     }
 
-    private string FormatDriver(PickupTaskInfo item)
+    private string FormatDriver(PickupTaskDto item)
     {
         if (string.IsNullOrWhiteSpace(item.AssignedDriverCode) && string.IsNullOrWhiteSpace(item.AssignedDriverName))
         {
@@ -191,7 +191,7 @@
         searchId = taskId;
 
         // Auto-select the driver of this task
-        PickupTaskInfo? task = pickupTasks.FirstOrDefault(t => t.PickupTaskId == taskId);
+        PickupTaskDto? task = pickupTasks.FirstOrDefault(t => t.PickupTaskId == taskId);
         if (task is not null)
         {
             Employee? taskDriver = FindTaskDriver(task);
@@ -204,7 +204,7 @@
         return Task.CompletedTask;
     }
 
-    private Task ApplyDriverFilterFromTaskAsync(PickupTaskInfo item)
+    private Task ApplyDriverFilterFromTaskAsync(PickupTaskDto item)
     {
         Employee? taskDriver = FindTaskDriver(item);
         if (taskDriver is null)
@@ -217,7 +217,7 @@
         return Task.CompletedTask;
     }
 
-    private bool CanApplyDriverFilter(PickupTaskInfo item)
+    private bool CanApplyDriverFilter(PickupTaskDto item)
     {
         Employee? taskDriver = FindTaskDriver(item);
         if (taskDriver is null)
@@ -228,7 +228,7 @@
         return selectedEmp?.EmployeeId != taskDriver.EmployeeId;
     }
 
-    private Employee? FindTaskDriver(PickupTaskInfo item)
+    private Employee? FindTaskDriver(PickupTaskDto item)
     {
         if (!string.IsNullOrWhiteSpace(item.AssignedDriverId)
             && Guid.TryParse(item.AssignedDriverId, out Guid driverId))
@@ -323,10 +323,10 @@
         return processingTaskIds.Contains(pickupTaskId);
     }
 
-    private async Task<PickupTaskActionDialogResult?> ShowActionDialogAsync(PickupTaskInfo item, string action)
+    private async Task<PickupTaskActionDialogResult?> ShowActionDialogAsync(PickupTaskDto item, string action)
     {
-        List<PickupTaskOrderInfo> orders = [];
-        List<PickupTaskOrderItemInfo> orderItems = [];
+        List<PickupTaskOrderDto> orders = [];
+        List<PickupTaskOrderItemDto> orderItems = [];
         if (action is ActionCancel or ActionReschedule)
         {
             orders = await OrderRepository.GetOrdersByPickupTaskIdAsync(item.PickupTaskId);
@@ -367,7 +367,7 @@ options);
         return dialogResult;
     }
 
-    private static DateTime GetSuggestedRescheduleTime(PickupTaskInfo item)
+    private static DateTime GetSuggestedRescheduleTime(PickupTaskDto item)
     {
         DateTime baseTime = item.ScheduledPickupDate?.ToLocalTime() ?? DateTime.Now;
         return baseTime.AddHours(2);
@@ -384,7 +384,7 @@ options);
         };
     }
 
-    private async Task HandlePreCheckCompleteAsync(PickupTaskInfo item)
+    private async Task HandlePreCheckCompleteAsync(PickupTaskDto item)
     {
         if (!processingTaskIds.Add(item.PickupTaskId))
         {
@@ -443,7 +443,7 @@ options);
         });
     }
 
-    private async Task HandleConfirmPickupAsync(PickupTaskInfo item)
+    private async Task HandleConfirmPickupAsync(PickupTaskDto item)
     {
         if (!processingTaskIds.Add(item.PickupTaskId))
         {
@@ -459,8 +459,8 @@ options);
                 return;
             }
 
-            List<PickupTaskOrderInfo> orders = await OrderRepository.GetOrdersByPickupTaskIdAsync(item.PickupTaskId);
-            List<PickupTaskOrderItemInfo> orderItems = await OrderRepository.GetOrderItemsByPickupTaskIdAsync(item.PickupTaskId);
+            List<PickupTaskOrderDto> orders = await OrderRepository.GetOrdersByPickupTaskIdAsync(item.PickupTaskId);
+            List<PickupTaskOrderItemDto> orderItems = await OrderRepository.GetOrderItemsByPickupTaskIdAsync(item.PickupTaskId);
 
             DialogParameters parameters = new()
             {
@@ -500,7 +500,7 @@ options);
         }
     }
 
-    private async Task HandleShowPickedOrdersAsync(PickupTaskInfo item)
+    private async Task HandleShowPickedOrdersAsync(PickupTaskDto item)
     {
         if (!processingTaskIds.Add(item.PickupTaskId))
         {
@@ -509,7 +509,7 @@ options);
 
         try
         {
-            List<PickupTaskOrderDraft> drafts = await OrderRepository.GetPickupTaskOrderDraftsByPickupTaskIdAsync(item.PickupTaskId);
+            List<PickupTaskOrderDraftDto> drafts = await OrderRepository.GetPickupTaskOrderDraftsByPickupTaskIdAsync(item.PickupTaskId);
 
             DialogParameters parameters = new()
             {
@@ -537,7 +537,7 @@ options);
         }
     }
 
-    private async Task HandleActionAsync(PickupTaskInfo item, string action)
+    private async Task HandleActionAsync(PickupTaskDto item, string action)
     {
         if (!processingTaskIds.Add(item.PickupTaskId))
         {

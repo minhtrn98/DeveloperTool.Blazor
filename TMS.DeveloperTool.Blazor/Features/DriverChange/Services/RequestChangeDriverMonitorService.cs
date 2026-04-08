@@ -110,7 +110,7 @@ public sealed class RequestChangeDriverMonitorService : IDisposable
                 if (driverIds.Count > 0)
                 {
                     FleetRepository fleetService = scope.ServiceProvider.GetRequiredService<FleetRepository>();
-                    vehicleDic = await fleetService.GetVehiclePlateAsync(vehicleIds, CancellationToken.None);
+                    vehicleDic = await fleetService.GetVehiclePlatesAsync(vehicleIds, CancellationToken.None);
                 }
 
                 foreach (RequestChangeDriverData data in _cacheItems.Values)

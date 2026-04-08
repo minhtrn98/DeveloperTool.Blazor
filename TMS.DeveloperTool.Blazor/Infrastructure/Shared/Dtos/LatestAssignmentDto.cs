@@ -2,7 +2,7 @@ using TMS.DeveloperTool.Blazor.Domain.Enums;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
-public sealed record LatestAssignmentResponse
+public sealed record LatestAssignmentDto
 {
     public required Guid? AssignmentId { get; init; }
     public required decimal? Odometer { get; init; }

@@ -1,5 +1,7 @@
 @page "/top-moving-vehicles"
 
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+
 @inject TrackingRepository TrackingRepository
 
 <AppPageTitle MenuName="Top xe di chuyển" />
@@ -56,7 +58,7 @@
 </MudContainer>
 
 @code {
-    private List<TopMovingVehicle> vehicles = [];
+    private List<TopMovingVehicleDto> vehicles = [];
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -72,7 +74,7 @@
         try
         {
             var count = 0;
-            await foreach (var vehicle in TrackingRepository.GetTopMovingVehicleAsync().WithCancellation(default))
+            await foreach (var vehicle in TrackingRepository.GetTopMovingVehiclesAsync().WithCancellation(default))
             {
                 vehicles.Add(vehicle);
                 if (++count % 5 == 0)
