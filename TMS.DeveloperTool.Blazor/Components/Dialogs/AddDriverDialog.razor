@@ -1,5 +1,5 @@
 @using TMS.DeveloperTool.Blazor.Services
-@inject MyDriverService MyDriverService
+@inject MyEmployeeService MyEmployeeService
 @inject ISnackbar Snackbar
 
 <MudDialog>
@@ -48,7 +48,7 @@
         _isSubmitting = true;
         try
         {
-            bool added = await MyDriverService.AddDriverAsync(code);
+            bool added = await MyEmployeeService.AddEmployeeAsync(code);
             if (!added)
             {
                 Snackbar.Add("Không thêm được nhân viên. Mã không tồn tại hoặc đã có trong danh sách tài xế.", Severity.Info);

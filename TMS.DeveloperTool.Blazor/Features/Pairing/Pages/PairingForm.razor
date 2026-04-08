@@ -9,7 +9,7 @@
 @inject FleetRepository FleetRepository
 @inject RouteRepository RouteRepository
 @inject PlanningRepository PlanningRepository
-@inject MyDriverService MyDriverService
+@inject MyEmployeeService MyEmployeeService
 @inject PairingService PairingService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
@@ -29,8 +29,8 @@
         else
         {
             <MudForm>
-                <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
-                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Driver>" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true"
+                <MudAutocomplete T="Employee" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Employee>" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true"
                                  Clearable="true" MaxItems="20" Class="mb-3" />
 
                 <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true"
@@ -77,8 +77,8 @@
 
                 @if (actionType is ActionType.SwapMainDriver or ActionType.SwapSubDriver)
                 {
-                    <MudAutocomplete T="Driver" @bind-Value="selectedSwapDriver" SearchFunc="SearchDrivers"
-                                     ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Driver>" Label="Tài xế cần đổi" Variant="Variant.Outlined" FullWidth="true"
+                    <MudAutocomplete T="Employee" @bind-Value="selectedSwapDriver" SearchFunc="SearchDrivers"
+                                     ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Employee>" Label="Tài xế cần đổi" Variant="Variant.Outlined" FullWidth="true"
                                      Clearable="true" MaxItems="20" Class="mb-3" />
                 }
 
@@ -158,13 +158,13 @@
     private List<DropdownItem<AssignmentPlanType>> planningTypes = [];
     private List<DropdownItemPlanning> planningOptions = [];
     private List<PostOffice> postOffices = [];
-    private List<Driver> drivers = [];
+    private List<Employee> emps = [];
 
     private VehicleDropdownItem? selectedVehicleOption;
     private DropdownItemPlanning? selectedPlanningOption;
     private PostOffice? selectedPostOffice;
-    private Driver? selectedDriver;
-    private Driver? selectedSwapDriver;
+    private Employee? selectedDriver;
+    private Employee? selectedSwapDriver;
     private string address = string.Empty;
     private string postOfficeCode = string.Empty;
 
@@ -192,7 +192,7 @@
             postOffices = (await RouteRepository.GetPostOfficesAsync(cancellationToken))
                 .OrderBy(x => x.PostOfficeCode)
                 .ToList();
-            drivers = (await MyDriverService.GetAllDriversAsync(cancellationToken))
+            emps = (await MyEmployeeService.GetAllEmployeesAsync(cancellationToken))
                 .OrderBy(x => x.Code)
                 .ThenBy(x => x.Name)
                 .ToList();
@@ -296,7 +296,7 @@
         }
     }
 
-    private Driver? SelectedDriver
+    private Employee? SelectedDriver
     {
         get => selectedDriver;
         set
@@ -350,13 +350,13 @@
         return Task.FromResult(results);
     }
 
-    private Task<IEnumerable<Driver>> SearchDrivers(string value, CancellationToken cancellationToken)
+    private Task<IEnumerable<Employee>> SearchDrivers(string value, CancellationToken cancellationToken)
     {
-        IEnumerable<Driver> results = AutocompleteSearchHelper.SearchByLike(drivers, value);
+        IEnumerable<Employee> results = AutocompleteSearchHelper.SearchByLike(emps, value);
         return Task.FromResult(results);
     }
 
-    private Task OnDriverChanged(Driver? driver)
+    private Task OnDriverChanged(Employee? driver)
     {
         SelectedDriver = driver;
         return Task.CompletedTask;
@@ -443,7 +443,7 @@
             VehicleId = vehicleId,
             Odometer = odometer,
             ActionType = actionType,
-            DriverRequest = selectedSwapDriver.DriverId
+            DriverRequest = selectedSwapDriver.EmployeeId
         };
 
         ApiCallResult result = await PairingService.SendSwapDriverAsync(

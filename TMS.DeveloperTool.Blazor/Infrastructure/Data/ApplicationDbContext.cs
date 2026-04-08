@@ -10,7 +10,7 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<Vehicle> Vehicles { get; set; }
-    public DbSet<Driver> Drivers { get; set; }
+    public DbSet<Employee> Employees { get; set; }
     public DbSet<RouteCheckPoint> RouteCheckPoints { get; set; }
     public DbSet<RouteCheckPointTemplate> RouteCheckPointTemplates { get; set; }
 
@@ -22,8 +22,8 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Vehicle>()
             .ToTable("vehicles");
 
-        modelBuilder.Entity<Driver>()
-            .ToTable("drivers");
+        modelBuilder.Entity<Employee>()
+            .ToTable("employees");
 
         modelBuilder.Entity<RouteCheckPointTemplate>()
             .ToTable("route_checkpoint_templates");
@@ -57,9 +57,9 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.IsMoving).HasColumnName("is_moving");
         });
 
-        modelBuilder.Entity<Driver>(entity =>
+        modelBuilder.Entity<Employee>(entity =>
         {
-            entity.Property(e => e.DriverId).HasColumnName("driver_id");
+            entity.Property(e => e.EmployeeId).HasColumnName("employee_id");
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.BearerToken).HasColumnName("bearer_token");
             entity.Property(e => e.TokenExpiredAt).HasColumnName("token_expired_at");

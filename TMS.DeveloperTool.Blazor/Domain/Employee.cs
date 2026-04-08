@@ -3,10 +3,10 @@ using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Interfaces;
 
 namespace TMS.DeveloperTool.Blazor.Domain;
 
-public sealed class Driver : IDisplaySearchItem
+public sealed class Employee : IDisplaySearchItem
 {
     [Key]
-    public Guid DriverId { get; set; } = Guid.CreateVersion7();
+    public Guid EmployeeId { get; set; } = Guid.CreateVersion7();
     public string Name { get; set; } = string.Empty;
     public string BearerToken { get; set; } = string.Empty;
     public DateTimeOffset? TokenExpiredAt { get; set; }

@@ -16,7 +16,7 @@ public sealed class JwtTokenService
     }
 
     public string CreateToken(
-        Driver driver,
+        Employee employee,
         bool isAdmin,
         List<string> permissions,
         List<string> roleNames,
@@ -24,20 +24,20 @@ public sealed class JwtTokenService
         long permissionsVersion
     )
     {
-        ArgumentNullException.ThrowIfNull(driver);
+        ArgumentNullException.ThrowIfNull(employee);
 
-        string driverId = driver.DriverId.ToString();
+        string employeeId = employee.EmployeeId.ToString();
 
         List<Claim> claims =
         [
-            new(JwtRegisteredClaimNames.Sub, driverId),
+            new(JwtRegisteredClaimNames.Sub, employeeId),
             new(JwtRegisteredClaimNames.Email, ""),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(JwtRegisteredClaimNames.Aud, _jwtSetting.Audience),
-            new(ClaimTypes.NameIdentifier, driver.Name),
-            new("employeeId", driverId),
-            new("employeeCode", driver.Code),
-            new("fullName", driver.Name),
+            new(ClaimTypes.NameIdentifier, employee.Name),
+            new("employeeId", employeeId),
+            new("employeeCode", employee.Code),
+            new("fullName", employee.Name),
             new("jobTitleName", ""),
             new("phone", "0000000000"),
             new("companyId", "01000000-7000-5000-0000-000000000001"),

@@ -10,7 +10,7 @@
 @inject IDialogService DialogService
 @inject OrderRepository OrderRepository
 @inject PickupTaskActionService PickupTaskActionService
-@inject MyDriverService MyDriverService
+@inject MyEmployeeService MyEmployeeService
 @inject ISnackbar Snackbar
 
 <AppPageTitle MenuName="Điều tin" />
@@ -29,8 +29,8 @@
                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true" Clearable="true"
                       Class="mb-3" />
 
-        <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
-                         ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Driver>" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true" Clearable="true"
+        <MudAutocomplete T="Employee" Value="selectedEmp" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
+                         ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Employee>" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true" Clearable="true"
                          MaxItems="20" Class="mb-3" />
 
         @if (isLoading)
@@ -111,8 +111,8 @@
     private const string ActionTransfer = "Transfer";
 
     private List<PickupTaskInfo> pickupTasks = [];
-    private List<Driver> drivers = [];
-    private Driver? selectedDriver;
+    private List<Employee> emps = [];
+    private Employee? selectedEmp;
     private string searchId = string.Empty;
     private readonly HashSet<string> processingTaskIds = [];
     private bool isLoading = true;
@@ -121,18 +121,18 @@
         pickupTasks
             .Where(task => string.IsNullOrWhiteSpace(searchId)
                 || task.PickupTaskId.Contains(searchId, StringComparison.OrdinalIgnoreCase))
-            .Where(task => selectedDriver == null
+            .Where(task => selectedEmp == null
                 || (!string.IsNullOrWhiteSpace(task.AssignedDriverId)
-                    && task.AssignedDriverId.Equals(selectedDriver.DriverId.ToString(), StringComparison.OrdinalIgnoreCase))
+                    && task.AssignedDriverId.Equals(selectedEmp.EmployeeId.ToString(), StringComparison.OrdinalIgnoreCase))
                 || (!string.IsNullOrWhiteSpace(task.AssignedDriverCode)
-                    && task.AssignedDriverCode.Equals(selectedDriver.Code, StringComparison.OrdinalIgnoreCase))
+                    && task.AssignedDriverCode.Equals(selectedEmp.Code, StringComparison.OrdinalIgnoreCase))
                 || (!string.IsNullOrWhiteSpace(task.AssignedDriverName)
-                    && task.AssignedDriverName.Equals(selectedDriver.Name, StringComparison.OrdinalIgnoreCase)));
+                    && task.AssignedDriverName.Equals(selectedEmp.Name, StringComparison.OrdinalIgnoreCase)));
 
-    private Driver? SelectedDriver
+    private Employee? SelectedEmp
     {
-        get => selectedDriver;
-        set => selectedDriver = value;
+        get => selectedEmp;
+        set => selectedEmp = value;
     }
 
     protected override async Task OnInitializedAsync()
@@ -143,7 +143,7 @@
 
     private async Task LoadDriversAsync()
     {
-        drivers = (await MyDriverService.GetAllDriversAsync(CancellationToken.None))
+        emps = (await MyEmployeeService.GetAllEmployeesAsync(CancellationToken.None))
             .OrderBy(x => x.Code)
             .ThenBy(x => x.Name)
             .ToList();
@@ -174,15 +174,15 @@
         return $"{code} - {name}".Trim(' ', '-');
     }
 
-    private Task<IEnumerable<Driver>> SearchDrivers(string value, CancellationToken cancellationToken)
+    private Task<IEnumerable<Employee>> SearchDrivers(string value, CancellationToken cancellationToken)
     {
-        IEnumerable<Driver> results = AutocompleteSearchHelper.SearchByLike(drivers, value);
+        IEnumerable<Employee> results = AutocompleteSearchHelper.SearchByLike(emps, value);
         return Task.FromResult(results);
     }
 
-    private Task OnDriverChanged(Driver? driver)
+    private Task OnDriverChanged(Employee? driver)
     {
-        SelectedDriver = driver;
+        selectedEmp = driver;
         return Task.CompletedTask;
     }
 
@@ -194,10 +194,10 @@
         PickupTaskInfo? task = pickupTasks.FirstOrDefault(t => t.PickupTaskId == taskId);
         if (task is not null)
         {
-            Driver? taskDriver = FindTaskDriver(task);
+            Employee? taskDriver = FindTaskDriver(task);
             if (taskDriver is not null)
             {
-                SelectedDriver = taskDriver;
+                selectedEmp = taskDriver;
             }
         }
 
@@ -206,34 +206,34 @@
 
     private Task ApplyDriverFilterFromTaskAsync(PickupTaskInfo item)
     {
-        Driver? taskDriver = FindTaskDriver(item);
+        Employee? taskDriver = FindTaskDriver(item);
         if (taskDriver is null)
         {
             Snackbar.Add("Không tìm thấy tài xế tương ứng trong danh sách filter.", Severity.Warning);
             return Task.CompletedTask;
         }
 
-        SelectedDriver = taskDriver;
+        selectedEmp = taskDriver;
         return Task.CompletedTask;
     }
 
     private bool CanApplyDriverFilter(PickupTaskInfo item)
     {
-        Driver? taskDriver = FindTaskDriver(item);
+        Employee? taskDriver = FindTaskDriver(item);
         if (taskDriver is null)
         {
             return false;
         }
 
-        return selectedDriver?.DriverId != taskDriver.DriverId;
+        return selectedEmp?.EmployeeId != taskDriver.EmployeeId;
     }
 
-    private Driver? FindTaskDriver(PickupTaskInfo item)
+    private Employee? FindTaskDriver(PickupTaskInfo item)
     {
         if (!string.IsNullOrWhiteSpace(item.AssignedDriverId)
             && Guid.TryParse(item.AssignedDriverId, out Guid driverId))
         {
-            Driver? byId = drivers.FirstOrDefault(driver => driver.DriverId == driverId);
+            Employee? byId = emps.FirstOrDefault(emp => emp.EmployeeId == driverId);
             if (byId is not null)
             {
                 return byId;
@@ -242,7 +242,7 @@
 
         if (!string.IsNullOrWhiteSpace(item.AssignedDriverCode))
         {
-            Driver? byCode = drivers.FirstOrDefault(driver =>
+            Employee? byCode = emps.FirstOrDefault(driver =>
                 !string.IsNullOrWhiteSpace(driver.Code)
                 && driver.Code.Equals(item.AssignedDriverCode, StringComparison.OrdinalIgnoreCase));
             if (byCode is not null)
@@ -253,7 +253,7 @@
 
         if (!string.IsNullOrWhiteSpace(item.AssignedDriverName))
         {
-            return drivers.FirstOrDefault(driver =>
+            return emps.FirstOrDefault(driver =>
                 !string.IsNullOrWhiteSpace(driver.Name)
                 && driver.Name.Equals(item.AssignedDriverName, StringComparison.OrdinalIgnoreCase));
         }
@@ -333,8 +333,8 @@
             orderItems = await OrderRepository.GetOrderItemsByPickupTaskIdAsync(item.PickupTaskId);
         }
 
-        List<Driver> transferDrivers = drivers
-            .Where(driver => selectedDriver == null || driver.DriverId != selectedDriver.DriverId)
+        List<Employee> transferDrivers = emps
+            .Where(driver => selectedEmp == null || driver.EmployeeId != selectedEmp.EmployeeId)
             .ToList();
 
         DialogParameters parameters = new()
@@ -393,7 +393,7 @@ options);
 
         try
         {
-            string bearerToken = selectedDriver?.BearerToken ?? string.Empty;
+            string bearerToken = selectedEmp?.BearerToken ?? string.Empty;
             if (string.IsNullOrWhiteSpace(bearerToken))
             {
                 Snackbar.Add("Vui lòng chọn tài xế có Bearer token trước khi thao tác.", Severity.Warning);
@@ -452,7 +452,7 @@ options);
 
         try
         {
-            string bearerToken = selectedDriver?.BearerToken ?? string.Empty;
+            string bearerToken = selectedEmp?.BearerToken ?? string.Empty;
             if (string.IsNullOrWhiteSpace(bearerToken))
             {
                 Snackbar.Add("Vui lòng chọn tài xế có Bearer token trước khi thao tác.", Severity.Warning);
@@ -467,8 +467,8 @@ options);
                 { nameof(ConfirmPickupDialog.PickupTaskId), item.PickupTaskId },
                 { nameof(ConfirmPickupDialog.Orders), orders },
                 { nameof(ConfirmPickupDialog.OrderItems), orderItems },
-                { nameof(ConfirmPickupDialog.AllDrivers), drivers },
-                { nameof(ConfirmPickupDialog.CurrentDriver), selectedDriver }
+                { nameof(ConfirmPickupDialog.AllEmps), emps },
+                { nameof(ConfirmPickupDialog.CurrentEmp), selectedEmp }
             };
 
             DialogOptions options = new()
@@ -546,7 +546,7 @@ options);
 
         try
         {
-            string bearerToken = selectedDriver?.BearerToken ?? string.Empty;
+            string bearerToken = selectedEmp?.BearerToken ?? string.Empty;
             if (string.IsNullOrWhiteSpace(bearerToken))
             {
                 Snackbar.Add("Vui lòng chọn tài xế có Bearer token trước khi thao tác.", Severity.Warning);

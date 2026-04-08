@@ -61,7 +61,7 @@ public static class ExternalApiServiceExtensions
         services.AddScoped<CreatePickupTaskEventService>();
         services.AddScoped<IJsonTypeMappingStrategy, PickupTaskEventJsonMappingStrategy>();
         services.AddScoped<JsonBuilderService>();
-        services.AddScoped<MyDriverService>();
+        services.AddScoped<MyEmployeeService>();
 
         services.AddSingleton<EventService>();
         services.AddSingleton<JwtTokenService>();

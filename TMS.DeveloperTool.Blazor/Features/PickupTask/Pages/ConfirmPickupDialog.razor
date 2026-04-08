@@ -227,7 +227,7 @@
                 </RowTemplate>
             </MudTable>
 
-            <MudAutocomplete T="Driver" SearchFunc="SearchAvailableDrivers" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Driver>"
+            <MudAutocomplete T="Employee" SearchFunc="SearchAvailableDrivers" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Employee>"
                              Label="Thêm tài xế" Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20"
                              Class="mt-3" ResetValueOnEmptyText="true" ValueChanged="OnAddWorkerDriver" />
         </MudPaper>
@@ -252,8 +252,8 @@
     [Parameter] public string PickupTaskId { get; set; } = string.Empty;
     [Parameter] public List<PickupTaskOrderInfo> Orders { get; set; } = [];
     [Parameter] public List<PickupTaskOrderItemInfo> OrderItems { get; set; } = [];
-    [Parameter] public List<Driver> AllDrivers { get; set; } = [];
-    [Parameter] public Driver? CurrentDriver { get; set; }
+    [Parameter] public List<Employee> AllEmps { get; set; } = [];
+    [Parameter] public Employee? CurrentEmp { get; set; }
 
     private PickupMode mode = PickupMode.Full;
     private bool isShipmentBatch;
@@ -300,13 +300,13 @@
         totalOrders = Orders.Count;
 
         // Default current driver as worker
-        if (CurrentDriver is not null)
+        if (CurrentEmp is not null)
         {
             workerSelections.Add(new WorkerSelection
             {
-                EmployeeId = CurrentDriver.DriverId,
-                EmployeeCode = CurrentDriver.Code,
-                EmployeeName = CurrentDriver.Name,
+                EmployeeId = CurrentEmp.EmployeeId,
+                EmployeeCode = CurrentEmp.Code,
+                EmployeeName = CurrentEmp.Name,
                 WorkContributionRatio = 100,
                 IsCurrentDriver = true
             });
@@ -440,24 +440,24 @@
         MudDialog.Cancel();
     }
 
-    private Task<IEnumerable<Driver>> SearchAvailableDrivers(string value, CancellationToken cancellationToken)
+    private Task<IEnumerable<Employee>> SearchAvailableDrivers(string value, CancellationToken cancellationToken)
     {
         HashSet<Guid> existingIds = workerSelections.Select(w => w.EmployeeId).ToHashSet();
-        IEnumerable<Driver> available = AllDrivers.Where(d => !existingIds.Contains(d.DriverId));
-        IEnumerable<Driver> results = AutocompleteSearchHelper.SearchByLike(available, value, orderByRelevance: false);
+        IEnumerable<Employee> available = AllEmps.Where(emp => !existingIds.Contains(emp.EmployeeId));
+        IEnumerable<Employee> results = AutocompleteSearchHelper.SearchByLike(available, value, orderByRelevance: false);
         return Task.FromResult(results);
     }
 
-    private void OnAddWorkerDriver(Driver? driver)
+    private void OnAddWorkerDriver(Employee? driver)
     {
-        if (driver is null || workerSelections.Any(w => w.EmployeeId == driver.DriverId))
+        if (driver is null || workerSelections.Any(w => w.EmployeeId == driver.EmployeeId))
         {
             return;
         }
 
         workerSelections.Add(new WorkerSelection
         {
-            EmployeeId = driver.DriverId,
+            EmployeeId = driver.EmployeeId,
             EmployeeCode = driver.Code,
             EmployeeName = driver.Name,
             WorkContributionRatio = 0,

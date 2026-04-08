@@ -4,7 +4,7 @@
 @using TMS.DeveloperTool.Blazor.Features.Pairing.Services
 @using TMS.DeveloperTool.Blazor.Services
 @inject IConnectionMultiplexer Redis
-@inject MyDriverService MyDriverService
+@inject MyEmployeeService MyEmployeeService
 @inject PairingService PairingService
 @inject ISnackbar Snackbar
 
@@ -14,8 +14,8 @@
     <MudPaper Elevation="2" Class="pa-4">
         <MudText Typo="Typo.h5" Class="mb-4">Yêu cầu đổi tài xế</MudText>
 
-        <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged"
-                         SearchFunc="SearchDrivers" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Driver>" Label="Tài xế"
+        <MudAutocomplete T="Employee" Value="SelectedDriver" ValueChanged="OnDriverChanged"
+                         SearchFunc="SearchDrivers" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Employee>" Label="Tài xế"
                          Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
 
         <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="4"
@@ -62,8 +62,8 @@
 
 @code {
     private string accessToken = string.Empty;
-    private List<Driver> drivers = [];
-    private Driver? selectedDriver;
+    private List<Employee> emps = [];
+    private Employee? selectedDriver;
     private readonly List<PairingCacheItem> cacheItems = [];
     private bool isLoading;
     private bool isSubmitting;
@@ -78,7 +78,7 @@
     {
         try
         {
-            drivers = (await MyDriverService.GetAllDriversAsync(CancellationToken.None))
+            emps = (await MyEmployeeService.GetAllEmployeesAsync(CancellationToken.None))
                 .OrderBy(x => x.Code)
                 .ThenBy(x => x.Name)
                 .ToList();
@@ -179,7 +179,7 @@
         }
     }
 
-    private Driver? SelectedDriver
+    private Employee? SelectedDriver
     {
         get => selectedDriver;
         set
@@ -189,13 +189,13 @@
         }
     }
 
-    private Task<IEnumerable<Driver>> SearchDrivers(string value, CancellationToken cancellationToken)
+    private Task<IEnumerable<Employee>> SearchDrivers(string value, CancellationToken cancellationToken)
     {
-        IEnumerable<Driver> results = AutocompleteSearchHelper.SearchByLike(drivers, value);
+        IEnumerable<Employee> results = AutocompleteSearchHelper.SearchByLike(emps, value);
         return Task.FromResult(results);
     }
 
-    private Task OnDriverChanged(Driver? driver)
+    private Task OnDriverChanged(Employee? driver)
     {
         SelectedDriver = driver;
         return Task.CompletedTask;

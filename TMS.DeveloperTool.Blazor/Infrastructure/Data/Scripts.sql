@@ -23,7 +23,7 @@ CREATE TABLE vehicles (
     is_moving BOOL NOT NULL
 );
 
-CREATE TABLE drivers (
+CREATE TABLE employees (
     driver_id UUID PRIMARY KEY,
     "name" VARCHAR(255) NOT NULL,
     bearer_token TEXT NOT NULL,

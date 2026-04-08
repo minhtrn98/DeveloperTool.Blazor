@@ -49,9 +49,9 @@
         {
             <MudSelect T="string" @bind-Value="selectedTargetDriverId" Label="Tài xế nhận điều tin" Variant="Variant.Outlined" FullWidth="true" Class="mb-4">
                 <MudSelectItem T="string" Value="@string.Empty">Không chọn</MudSelectItem>
-                @foreach (Driver driver in TransferDrivers)
+                @foreach (Employee driver in TransferDrivers)
                 {
-                    string driverId = driver.DriverId.ToString();
+                    string driverId = driver.EmployeeId.ToString();
                     <MudSelectItem T="string" Value="@driverId">@GetDriverOptionLabel(driver)</MudSelectItem>
                 }
             </MudSelect>
@@ -104,7 +104,7 @@
     public DateTime? InitialRescheduledPickupDt { get; set; }
 
     [Parameter]
-    public List<Driver> TransferDrivers { get; set; } = [];
+    public List<Employee> TransferDrivers { get; set; } = [];
 
     [Parameter]
     public string? InitialTargetDriverId { get; set; }
@@ -214,7 +214,7 @@
         _ => Color.Default
     };
 
-    private static string GetDriverOptionLabel(Driver driver)
+    private static string GetDriverOptionLabel(Employee driver)
     {
         return string.IsNullOrWhiteSpace(driver.Code)
             ? driver.Name

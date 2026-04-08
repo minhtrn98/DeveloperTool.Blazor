@@ -4,7 +4,7 @@
 @using System.Text
 @using TMS.DeveloperTool.Blazor.Services
 @inject IHttpClientFactory HttpClientFactory
-@inject MyDriverService MyDriverService
+@inject MyEmployeeService MyEmployeeService
 @inject ApiUrlsOptions ApiUrlsOptions
 @inject ISnackbar Snackbar
 
@@ -42,8 +42,8 @@
                     </MudItem>
                 </MudGrid>
 
-                <MudAutocomplete T="Driver" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
-                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Driver>" Label="Driver" Variant="Variant.Outlined" FullWidth="true"
+                <MudAutocomplete T="Employee" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Employee>" Label="Driver" Variant="Variant.Outlined" FullWidth="true"
                                  Clearable="true" MaxItems="20" Class="mb-3" />
 
                 <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="3" Class="mb-3" />
@@ -123,9 +123,9 @@
     private const string ApiPrefix = "/api/v1/";
     private readonly List<string> methodOptions = ["GET", "POST", "PUT", "PATCH", "DELETE"];
     private readonly List<ServiceOption> serviceOptions = [];
-    private List<Driver> drivers = [];
+    private List<Employee> emps = [];
 
-    private Driver? selectedDriver;
+    private Employee? selectedDriver;
     private string selectedMethod = "POST";
     private string selectedService = string.Empty;
     private string selectedDomain = string.Empty;
@@ -144,7 +144,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        drivers = (await MyDriverService.GetAllDriversAsync(CancellationToken.None))
+        emps = (await MyEmployeeService.GetAllEmployeesAsync(CancellationToken.None))
             .OrderBy(x => x.Code)
             .ThenBy(x => x.Name)
             .ToList();
@@ -167,7 +167,7 @@
         selectedDomain = serviceOptions.FirstOrDefault()?.Domain ?? string.Empty;
     }
 
-    private Driver? SelectedDriver
+    private Employee? SelectedDriver
     {
         get => selectedDriver;
         set
@@ -177,7 +177,7 @@
         }
     }
 
-    private Task OnDriverChanged(Driver? value)
+    private Task OnDriverChanged(Employee? value)
     {
         SelectedDriver = value;
         return Task.CompletedTask;
@@ -189,9 +189,9 @@
         return Task.CompletedTask;
     }
 
-    private Task<IEnumerable<Driver>> SearchDrivers(string value, CancellationToken cancellationToken)
+    private Task<IEnumerable<Employee>> SearchDrivers(string value, CancellationToken cancellationToken)
     {
-        IEnumerable<Driver> results = AutocompleteSearchHelper.SearchByLike(drivers, value, orderByRelevance: false);
+        IEnumerable<Employee> results = AutocompleteSearchHelper.SearchByLike(emps, value, orderByRelevance: false);
         return Task.FromResult(results);
     }
 

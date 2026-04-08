@@ -2,7 +2,7 @@
 @using TMS.DeveloperTool.Blazor.Services
 @using TMS.DeveloperTool.Blazor.Components.Dialogs
 @inherits LayoutComponentBase
-@inject MyDriverService MyDriverService
+@inject MyEmployeeService MyEmployeeService
 @inject ISnackbar Snackbar
 @inject IWebHostEnvironment WebHostEnvironment
 @inject IDialogService DialogService
@@ -110,7 +110,7 @@
         _isGeneratingTokens = true;
         try
         {
-            int updatedCount = await MyDriverService.GenerateTokensForAllDriversAsync();
+            int updatedCount = await MyEmployeeService.GenerateTokensForAllEmployeesAsync();
             if (updatedCount == 0)
             {
                 Snackbar.Add("Tất cả tài xế đã có token.", Severity.Info);
@@ -138,7 +138,7 @@
         _isSyncingDrivers = true;
         try
         {
-            int insertedCount = await MyDriverService.SyncMissingDriversFromPickupTaskAsync();
+            int insertedCount = await MyEmployeeService.SyncMissingEmployeesFromPickupTaskAsync();
             if (insertedCount == 0)
             {
                 Snackbar.Add("Không có tài xế mới để đồng bộ.", Severity.Info);
