@@ -1,0 +1,70 @@
+@using TMS.DeveloperTool.Blazor.Services
+@inject MyDriverService MyDriverService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="_driverCode"
+                      Label="Mã nhân viên"
+                      Placeholder="Nhập mã nhân viên"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Disabled="@_isSubmitting" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="@_isSubmitting">Hủy</MudButton>
+        <MudButton Color="Color.Success" OnClick="Submit" Disabled="@_isSubmitting" Variant="Variant.Filled">
+            @if (_isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                <span>Đang thêm</span>
+            }
+            else
+            {
+                <span>Lưu</span>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private string _driverCode = string.Empty;
+    private bool _isSubmitting;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        string code = _driverCode.Trim();
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            Snackbar.Add("Vui lòng nhập mã nhân viên.", Severity.Warning);
+            return;
+        }
+
+        _isSubmitting = true;
+        try
+        {
+            bool added = await MyDriverService.AddDriverAsync(code);
+            if (!added)
+            {
+                Snackbar.Add("Không thêm được nhân viên. Mã không tồn tại hoặc đã có trong danh sách tài xế.", Severity.Info);
+                return;
+            }
+
+            Snackbar.Add($"Đã thêm nhân viên {code}.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thêm được nhân viên: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

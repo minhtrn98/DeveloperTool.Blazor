@@ -7,12 +7,6 @@ namespace TMS.DeveloperTool.Blazor.Infrastructure.Security;
 
 public sealed class JwtTokenService
 {
-    private const string DefaultProfileImageUrl = "";
-    private const string DefaultUserType = "Employee";
-    private const string DefaultCompanyId = "01000000-7000-5000-0000-000000000001";
-    private const string DefaultIsAdmin = "true";
-    private const string DefaultScope = "api hrm-api tms-api openid profile email roles";
-
     private readonly JwtOptions _jwtSetting;
     private readonly JwtSecurityTokenHandler _handler = new();
 
@@ -21,7 +15,14 @@ public sealed class JwtTokenService
         _jwtSetting = jwtOptions;
     }
 
-    public string CreateToken(Driver driver, List<string> permissions)
+    public string CreateToken(
+        Driver driver,
+        bool isAdmin,
+        List<string> permissions,
+        List<string> roleNames,
+        List<string> accessDepartments,
+        long permissionsVersion
+    )
     {
         ArgumentNullException.ThrowIfNull(driver);
 
@@ -30,25 +31,33 @@ public sealed class JwtTokenService
         List<Claim> claims =
         [
             new(JwtRegisteredClaimNames.Sub, driverId),
+            new(JwtRegisteredClaimNames.Email, ""),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Email, driver.Email),
-            new("employeeCode", driver.Code),
-            new("profileImageUrl", DefaultProfileImageUrl),
-            new("fullName", driver.Name),
-            new("employeeId", driverId),
-            new("user_type", DefaultUserType),
-            new("company_id", DefaultCompanyId),
-            new("isAdmin", DefaultIsAdmin),
-            new(ClaimTypes.NameIdentifier, driver.Name),
             new(JwtRegisteredClaimNames.Aud, _jwtSetting.Audience),
-            new("scope", DefaultScope),
-            new("accessDepartments", "*"),
-            new("roleNames", "SA")
+            new(ClaimTypes.NameIdentifier, driver.Name),
+            new("employeeId", driverId),
+            new("employeeCode", driver.Code),
+            new("fullName", driver.Name),
+            new("jobTitleName", ""),
+            new("phone", "0000000000"),
+            new("companyId", "01000000-7000-5000-0000-000000000001"),
+            new("isAdmin", isAdmin.ToString()),
+            new("pv", permissionsVersion.ToString()), // phiên bản
         ];
 
         foreach (string permission in permissions)
         {
             claims.Add(new Claim("permissions", permission));
+        }
+
+        foreach (string accessDept in accessDepartments)
+        {
+            claims.Add(new Claim("accessDepartments", accessDept));
+        }
+
+        foreach (string roleName in roleNames)
+        {
+            claims.Add(new Claim("roleNames", roleName));
         }
 
         DateTime utcNow = DateTime.UtcNow;

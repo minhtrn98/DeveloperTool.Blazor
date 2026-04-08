@@ -16,20 +16,21 @@ public sealed class DriverRepository
         const string sql = @"
             SELECT id, name, code
             FROM public.employees
-            WHERE id = ANY(@Ids)
+            WHERE id = ANY(@Ids) and is_active = true
         ";
         IEnumerable<DriverRecord> drivers = await _dbQuery.QueryAsync<DriverRecord>(sql, new { Ids = ids }, cancellationToken);
         return drivers.ToDictionary(d => d.Id, d => d.Name);
     }
 
-    public async Task<List<DropdownItem<string>>> GetAllDriversAsync(CancellationToken cancellationToken)
+    public async Task<EmployeeDto?> GetEmployeeByCodeAsync(string code, CancellationToken cancellationToken)
     {
-        const string sql = @"
-            SELECT id, name, code
+        const string sql = """
+            SELECT id as "Id", name as "Name", code as "Code"
             FROM public.employees
-        ";
-        IEnumerable<DriverRecord> drivers = await _dbQuery.QueryAsync<DriverRecord>(sql, null, cancellationToken);
-        return drivers.Select(d => new DropdownItem<string>(d.Id.ToString(), d.Id.ToString(), d.Name)).ToList();
+            WHERE code = @Code and is_active = true
+        """;
+        EmployeeDto? driver = await _dbQuery.FirstOrDefaultAsync<EmployeeDto>(sql, new { Code = code }, cancellationToken);
+        return driver;
     }
 
     public async Task<DriverRecord?> GetDriverByIdAsync(Guid id, CancellationToken cancellationToken)

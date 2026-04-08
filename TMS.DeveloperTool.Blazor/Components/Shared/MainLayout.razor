@@ -1,9 +1,11 @@
 ﻿@using TMS.DeveloperTool.Blazor.Infrastructure.Security
 @using TMS.DeveloperTool.Blazor.Services
+@using TMS.DeveloperTool.Blazor.Components.Dialogs
 @inherits LayoutComponentBase
 @inject MyDriverService MyDriverService
 @inject ISnackbar Snackbar
 @inject IWebHostEnvironment WebHostEnvironment
+@inject IDialogService DialogService
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
@@ -21,15 +23,15 @@
             @if (_isSyncingDrivers)
             {
                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
-                <MudText>Đang đồng bộ tài xế</MudText>
+                <MudText>Đang đồng bộ nv</MudText>
             }
             else
             {
-                <MudText>Đồng bộ tài xế</MudText>
+                <MudText>Đồng bộ nv</MudText>
             }
         </MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_isGeneratingTokens || _isSyncingDrivers)"
-                   StartIcon="@Icons.Material.Filled.VpnKey" OnClick="GenerateDriverTokensAsync">
+                   StartIcon="@Icons.Material.Filled.VpnKey" OnClick="GenerateDriverTokensAsync" Class="me-2">
             @if (_isGeneratingTokens)
             {
                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
@@ -37,8 +39,12 @@
             }
             else
             {
-                <MudText>Tạo token cho tài xế</MudText>
+                <MudText>Tạo token</MudText>
             }
+        </MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Tertiary"
+                   StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="ShowAddDriverDialog" Class="me-2">
+            <MudText>Thêm nhân viên</MudText>
         </MudButton>
         <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" />
         <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Inherit" Edge="Edge.End" />
@@ -86,6 +92,12 @@
     private void DarkModeToggle()
     {
         _isDarkMode = !_isDarkMode;
+    }
+
+    private async Task ShowAddDriverDialog()
+    {
+        var dialog = await DialogService.ShowAsync<AddDriverDialog>();
+        var result = await dialog.Result;
     }
 
     private async Task GenerateDriverTokensAsync()

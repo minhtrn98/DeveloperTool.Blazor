@@ -10,7 +10,6 @@ public sealed class Driver : IDisplaySearchItem
     public string Name { get; set; } = string.Empty;
     public string BearerToken { get; set; } = string.Empty;
     public DateTimeOffset? TokenExpiredAt { get; set; }
-    public string Email { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
 
     public string GetDisplayString()
@@ -21,7 +20,6 @@ public sealed class Driver : IDisplaySearchItem
     public bool Like(string searchTerm)
     {
         return Code.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-               Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-               Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
+               Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
     }
 }
