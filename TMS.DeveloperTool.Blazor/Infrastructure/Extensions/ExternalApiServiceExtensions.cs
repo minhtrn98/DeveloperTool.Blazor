@@ -46,6 +46,18 @@ public static class ExternalApiServiceExtensions
             })
             .AddHttpMessageHandler<LoggingHttpHandler>();
 
+        // QuanLyXe Vehicle Status API
+        services.AddTransient<QuanLyXeApiKeyHandler>();
+
+        services.AddRefitClient<IVehicleStatusApi>(refitSettings)
+            .ConfigureHttpClient((sp, c) =>
+            {
+                QuanLyXeOptions opts = sp.GetRequiredService<QuanLyXeOptions>();
+                c.BaseAddress = new Uri(opts.BaseUrl);
+            })
+            .AddHttpMessageHandler<QuanLyXeApiKeyHandler>()
+            .AddHttpMessageHandler<LoggingHttpHandler>();
+
         return services;
     }
 

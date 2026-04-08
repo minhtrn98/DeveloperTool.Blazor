@@ -4,12 +4,16 @@
 @using TMS.DeveloperTool.Blazor.Features.Pairing.Models
 @using TMS.DeveloperTool.Blazor.Features.Pairing.Services
 @using TMS.DeveloperTool.Blazor.Features.Routing.Models
+@using TMS.DeveloperTool.Blazor.Features.Tracking.Dtos
+@using TMS.DeveloperTool.Blazor.Infrastructure.Http
 @using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
 @using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Interfaces
 @using TMS.DeveloperTool.Blazor.Services
 @inject FleetRepository FleetRepository
 @inject RouteRepository RouteRepository
 @inject PlanningRepository PlanningRepository
+@inject DriverRepository DriverRepository
+@inject IVehicleStatusApi VehicleStatusApi
 @inject MyEmployeeService MyEmployeeService
 @inject PairingService PairingService
 @inject ISnackbar Snackbar
@@ -30,12 +34,13 @@
         else
         {
             <MudForm>
+                <MudAutocomplete T="VehicleDropdownItemDto" Value="SelectedVehicleOption" ValueChanged="OnVehicleChanged"
+                                 SearchFunc="SearchVehicleOptions" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<VehicleDropdownItemDto>" Label="Xe"
+                                 Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
+
                 <MudAutocomplete T="Employee" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
                                  ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Employee>" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true"
                                  Clearable="true" MaxItems="20" Class="mb-3" />
-
-                <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true"
-                              Lines="4" Class="mb-3" />
 
                 @* <MudGrid>
                     <MudItem xs="12" md="6">
@@ -47,10 +52,6 @@
                                       FullWidth="true" Class="mb-3" />
                     </MudItem>
                 </MudGrid> *@
-
-                <MudAutocomplete T="VehicleDropdownItemDto" Value="SelectedVehicleOption" ValueChanged="OnVehicleChanged"
-                                 SearchFunc="SearchVehicleOptions" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<VehicleDropdownItemDto>" Label="Xe"
-                                 Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
 
                 <MudSelect T="Guid" @bind-Value="pairingReasonTypeId" Label="Lý do ghép xe" Variant="Variant.Outlined"
                            FullWidth="true" Class="mb-3">
@@ -230,11 +231,14 @@
         if (vehicleId == Guid.Empty)
         {
             odometer = 0;
+            SelectedDriver = null;
             return;
         }
 
         try
         {
+            await TrySelectDriverByVehicleAsync(value, CancellationToken.None);
+
             LatestAssignmentDto? latestAssignment = await FleetRepository.GetLatestAssignmentAsync(vehicleId);
 
             if (latestAssignment?.Odometer is not null)
@@ -274,6 +278,58 @@
         {
             Snackbar.Add($"Có lỗi xảy ra: {ex.Message}", Severity.Warning);
         }
+    }
+
+    private async Task TrySelectDriverByVehicleAsync(VehicleDropdownItemDto? selectedVehicle, CancellationToken cancellationToken)
+    {
+        if (selectedVehicle is null)
+        {
+            SelectedDriver = null;
+            return;
+        }
+
+        string plate = selectedVehicle.LicensePlate
+            .Replace("-", string.Empty, StringComparison.Ordinal)
+            .Replace(".", string.Empty, StringComparison.Ordinal)
+            .Trim();
+
+        if (string.IsNullOrWhiteSpace(plate))
+        {
+            SelectedDriver = null;
+            return;
+        }
+
+        VehicleStatusResponseDto response = await VehicleStatusApi.GetVehicleStatusAsync(plate, cancellationToken);
+        string? licenseNo = response.Data.FirstOrDefault()?.LicenseNo;
+
+        if (string.IsNullOrWhiteSpace(licenseNo))
+        {
+            SelectedDriver = null;
+            return;
+        }
+
+        EmployeeDto? employee = await DriverRepository.GetEmployeeByLicenseNoAsync(licenseNo, cancellationToken);
+        if (employee is null)
+        {
+            SelectedDriver = null;
+            return;
+        }
+
+        Employee? matchedEmployee = emps.FirstOrDefault(e => e.EmployeeId == employee.Id)
+            ?? emps.FirstOrDefault(e => e.Code.Equals(employee.Code, StringComparison.OrdinalIgnoreCase));
+
+        if (matchedEmployee is null)
+        {
+            matchedEmployee = new Employee
+            {
+                EmployeeId = employee.Id,
+                Code = employee.Code,
+                Name = employee.Name
+            };
+            emps.Add(matchedEmployee);
+        }
+
+        SelectedDriver = matchedEmployee;
     }
 
     private PlanningDropdownItemDto? SelectedPlanningOption

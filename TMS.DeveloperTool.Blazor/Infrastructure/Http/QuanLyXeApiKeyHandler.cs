@@ -1,0 +1,28 @@
+using Microsoft.Extensions.Options;
+using TMS.DeveloperTool.Blazor.Infrastructure.Configuration;
+
+namespace TMS.DeveloperTool.Blazor.Infrastructure.Http;
+
+public sealed class QuanLyXeApiKeyHandler : DelegatingHandler
+{
+    private readonly QuanLyXeOptions _options;
+
+    public QuanLyXeApiKeyHandler(IOptions<QuanLyXeOptions> options)
+    {
+        _options = options.Value;
+    }
+
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        UriBuilder uriBuilder = new(request.RequestUri!);
+        string apiKeyParam = $"apikey={Uri.EscapeDataString(_options.ApiKey)}";
+
+        uriBuilder.Query = string.IsNullOrEmpty(uriBuilder.Query)
+            ? apiKeyParam
+            : uriBuilder.Query.TrimStart('?') + "&" + apiKeyParam;
+
+        request.RequestUri = uriBuilder.Uri;
+
+        return base.SendAsync(request, cancellationToken);
+    }
+}

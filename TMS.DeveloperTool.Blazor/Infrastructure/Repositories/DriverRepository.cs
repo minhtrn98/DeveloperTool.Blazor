@@ -47,6 +47,17 @@ public sealed class DriverRepository
         return driver;
     }
 
+    public async Task<EmployeeDto?> GetEmployeeByLicenseNoAsync(string licenseNo, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT id as "Id", name as "Name", code as "Code"
+            FROM public.employees
+            WHERE license_no = @LicenseNo and is_active = true
+        """;
+        EmployeeDto? driver = await _dbQuery.FirstOrDefaultAsync<EmployeeDto>(sql, new { LicenseNo = licenseNo }, cancellationToken);
+        return driver;
+    }
+
     public async Task<Dictionary<Guid, RoleDto[]>> GetEmployeeRolesAsync(IEnumerable<Guid> driverIds, CancellationToken cancellationToken)
     {
         const string sql = """
