@@ -55,6 +55,12 @@
         </MudNavLink>
     }
 
+    @if (ShouldShow(ApplicationConstants.MenuKeys.VehicleStatuses))
+    {
+        <MudNavLink Href="@ApplicationConstants.Routes.VehicleStatuses" Match="NavLinkMatch.All">Theo dõi trạng thái xe
+        </MudNavLink>
+    }
+
     @if (ShouldShow(ApplicationConstants.MenuKeys.ApiRequest))
     {
         <MudNavLink Href="@ApplicationConstants.Routes.ApiRequest" Match="NavLinkMatch.All">API Request</MudNavLink>
@@ -78,6 +84,7 @@
         ApplicationConstants.MenuKeys.PickupTasks,
         ApplicationConstants.MenuKeys.CreatePickupTaskEvent,
         ApplicationConstants.MenuKeys.TopMovingVehicles,
+        ApplicationConstants.MenuKeys.VehicleStatuses,
         ApplicationConstants.MenuKeys.RoutingConfig,
         ApplicationConstants.MenuKeys.ApiRequest
     ];

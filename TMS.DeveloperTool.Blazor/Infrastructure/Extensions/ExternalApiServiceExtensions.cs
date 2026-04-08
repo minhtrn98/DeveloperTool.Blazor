@@ -55,8 +55,7 @@ public static class ExternalApiServiceExtensions
                 QuanLyXeOptions opts = sp.GetRequiredService<QuanLyXeOptions>();
                 c.BaseAddress = new Uri(opts.BaseUrl);
             })
-            .AddHttpMessageHandler<QuanLyXeApiKeyHandler>()
-            .AddHttpMessageHandler<LoggingHttpHandler>();
+            .AddHttpMessageHandler<QuanLyXeApiKeyHandler>();
 
         return services;
     }
@@ -74,6 +73,7 @@ public static class ExternalApiServiceExtensions
         services.AddScoped<IJsonTypeMappingStrategy, PickupTaskEventJsonMappingStrategy>();
         services.AddScoped<JsonBuilderService>();
         services.AddScoped<MyEmployeeService>();
+        services.AddScoped<VehicleStatusService>();
 
         services.AddSingleton<EventService>();
         services.AddSingleton<JwtTokenService>();

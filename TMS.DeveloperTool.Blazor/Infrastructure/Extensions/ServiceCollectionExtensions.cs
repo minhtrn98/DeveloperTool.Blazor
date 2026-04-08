@@ -20,7 +20,7 @@ public static class ServiceCollectionExtensions
         services.AddSettingsAndValidate<JwtOptions>(config);
         services.AddSettingsAndValidate<ApiUrlsOptions>(config);
         services.AddSettingsAndValidate<MenuVisibilityOptions>(config);
-            services.AddSettingsAndValidate<QuanLyXeOptions>(config);
+        services.AddSettingsAndValidate<QuanLyXeOptions>(config);
         return services;
     }
 

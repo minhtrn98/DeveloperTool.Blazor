@@ -1,14 +1,14 @@
 using System.Text.Json.Serialization;
 
-namespace TMS.DeveloperTool.Blazor.Features.Tracking.Dtos;
+namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
 public sealed class VehicleStatusResponseDto
 {
     [JsonPropertyName("Data")]
-    public IReadOnlyList<VehicleStatusDto> Data { get; init; } = [];
+    public IReadOnlyList<VehicleStatusItemDto> Data { get; init; } = [];
 }
 
-public sealed class VehicleStatusDto
+public sealed class VehicleStatusItemDto
 {
     [JsonPropertyName("Driver")]
     public string? Driver { get; init; }

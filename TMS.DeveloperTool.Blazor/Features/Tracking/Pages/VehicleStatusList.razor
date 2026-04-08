@@ -1,0 +1,162 @@
+@page "/vehicle-statuses"
+
+@using TMS.DeveloperTool.Blazor.Services
+@inject VehicleStatusService VehicleStatusService
+
+<AppPageTitle MenuName="Theo doi trang thai xe" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4">
+        <div class="d-flex justify-space-between mb-4">
+            <MudText Typo="Typo.h4">Danh sách trạng thái xe</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="ReloadAsync" Disabled="@isLoading">
+                Làm mới
+            </MudButton>
+        </div>
+
+        <MudGrid Class="mb-4">
+            <MudItem xs="12">
+                <MudTextField @bind-Value="searchValue"
+                              Label="Tìm theo biển số"
+                              Placeholder="Ví dụ: 51A12345"
+                              Variant="Variant.Outlined"
+                              FullWidth="true"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Immediate="true"
+                              DebounceInterval="350"
+                              @bind-Value:after="OnSearchChanged" />
+            </MudItem>
+        </MudGrid>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+        }
+
+        <MudTable @ref="tableRef"
+                  T="VehicleStatusTrackingDto"
+                  ServerData="LoadServerData"
+                  Loading="@isLoading"
+                  Hover="true"
+                  Dense="true"
+                  Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>STT</MudTh>
+                <MudTh>Vehicle ID</MudTh>
+                <MudTh>Biển số</MudTh>
+                <MudTh>Biển số thực tế</MudTh>
+                <MudTh>Phòng ban xe</MudTh>
+                <MudTh>Bằng lái</MudTh>
+                <MudTh>Mã tài xế</MudTh>
+                <MudTh>Tên tài xế</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="STT">@GetRowIndex(context)</MudTd>
+                <MudTd DataLabel="Vehicle ID">@context.VehicleId</MudTd>
+                <MudTd DataLabel="Biển số">@DisplayText(context.Plate)</MudTd>
+                <MudTd DataLabel="Biển số thực tế">@DisplayText(context.ActualPlate)</MudTd>
+                <MudTd DataLabel="Phòng ban xe">@DisplayText(context.VehicleDepartmentCode)</MudTd>
+                <MudTd DataLabel="Bằng lái">@DisplayText(context.LicenseNo)</MudTd>
+                <MudTd DataLabel="Mã tài xế">@DisplayText(context.DriverCode)</MudTd>
+                <MudTd DataLabel="Tên tài xế">@DisplayText(context.DriverName)</MudTd>
+            </RowTemplate>
+            <LoadingContent>
+                <MudText Class="pa-4">Đang tải dữ liệu...</MudText>
+            </LoadingContent>
+            <NoRecordsContent>
+                <MudText Class="pa-4">Không có dữ liệu trạng thái xe.</MudText>
+            </NoRecordsContent>
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[] { 10, 20, 50 }" />
+            </PagerContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<VehicleStatusTrackingDto> vehicleStatuses = [];
+    private MudTable<VehicleStatusTrackingDto>? tableRef;
+    private bool isLoading;
+    private string? errorMessage;
+    private string searchValue = string.Empty;
+    private int currentPageIndex = 1;
+    private int currentPageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.CompletedTask;
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (tableRef is null)
+        {
+            return;
+        }
+
+        await tableRef.ReloadServerData();
+    }
+
+    private async Task OnSearchChanged()
+    {
+        if (tableRef is not null)
+        {
+            tableRef.NavigateTo(0);
+            await tableRef.ReloadServerData();
+        }
+    }
+
+    private async Task<TableData<VehicleStatusTrackingDto>> LoadServerData(TableState state, CancellationToken cancellationToken)
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            currentPageIndex = state.Page + 1;
+            currentPageSize = state.PageSize;
+
+            (List<VehicleStatusTrackingDto> items, int totalCount) = await VehicleStatusService.GetVehicleStatusesAsync(
+                searchValue,
+                currentPageIndex,
+                currentPageSize,
+                cancellationToken);
+
+            vehicleStatuses = items;
+
+            return new TableData<VehicleStatusTrackingDto>
+            {
+                TotalItems = totalCount,
+                Items = items
+            };
+        }
+        catch (Exception ex)
+        {
+            vehicleStatuses = [];
+            errorMessage = $"Không thể tải dữ liệu: {ex.Message}";
+
+            return new TableData<VehicleStatusTrackingDto>
+            {
+                TotalItems = 0,
+                Items = vehicleStatuses
+            };
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private int GetRowIndex(VehicleStatusTrackingDto item)
+    {
+        int indexInPage = vehicleStatuses.IndexOf(item);
+        return ((currentPageIndex - 1) * currentPageSize) + indexInPage + 1;
+    }
+
+    private static string DisplayText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value;
+    }
+}

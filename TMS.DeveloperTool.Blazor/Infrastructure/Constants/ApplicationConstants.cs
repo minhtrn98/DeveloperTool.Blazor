@@ -38,6 +38,7 @@ public static class ApplicationConstants
         public const string PickupTasks = "/pickup-tasks";
         public const string PickupTasksCreateEvent = "/pickup-tasks/create-event";
         public const string TopMovingVehicles = "/top-moving-vehicles";
+        public const string VehicleStatuses = "/vehicle-statuses";
         public const string RoutingConfig = "/routing-config";
         public const string DriverChange = "/driver-change";
         public const string JsonBuilder = "/json-builder";
@@ -64,6 +65,7 @@ public static class ApplicationConstants
         public const string PickupTasks = "PickupTasks";
         public const string CreatePickupTaskEvent = "CreatePickupTaskEvent";
         public const string TopMovingVehicles = "TopMovingVehicles";
+        public const string VehicleStatuses = "VehicleStatuses";
         public const string RoutingConfig = "RoutingConfig";
         public const string ApiRequest = "ApiRequest";
     }
