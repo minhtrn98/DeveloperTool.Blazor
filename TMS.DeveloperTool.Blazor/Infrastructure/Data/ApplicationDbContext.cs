@@ -64,6 +64,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.BearerToken).HasColumnName("bearer_token");
             entity.Property(e => e.TokenExpiredAt).HasColumnName("token_expired_at");
             entity.Property(e => e.Code).HasColumnName("code");
+            entity.Ignore(e => e.Email);
+            entity.Ignore(e => e.Phone);
         });
     }
 }

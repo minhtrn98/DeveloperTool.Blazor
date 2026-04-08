@@ -9,27 +9,24 @@ public sealed class MyDriverService
     private readonly OrderRepository _orderRepository;
     private readonly DriverRepository _driverRepository;
     private readonly JwtTokenService _jwtTokenService;
-    private readonly IWebHostEnvironment _environment;
-    private readonly HashSet<string> _adminRoles = new (StringComparer.OrdinalIgnoreCase) { "SA", "PM" };
+    private readonly HashSet<string> _adminRoles = new(StringComparer.OrdinalIgnoreCase) { "SA", "PM" };
 
     public MyDriverService(
         ApplicationDbContext dbContext,
         OrderRepository orderRepository,
         DriverRepository driverRepository,
-        JwtTokenService jwtTokenService,
-        IWebHostEnvironment webHostEnvironment)
+        JwtTokenService jwtTokenService)
     {
         _dbContext = dbContext;
         _orderRepository = orderRepository;
         _driverRepository = driverRepository;
         _jwtTokenService = jwtTokenService;
-        _environment = webHostEnvironment;
     }
 
     public async Task<int> SyncMissingDriversFromPickupTaskAsync(CancellationToken cancellationToken = default)
     {
         List<Guid> pickupTaskAssignedDriverIds = (await _orderRepository.GetPickupTaskAssignedDriverIdsAsync(cancellationToken))
-            .Distinct()
+            .Where(id => id != Guid.Empty)
             .ToList();
         if (pickupTaskAssignedDriverIds.Count == 0)
         {
@@ -85,8 +82,14 @@ public sealed class MyDriverService
 
     public async Task<int> GenerateTokensForAllDriversAsync(CancellationToken cancellationToken = default)
     {
-        List<string> allPermissions = await _driverRepository.GetAllPermissionsAsync(cancellationToken);
         List<Driver> drivers = await _dbContext.Drivers.ToListAsync(cancellationToken);
+        List<Guid> driverIds = drivers.Select(d => d.DriverId).ToList();
+
+        Dictionary<Guid, EmployeeContactDto> empContactInfos = await _driverRepository.GetEmpContactAsync(driverIds, cancellationToken);
+        Dictionary<Guid, RoleDto[]> empRoles = await _driverRepository.GetEmpRolesAsync(driverIds, cancellationToken);
+        Dictionary<Guid, string[]> empDepts = await _driverRepository.GetEmpDeptsAsync(driverIds, cancellationToken);
+        Dictionary<Guid, string[]> rolePermissions = await _driverRepository.GetAllRolePermissionsAsync(cancellationToken);
+
         DateTimeOffset utcNow = DateTimeOffset.UtcNow;
 
         foreach (Driver driver in drivers)
@@ -100,7 +103,20 @@ public sealed class MyDriverService
                 continue;
             }
 
-            DriverPermissionInfo permissionInfo = await GetDriverPermissionInfo(driver.DriverId, allPermissions, cancellationToken);
+            EmployeeContactDto? contactInfo = empContactInfos.GetValueOrDefault(driver.DriverId);
+            if (contactInfo != null)
+            {
+                driver.Email = contactInfo.Email;
+                driver.Phone = contactInfo.Phone;
+            }
+
+            DriverPermissionInfo permissionInfo = await GetDriverPermissionInfo(
+                driver.DriverId,
+                empRoles,
+                empDepts,
+                rolePermissions,
+                cancellationToken
+            );
             driver.BearerToken = _jwtTokenService.CreateToken(
                 driver,
                 permissionInfo.IsAdmin,
@@ -148,28 +164,25 @@ public sealed class MyDriverService
         return await _dbContext.Drivers.AsNoTracking().ToListAsync(cancellationToken);
     }
 
-    public async Task<DriverPermissionInfo> GetDriverPermissionInfo(Guid driverId, List<string> allPermissions, CancellationToken cancellationToken = default)
+    public async Task<DriverPermissionInfo> GetDriverPermissionInfo(Guid driverId, Dictionary<Guid, RoleDto[]> empRoles, Dictionary<Guid, string[]> empDepts, Dictionary<Guid, string[]> rolePermissions, CancellationToken cancellationToken = default)
     {
-        if (_environment.IsLocal())
-        {
-            return new DriverPermissionInfo(
-                isAdmin: true,
-                permissions: allPermissions,
-                roleNames: ["FullAccess"],
-                accessDepartments: ["*"],
-                version: 1
-            );
-        }
-
-
+        RoleDto[] empRolesForDriver = empRoles.GetValueOrDefault(driverId, []);
+        List<string> roleNames = empRolesForDriver.Select(r => r.Name).ToList();
+        long version = empRolesForDriver.Select(r => r.PermissionsVersion).DefaultIfEmpty(0).Max();
+        bool isAdmin = empRolesForDriver.Any(r => _adminRoles.Contains(r.Name, StringComparer.OrdinalIgnoreCase));
+        List<string> permissions = empRolesForDriver
+            .SelectMany(r => rolePermissions.GetValueOrDefault(r.Id, []))
+            .Distinct()
+            .ToList();
+        List<string> accessDepartments = empDepts.GetValueOrDefault(driverId, []).ToList();
 
         // do later: implement real permission logic based on driverId
         return new DriverPermissionInfo(
-            isAdmin: true,
-            permissions: allPermissions,
-            roleNames: ["FullAccess"],
-            accessDepartments: ["*"],
-            version: 1
+            isAdmin: isAdmin,
+            permissions: permissions,
+            roleNames: roleNames,
+            accessDepartments: accessDepartments,
+            version: version
         );
     }
 }

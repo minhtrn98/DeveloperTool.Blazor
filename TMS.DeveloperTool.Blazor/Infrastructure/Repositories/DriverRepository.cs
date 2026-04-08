@@ -1,4 +1,7 @@
-﻿using DriverRecord = (System.Guid Id, string Name, string Code);
+﻿using DriverDeptRecord = (System.Guid DriverId, string DeptCode);
+using DriverRecord = (System.Guid Id, string Name, string Code);
+using DriverRoleRecord = (System.Guid DriverId, System.Guid RoleId, string RoleName, long PermissionsVersion);
+using RolePermissionRecord = (System.Guid RoleId, string PermissionKey);
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 
@@ -22,6 +25,17 @@ public sealed class DriverRepository
         return drivers.ToDictionary(d => d.Id, d => d.Name);
     }
 
+    public async Task<Dictionary<Guid, EmployeeContactDto>> GetEmpContactAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT id as "Id", email as "Email", phone as "Phone"
+            FROM public.employees
+            WHERE id = ANY(@Ids) and is_active = true
+        """;
+        IEnumerable<EmployeeContactDto> contacts = await _dbQuery.QueryAsync<EmployeeContactDto>(sql, new { Ids = ids }, cancellationToken);
+        return contacts.ToDictionary(d => d.Id, d => d);
+    }
+
     public async Task<EmployeeDto?> GetEmployeeByCodeAsync(string code, CancellationToken cancellationToken)
     {
         const string sql = """
@@ -31,6 +45,50 @@ public sealed class DriverRepository
         """;
         EmployeeDto? driver = await _dbQuery.FirstOrDefaultAsync<EmployeeDto>(sql, new { Code = code }, cancellationToken);
         return driver;
+    }
+
+    public async Task<Dictionary<Guid, RoleDto[]>> GetEmpRolesAsync(IEnumerable<Guid> driverIds, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT e.id as "DriverId", r.id as "RoleId", r.name as "RoleName", r.permissions_version as "PermissionsVersion"
+            FROM public.employees e
+            JOIN public.app_user_roles er ON e.id = er.employee_id
+            JOIN public.app_roles r ON er.role_id = r.id
+            WHERE e.id = ANY(@DriverIds) and e.is_active = true
+        """;
+        IEnumerable<DriverRoleRecord> driverRoles = await _dbQuery.QueryAsync<DriverRoleRecord>(sql, new { DriverIds = driverIds }, cancellationToken);
+        return driverRoles
+            .GroupBy(dr => dr.DriverId)
+            .ToDictionary(g => g.Key, g => g.Select(dr => new RoleDto(dr.RoleId, dr.RoleName, dr.PermissionsVersion)).ToArray());
+    }
+
+    public async Task<Dictionary<Guid, string[]>> GetEmpDeptsAsync(IEnumerable<Guid> driverIds, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT e.id as "DriverId", d.code as "DeptCode"
+            FROM public.employees e
+            JOIN public.app_user_departments ud ON e.id = ud.employee_id
+            JOIN public.departments d ON ud.department_id = d.id
+            WHERE e.id = ANY(@DriverIds) and e.is_active = true
+        """;
+        IEnumerable<DriverDeptRecord> driverDepts = await _dbQuery.QueryAsync<DriverDeptRecord>(sql, new { DriverIds = driverIds }, cancellationToken);
+        return driverDepts
+            .GroupBy(dr => dr.DriverId)
+            .ToDictionary(g => g.Key, g => g.Select(dr => dr.DeptCode).ToArray());
+    }
+
+    public async Task<Dictionary<Guid, string[]>> GetAllRolePermissionsAsync(CancellationToken cancellationToken)
+    {
+        const string sql = """
+            select r.id as "RoleId", p.key as "PermissionKey"
+            from public.app_roles r
+            join public.app_role_permissions rp on r.id = rp.role_id
+            join public.app_permissions p on rp.permission_id = p.id
+        """;
+        IEnumerable<RolePermissionRecord> rolePermissions = await _dbQuery.QueryAsync<RolePermissionRecord>(sql, null, cancellationToken);
+        return rolePermissions
+            .GroupBy(rp => rp.RoleId)
+            .ToDictionary(g => g.Key, g => g.Select(rp => rp.PermissionKey).ToArray());
     }
 
     public async Task<DriverRecord?> GetDriverByIdAsync(Guid id, CancellationToken cancellationToken)
