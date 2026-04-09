@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Models;
 
 public sealed record PickupTaskEventOrderDto(
@@ -7,7 +9,7 @@ public sealed record PickupTaskEventOrderDto(
     decimal L,
     decimal H,
     decimal W,
-    bool HasPickupTask,
+    [property: JsonIgnore] bool HasPickupTask,
     IReadOnlyList<PickupTaskEventOrderItemDto> Items);
 
 public sealed record PickupTaskEventOrderItemDto(
@@ -17,4 +19,4 @@ public sealed record PickupTaskEventOrderItemDto(
     decimal L,
     decimal H,
     decimal W,
-    bool HasPickupTask);
+    [property: JsonIgnore] bool HasPickupTask);
