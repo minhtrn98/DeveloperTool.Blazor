@@ -14,6 +14,8 @@ public record DropdownItemDto<TKey>(TKey Id, string Code, string Name) : Interfa
 public sealed record PlanningDropdownItemDto(Guid Id, string Code, string Name, string Status, string DepartmentCode)
     : DropdownItemDto<Guid>(Id, Code, Name)
 {
+    public string? FirstStop { get; set; }
+
     public override string GetDisplayString() => $"[{DepartmentCode}] [{Status}] {Name}";
 
     public override bool Like(string searchTerm)

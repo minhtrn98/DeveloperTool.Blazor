@@ -338,6 +338,17 @@
         {
             selectedPlanningOption = value;
             planningId = value?.Id ?? Guid.Empty;
+
+            // Auto-select SelectedPostOffice based on FirstStop
+            if (!string.IsNullOrWhiteSpace(value?.FirstStop))
+            {
+                SelectedPostOffice = postOffices.FirstOrDefault(postOffice =>
+                    postOffice.PostOfficeCode == value.FirstStop);
+            }
+            else
+            {
+                SelectedPostOffice = null;
+            }
         }
     }
 

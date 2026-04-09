@@ -1,3 +1,5 @@
+using RealPlanPostOfficeRecord = (System.Guid RealPlanId, string PostOfficeCode);
+
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 
 public sealed class PlanningRepository
@@ -22,6 +24,19 @@ public sealed class PlanningRepository
             where execution_date = '{todayGmt7}'
         """;
         IEnumerable<PlanningDropdownItemDto> records = await _dbQuery.QueryAsync<PlanningDropdownItemDto>(sql, null, cancellationToken);
+
+        string sqlFirstStop = $"""
+            select d.real_plan_id as "RealPlanId", d.post_office_code as "PostOfficeCode"
+            from public.real_plan_details d
+            where d.real_plan_id = ANY(@Ids) and d.step_number = 1
+        """;
+        object param = new { Ids = records.Select(r => r.Id).ToArray() };
+        IEnumerable<RealPlanPostOfficeRecord> firstStops = await _dbQuery.QueryAsync<RealPlanPostOfficeRecord>(sqlFirstStop, param, cancellationToken);
+        foreach (var record in records)
+        {
+            record.FirstStop = firstStops.FirstOrDefault(fs => fs.RealPlanId == record.Id).PostOfficeCode;
+        }
+
         return records;
     }
 
