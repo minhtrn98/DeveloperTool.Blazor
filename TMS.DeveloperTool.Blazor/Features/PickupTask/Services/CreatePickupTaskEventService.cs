@@ -333,22 +333,9 @@ public sealed class CreatePickupTaskEventService(
     }
 }
 
-public sealed record PostOfficeOption(string Code, string Name) : Infrastructure.Shared.Interfaces.IDisplaySearchItem
-{
-    public string GetDisplayString() => $"{Code} - {Name}";
-
-    public override string ToString() => $"{Code} - {Name}";
-
-    public bool Like(string searchTerm)
-    {
-        return Code.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-               Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
-    }
-}
-
 public sealed record EnumOption(string Value, string Description) : Infrastructure.Shared.Interfaces.IDisplaySearchItem
 {
-    public string GetDisplayString() => Description;
+    public string DisplayString => Description;
 
     public bool Like(string searchTerm)
     {

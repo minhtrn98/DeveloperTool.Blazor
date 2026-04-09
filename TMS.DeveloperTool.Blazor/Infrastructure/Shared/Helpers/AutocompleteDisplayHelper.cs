@@ -6,6 +6,6 @@ public static class AutocompleteDisplayHelper
 {
     public static string GetDisplayString<TItem>(TItem? item) where TItem : class, IDisplaySearchItem
     {
-        return item?.GetDisplayString() ?? string.Empty;
+        return item?.DisplayString ?? string.Empty;
     }
 }

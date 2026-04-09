@@ -14,10 +14,7 @@ public sealed record DailyPlanDto : IDisplaySearchItem
 
     public List<DailyPlanDetailDto> Details { get; set; } = [];
 
-    public string GetDisplayString()
-    {
-        return $"{Code} - {Name} ({Status})";
-    }
+    public string DisplayString => $"[{DepartmentCode}] [{Status}] {Code} - {Name}";
 
     public bool Like(string searchTerm)
     {

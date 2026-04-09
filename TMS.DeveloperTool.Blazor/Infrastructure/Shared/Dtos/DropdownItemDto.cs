@@ -2,7 +2,7 @@ namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
 public record DropdownItemDto<TKey>(TKey Id, string Code, string Name) : Interfaces.IDisplaySearchItem
 {
-    public virtual string GetDisplayString() => Name;
+    public virtual string DisplayString => Name;
 
     public virtual bool Like(string searchTerm)
     {
@@ -16,7 +16,7 @@ public sealed record PlanningDropdownItemDto(Guid Id, string Code, string Name, 
 {
     public string? FirstStop { get; set; }
 
-    public override string GetDisplayString() => $"[{DepartmentCode}] [{Status}] {Name}";
+    public override string DisplayString => $"[{DepartmentCode}] [{Status}] {Name}";
 
     public override bool Like(string searchTerm)
     {
@@ -29,7 +29,7 @@ public sealed record PlanningDropdownItemDto(Guid Id, string Code, string Name, 
 public sealed record VehicleDropdownItemDto(Guid Id, string Code, string LicensePlate, string DeptManagerCode)
     : DropdownItemDto<Guid>(Id, Code, LicensePlate)
 {
-    public override string GetDisplayString() => $"[{DeptManagerCode}] {LicensePlate}";
+    public override string DisplayString => $"[{DeptManagerCode}] {LicensePlate}";
 
     public override bool Like(string searchTerm)
     {

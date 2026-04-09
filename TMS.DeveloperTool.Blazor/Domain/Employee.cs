@@ -15,10 +15,7 @@ public sealed class Employee : IDisplaySearchItem
     public string? Email { get; set; }
     public string? Phone { get; set; }
 
-    public string GetDisplayString()
-    {
-        return $"{Code} - {Name}";
-    }
+    public string DisplayString => $"{Code} - {Name}";
 
     public bool Like(string searchTerm)
     {

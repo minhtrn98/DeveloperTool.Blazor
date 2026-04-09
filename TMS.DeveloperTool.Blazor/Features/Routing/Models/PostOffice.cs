@@ -15,10 +15,7 @@ public sealed class PostOffice : IDisplaySearchItem
     public double Longitude { get; set; }
     public double Latitude { get; set; }
 
-    public string GetDisplayString()
-    {
-        return $"{PostOfficeCode} - {PostOfficeName}";
-    }
+    public string DisplayString => $"{PostOfficeCode} - {PostOfficeName}";
 
     public bool Like(string searchTerm)
     {
