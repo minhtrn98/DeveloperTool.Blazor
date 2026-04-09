@@ -33,20 +33,10 @@ public sealed class CreatePickupTaskEventService(
         return plans.ToList();
     }
 
-    public async Task<List<PostOfficeOption>> GetPostOfficeOptionsAsync()
+    public async Task<List<PostOffice>> GetPostOfficeOptionsAsync()
     {
         IEnumerable<PostOffice> postOffices = await routeRepository.GetPostOfficesAsync();
-
-        return postOffices
-            .Where(p => !string.IsNullOrWhiteSpace(p.PostOfficeCode))
-            .GroupBy(p => p.PostOfficeCode, StringComparer.OrdinalIgnoreCase)
-            .Select(g =>
-            {
-                PostOffice first = g.First();
-                return new PostOfficeOption(first.PostOfficeCode, first.PostOfficeName);
-            })
-            .OrderBy(x => x.Code)
-            .ToList();
+        return postOffices.ToList();
     }
 
     public static List<EnumOption> GetStatusOptions()
@@ -116,6 +106,13 @@ public sealed class CreatePickupTaskEventService(
             SetValue(jsonNode, "pickupPostOfficeCode", input.PostOfficeCode);
             SetValue(jsonNode, "pickupPostOfficeName", input.PostOfficeName ?? string.Empty);
             SetValue(jsonNode, "pickupPostOfficeId", input.PostOfficeCode);
+            SetValue(jsonNode, "pickupWardId", input.WardId ?? string.Empty);
+            SetValue(jsonNode, "pickupWardName", input.WardName ?? string.Empty);
+            SetValue(jsonNode, "pickupProvinceId", input.ProvinceId ?? string.Empty);
+            SetValue(jsonNode, "pickupProvinceName", input.ProvinceName ?? string.Empty);
+            SetValue(jsonNode, "pickupAddress", input.StreetAddress ?? string.Empty);
+            SetValue(jsonNode, "pickupLongitude", input.Lon ?? 0);
+            SetValue(jsonNode, "pickupLatitude", input.Lat ?? 0);
             UpdatePickupTaskIdPrefix(jsonNode, input.PostOfficeCode);
         }
 
@@ -188,7 +185,7 @@ public sealed class CreatePickupTaskEventService(
 
     public List<string> BuildJsonListFromDailyPlan(
         DailyPlanDto plan,
-        List<PostOfficeOption> postOfficeOptions,
+        List<PostOffice> postOfficeOptions,
         CreatePickupTaskEventInput baseInput,
         int intervalMinutes = 15)
     {
@@ -201,8 +198,8 @@ public sealed class CreatePickupTaskEventService(
 
         foreach (DailyPlanDetailDto detail in pickupDetails)
         {
-            PostOfficeOption? postOffice = postOfficeOptions
-                .FirstOrDefault(po => string.Equals(po.Code, detail.PostOfficeCode, StringComparison.OrdinalIgnoreCase));
+            PostOffice? postOffice = postOfficeOptions
+                .FirstOrDefault(po => string.Equals(po.PostOfficeCode, detail.PostOfficeCode, StringComparison.OrdinalIgnoreCase));
 
             // Generate multiple events spaced by intervalMinutes within FromTime-ToTime
             int count = 0;
@@ -212,7 +209,7 @@ public sealed class CreatePickupTaskEventService(
                 CreatePickupTaskEventInput input = new()
                 {
                     PostOfficeCode = detail.PostOfficeCode,
-                    PostOfficeName = postOffice?.Name ?? detail.PostOfficeCode,
+                    PostOfficeName = postOffice?.PostOfficeName ?? detail.PostOfficeCode,
                     StatusId = baseInput.StatusId,
                     StatusName = baseInput.StatusName,
                     ServiceTypeId = baseInput.ServiceTypeId,
@@ -350,6 +347,13 @@ public sealed record CreatePickupTaskEventInput
 {
     public string? PostOfficeCode { get; set; }
     public string? PostOfficeName { get; set; }
+    public string? WardId { get; set; }
+    public string? WardName { get; set; }
+    public string? ProvinceId { get; set; }
+    public string? ProvinceName { get; set; }
+    public string? StreetAddress { get; set; }
+    public double? Lon { get; set; }
+    public double? Lat { get; set; }
     public string? StatusId { get; set; }
     public string? StatusName { get; set; }
     public string? ServiceTypeId { get; set; }

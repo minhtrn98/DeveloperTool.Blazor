@@ -23,12 +23,15 @@ public sealed class RouteRepository
         }
 
         const string sql = """
-            SELECT "Id", "PostOfficeCode", "PostOfficeName", "StreetAddress", "Longitude", "Latitude"
-            FROM public."PostOffices"
+            SELECT "Id", "PostOfficeCode", "PostOfficeName", "StreetAddress", "Longitude", "Latitude", p."WardId", p."ProvinceId", "Wards"."WardName" AS "WardName", "Provinces"."ProvinceName" AS "ProvinceName"
+            FROM public."PostOffices" p
+            join public."Wards" on p."WardId" = "Wards"."WardId"
+            join public."Provinces" on p."ProvinceId" = "Provinces"."ProvinceId"
             WHERE "Longitude" IS NOT NULL AND "Latitude" IS NOT NULL
         """;
         IEnumerable<PostOffice> records = await _dbQuery.QueryAsync<PostOffice>(sql, null, cancellationToken);
         _cacheService.SetPostOfficesCache(records);
+
         return records;
     }
 }

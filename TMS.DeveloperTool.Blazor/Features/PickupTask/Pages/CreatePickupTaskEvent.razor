@@ -2,6 +2,7 @@
 @using System.Text.Json.Nodes
 @using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Models
 @using TMS.DeveloperTool.Blazor.Features.PickupTask.Services
+@using TMS.DeveloperTool.Blazor.Features.Routing.Models
 @inject CreatePickupTaskEventService Service
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
@@ -30,11 +31,11 @@
                                      Class="mb-3" Clearable="true" MaxItems="20"
                                      ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<DailyPlanDto>" />
 
-                    <MudAutocomplete T="PostOfficeOption" Value="selectedPostOffice" ValueChanged="OnPostOfficeChanged"
+                    <MudAutocomplete T="PostOffice" Value="selectedPostOffice" ValueChanged="OnPostOfficeChanged"
                                      SearchFunc="SearchPostOfficeOptions" Label="Bưu cục" Variant="Variant.Outlined"
                                      Class="mb-3" Clearable="true" MaxItems="20"
                                      Disabled="@(selectedDailyPlan is not null)"
-                                     ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<PostOfficeOption>" />
+                                     ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<PostOffice>" />
 
                     <MudGrid>
                         <MudItem xs="7">
@@ -176,7 +177,7 @@
 
     // Dropdown options
     private List<DailyPlanDto> dailyPlans = [];
-    private List<PostOfficeOption> postOfficeOptions = [];
+    private List<PostOffice> postOfficeOptions = [];
     private List<EnumOption> statusOptions = [];
     private List<EnumOption> serviceTypeOptions = [];
     private List<EnumOption> dispatchTypeOptions = [];
@@ -184,7 +185,7 @@
 
     // Selected values
     private DailyPlanDto? selectedDailyPlan;
-    private PostOfficeOption? selectedPostOffice;
+    private PostOffice? selectedPostOffice;
     private EnumOption? selectedStatus;
     private EnumOption? selectedServiceType;
     private EnumOption? selectedDispatchType;
@@ -249,7 +250,7 @@
     }
 
     private void OnDailyPlanChanged(DailyPlanDto? value) => selectedDailyPlan = value;
-    private void OnPostOfficeChanged(PostOfficeOption? value) => selectedPostOffice = value;
+    private void OnPostOfficeChanged(PostOffice? value) => selectedPostOffice = value;
     private void OnStatusChanged(EnumOption? value) => selectedStatus = value;
     private void OnServiceTypeChanged(EnumOption? value) => selectedServiceType = value;
     private void OnDispatchTypeChanged(EnumOption? value) => selectedDispatchType = value;
@@ -261,9 +262,9 @@
         return Task.FromResult(results);
     }
 
-    private Task<IEnumerable<PostOfficeOption>> SearchPostOfficeOptions(string value, CancellationToken cancellationToken)
+    private Task<IEnumerable<PostOffice>> SearchPostOfficeOptions(string value, CancellationToken cancellationToken)
     {
-        IEnumerable<PostOfficeOption> results = AutocompleteSearchHelper.SearchByLike(postOfficeOptions, value);
+        IEnumerable<PostOffice> results = AutocompleteSearchHelper.SearchByLike(postOfficeOptions, value);
         return Task.FromResult(results);
     }
 
@@ -297,8 +298,15 @@
         {
             CreatePickupTaskEventInput baseInput = new()
             {
-                PostOfficeCode = selectedPostOffice?.Code,
-                PostOfficeName = selectedPostOffice?.Name,
+                PostOfficeCode = selectedPostOffice?.PostOfficeCode,
+                PostOfficeName = selectedPostOffice?.PostOfficeName,
+                WardId = selectedPostOffice?.WardId,
+                WardName = selectedPostOffice?.WardName,
+                ProvinceId = selectedPostOffice?.ProvinceId,
+                ProvinceName = selectedPostOffice?.ProvinceName,
+                StreetAddress = selectedPostOffice?.StreetAddress,
+                Lon = selectedPostOffice?.Longitude,
+                Lat = selectedPostOffice?.Latitude,
                 StatusId = selectedStatus?.Value,
                 StatusName = selectedStatus?.Description,
                 ServiceTypeId = selectedServiceType?.Value,
