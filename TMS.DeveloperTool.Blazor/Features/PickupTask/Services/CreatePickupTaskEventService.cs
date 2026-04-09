@@ -187,8 +187,12 @@ public sealed class CreatePickupTaskEventService(
         DailyPlanDto plan,
         List<PostOffice> postOfficeOptions,
         CreatePickupTaskEventInput baseInput,
+        int ordersPerEvent = 1,
         int intervalMinutes = 15)
     {
+        int effectiveOrdersPerEvent = Math.Max(1, ordersPerEvent);
+        int orderCursor = 0;
+
         List<DailyPlanDetailDto> pickupDetails = plan.Details
             .Where(d => d.BusinessOperation is BusinessOperation.Receive or BusinessOperation.ReceiveAndDelivery)
             .OrderBy(d => d.StepNumber)
@@ -206,6 +210,16 @@ public sealed class CreatePickupTaskEventService(
             TimeOnly current = detail.FromTime;
             while (current < detail.ToTime)
             {
+                List<PickupTaskEventOrderDto> ordersForCurrentEvent = baseInput.SelectedOrders
+                    .Skip(orderCursor)
+                    .Take(effectiveOrdersPerEvent)
+                    .ToList();
+
+                if (ordersForCurrentEvent.Count == 0)
+                {
+                    break;
+                }
+
                 CreatePickupTaskEventInput input = new()
                 {
                     PostOfficeCode = detail.PostOfficeCode,
@@ -217,10 +231,11 @@ public sealed class CreatePickupTaskEventService(
                     DispatchType = baseInput.DispatchType,
                     DispatchMethod = baseInput.DispatchMethod,
                     ScheduledPickupDate = plan.ExecutionDate.ToDateTime(current),
-                    SelectedOrders = baseInput.SelectedOrders
+                    SelectedOrders = ordersForCurrentEvent
                 };
 
                 jsonList.Add(BuildJson(input));
+                orderCursor += ordersForCurrentEvent.Count;
                 current = current.Add(TimeSpan.FromMinutes(intervalMinutes));
                 if (++count > 2)
                 {

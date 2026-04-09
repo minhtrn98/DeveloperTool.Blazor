@@ -26,10 +26,18 @@
                 <MudItem xs="12" md="4">
                     <MudText Typo="Typo.h6" Class="mb-3">Thông tin điều tin</MudText>
 
-                    <MudAutocomplete T="DailyPlanDto" Value="selectedDailyPlan" ValueChanged="OnDailyPlanChanged"
-                                     SearchFunc="SearchDailyPlans" Label="Kế hoạch vận chuyển" Variant="Variant.Outlined"
-                                     Class="mb-3" Clearable="true" MaxItems="20"
-                                     ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<DailyPlanDto>" />
+                    <MudGrid Class="mb-3">
+                        <MudItem xs="12" sm="8">
+                            <MudAutocomplete T="DailyPlanDto" Value="selectedDailyPlan" ValueChanged="OnDailyPlanChanged"
+                                             SearchFunc="SearchDailyPlans" Label="Kế hoạch vận chuyển" Variant="Variant.Outlined"
+                                             Clearable="true" MaxItems="20"
+                                             ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<DailyPlanDto>" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudNumericField T="int" @bind-Value="ordersPerEvent" Min="1" HideSpinButtons="false"
+                                             Label="Số đơn / điều tin" Variant="Variant.Outlined" />
+                        </MudItem>
+                    </MudGrid>
 
                     <MudAutocomplete T="PostOffice" Value="selectedPostOffice" ValueChanged="OnPostOfficeChanged"
                                      SearchFunc="SearchPostOfficeOptions" Label="Bưu cục" Variant="Variant.Outlined"
@@ -200,6 +208,7 @@
     private HashSet<PickupTaskEventOrderDto> selectedOrderSet = [];
     private HashSet<string> selectedOrderIds = [];
     private bool showOnlyWithoutPickupTask = true;
+    private int ordersPerEvent = 1;
 
     // Output
     private string jsonOutput = string.Empty;
@@ -319,7 +328,11 @@
 
             if (selectedDailyPlan is not null)
             {
-                List<string> jsonList = Service.BuildJsonListFromDailyPlan(selectedDailyPlan, postOfficeOptions, baseInput);
+                List<string> jsonList = Service.BuildJsonListFromDailyPlan(
+                    selectedDailyPlan,
+                    postOfficeOptions,
+                    baseInput,
+                    ordersPerEvent);
                 jsonOutput = $"[\n{string.Join(",\n", jsonList)}\n]";
                 Snackbar.Add($"Build {jsonList.Count} JSON từ kế hoạch thành công.", Severity.Success);
             }
