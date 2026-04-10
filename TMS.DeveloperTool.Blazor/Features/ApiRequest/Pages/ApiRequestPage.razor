@@ -1,12 +1,15 @@
 @page "/api-request"
 @using System.Diagnostics
 @using System.Net.Http.Headers
+@using System.Text.Encodings.Web
 @using System.Text
+@using System.Text.Json
 @using TMS.DeveloperTool.Blazor.Services
 @inject IHttpClientFactory HttpClientFactory
 @inject MyEmployeeService MyEmployeeService
 @inject ApiUrlsOptions ApiUrlsOptions
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <AppPageTitle MenuName="API Request" />
 
@@ -91,7 +94,16 @@
                     <pre>@responseHeaders</pre>
                 </MudPaper>
 
-                <MudText Typo="Typo.subtitle2" Class="mb-2">Body</MudText>
+                <div class="d-flex align-center justify-space-between mb-2">
+                    <MudText Typo="Typo.subtitle2">Body</MudText>
+                    <div class="d-flex align-center">
+                        <MudSwitch T="bool" @bind-Value="isBeautyView" @bind-Value:after="OnResponseBodyViewChanged" Color="Color.Primary" Label="Beauty" />
+                        <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.ContentCopy"
+                                   Disabled="@(responseBody == "(empty)")" OnClick="CopyResponseBodyAsync" Class="ms-4">
+                            Copy
+                        </MudButton>
+                    </div>
+                </div>
                 <MudPaper Outlined="true" Class="pa-3 response-block">
                     <pre>@responseBody</pre>
                 </MudPaper>
@@ -121,7 +133,7 @@
 
 @code {
     private const string ApiPrefix = "/api/v1/";
-    private readonly List<string> methodOptions = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+    private readonly List<string> methodOptions = ["GET", "POST", "PUT", "DELETE"];
     private readonly List<ServiceOption> serviceOptions = [];
     private List<Employee> emps = [];
 
@@ -137,8 +149,11 @@
     private string responseStatus = "-";
     private string responseDuration = "-";
     private string responseContentType = "-";
+    private string responseMediaType = string.Empty;
     private string responseHeaders = "(empty)";
+    private string rawResponseBody = "(empty)";
     private string responseBody = "(empty)";
+    private bool isBeautyView;
 
     private string resolvedUrl => BuildRequestUrl();
 
@@ -241,12 +256,14 @@
             responseStatus = $"{(int)response.StatusCode} {response.ReasonPhrase}";
             responseDuration = $"{stopwatch.ElapsedMilliseconds} ms";
             responseContentType = response.Content.Headers.ContentType?.ToString() ?? "-";
+            responseMediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
 
             List<string> headerLines = [];
             headerLines.AddRange(response.Headers.SelectMany(h => h.Value.Select(v => $"{h.Key}: {v}")));
             headerLines.AddRange(response.Content.Headers.SelectMany(h => h.Value.Select(v => $"{h.Key}: {v}")));
             responseHeaders = headerLines.Count == 0 ? "(empty)" : string.Join(Environment.NewLine, headerLines);
-            responseBody = string.IsNullOrWhiteSpace(content) ? "(empty)" : content;
+            rawResponseBody = string.IsNullOrWhiteSpace(content) ? "(empty)" : content;
+            UpdateDisplayedResponseBody();
 
             if (response.IsSuccessStatusCode)
             {
@@ -262,13 +279,41 @@
             responseStatus = "Exception";
             responseDuration = "-";
             responseContentType = "-";
+            responseMediaType = string.Empty;
             responseHeaders = "(empty)";
-            responseBody = ex.ToString();
+            rawResponseBody = ex.ToString();
+            UpdateDisplayedResponseBody();
             Snackbar.Add($"Request error: {ex.Message}", Severity.Error);
         }
         finally
         {
             isSubmitting = false;
+        }
+    }
+
+    private void UpdateDisplayedResponseBody()
+    {
+        responseBody = isBeautyView
+            ? FormatResponseBody(rawResponseBody, responseMediaType)
+            : rawResponseBody;
+    }
+
+    private Task OnResponseBodyViewChanged()
+    {
+        UpdateDisplayedResponseBody();
+        return Task.CompletedTask;
+    }
+
+    private async Task CopyResponseBodyAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", responseBody);
+            Snackbar.Add("Response body copied.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Cannot copy response body: {ex.Message}", Severity.Error);
         }
     }
 
@@ -322,6 +367,37 @@
         }
 
         return trimmed;
+    }
+
+    private static string FormatResponseBody(string content, string? mediaType)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return "(empty)";
+        }
+
+        string trimmed = content.Trim();
+        bool looksLikeJson = trimmed.StartsWith('{') || trimmed.StartsWith('[');
+        bool isJsonContentType = mediaType?.Contains("json", StringComparison.OrdinalIgnoreCase) == true;
+
+        if (!looksLikeJson && !isJsonContentType)
+        {
+            return content;
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(content);
+            return JsonSerializer.Serialize(document.RootElement, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+        }
+        catch
+        {
+            return content;
+        }
     }
 
     private sealed record ServiceOption(string Name, string Domain);
