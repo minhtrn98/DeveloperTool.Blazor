@@ -190,7 +190,6 @@ public sealed class CreatePickupTaskEventService(
         int ordersPerEvent = 1,
         int intervalMinutes = 15)
     {
-        int effectiveOrdersPerEvent = Math.Max(1, ordersPerEvent);
         int orderCursor = 0;
 
         List<DailyPlanDetailDto> pickupDetails = plan.Details
@@ -212,13 +211,8 @@ public sealed class CreatePickupTaskEventService(
             {
                 List<PickupTaskEventOrderDto> ordersForCurrentEvent = baseInput.SelectedOrders
                     .Skip(orderCursor)
-                    .Take(effectiveOrdersPerEvent)
+                    .Take(ordersPerEvent)
                     .ToList();
-
-                if (ordersForCurrentEvent.Count == 0)
-                {
-                    break;
-                }
 
                 CreatePickupTaskEventInput input = new()
                 {
