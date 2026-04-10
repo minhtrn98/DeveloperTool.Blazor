@@ -156,8 +156,6 @@
         {
             ApiCallResult result = await PairingService.SendConfirmAsync(
                 accessToken,
-                companyId: null,
-                departmentId: null,
                 item.VehicleId);
 
             if (result.IsSuccess)

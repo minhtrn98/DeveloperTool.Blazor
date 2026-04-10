@@ -9,17 +9,15 @@ public sealed class PairingService(IFleetAssignmentApi api)
 {
     public Task<ApiCallResult> SendPairingAsync(
         string accessToken,
-        string? companyId,
-        string? departmentId,
         PairingRequest request,
         CancellationToken cancellationToken = default)
     {
-        (string? auth, string? companyHeader, string? deptHeader) = BuildHeaders(accessToken, companyId, departmentId);
+        string? auth = BuildAuthorizationHeader(accessToken);
         Task apiTask = request.ActionType switch
         {
-            ActionType.Pairing => api.PairingAsync(request, auth, companyHeader, deptHeader, cancellationToken),
-            ActionType.Unpairing => api.UnpairingAsync(request, auth, companyHeader, deptHeader, cancellationToken),
-            ActionType.UnexpectedPairing => api.UnexpectedPairingAsync(request, auth, companyHeader, deptHeader, cancellationToken),
+            ActionType.Pairing => api.PairingAsync(request, auth, cancellationToken),
+            ActionType.Unpairing => api.UnpairingAsync(request, auth, cancellationToken),
+            ActionType.UnexpectedPairing => api.UnexpectedPairingAsync(request, auth, cancellationToken),
             _ => throw new NotSupportedException($"ActionType '{request.ActionType}' không được hỗ trợ.")
         };
         return WrapAsync(apiTask);
@@ -27,33 +25,25 @@ public sealed class PairingService(IFleetAssignmentApi api)
 
     public Task<ApiCallResult> SendSwapDriverAsync(
         string accessToken,
-        string? companyId,
-        string? departmentId,
         SwapDriverRequest request,
         CancellationToken cancellationToken = default)
     {
-        (string? auth, string? companyHeader, string? deptHeader) = BuildHeaders(accessToken, companyId, departmentId);
-        return WrapAsync(api.SwapDriverAsync(request, auth, companyHeader, deptHeader, cancellationToken));
+        string? auth = BuildAuthorizationHeader(accessToken);
+        return WrapAsync(api.SwapDriverAsync(request, auth, cancellationToken));
     }
 
     public Task<ApiCallResult> SendConfirmAsync(
         string accessToken,
-        string? companyId,
-        string? departmentId,
         Guid vehicleId,
         CancellationToken cancellationToken = default)
     {
-        (string? auth, string? companyHeader, string? deptHeader) = BuildHeaders(accessToken, companyId, departmentId);
-        return WrapAsync(api.ConfirmAsync(new ConfirmRequest { VehicleId = vehicleId }, auth, companyHeader, deptHeader, cancellationToken));
+        string? auth = BuildAuthorizationHeader(accessToken);
+        return WrapAsync(api.ConfirmAsync(new ConfirmRequest { VehicleId = vehicleId }, auth, cancellationToken));
     }
 
-    private static (string? auth, string? companyId, string? departmentId) BuildHeaders(
-        string accessToken, string? companyId, string? departmentId)
+    private static string? BuildAuthorizationHeader(string accessToken)
     {
-        string? auth = string.IsNullOrWhiteSpace(accessToken) ? null : $"Bearer {accessToken.Trim()}";
-        string? companyHeader = Guid.TryParse(companyId, out Guid companyGuid) ? companyGuid.ToString() : null;
-        string? deptHeader = Guid.TryParse(departmentId, out Guid deptGuid) ? deptGuid.ToString() : null;
-        return (auth, companyHeader, deptHeader);
+        return string.IsNullOrWhiteSpace(accessToken) ? null : $"Bearer {accessToken.Trim()}";
     }
 
     private static async Task<ApiCallResult> WrapAsync(Task apiTask)

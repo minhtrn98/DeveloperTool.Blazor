@@ -5,7 +5,6 @@
 @inherits LayoutComponentBase
 @inject MyEmployeeService MyEmployeeService
 @inject DriverRepository DriverRepository
-@inject SelectedDepartmentContext SelectedDepartmentContext
 @inject ISnackbar Snackbar
 @inject IWebHostEnvironment WebHostEnvironment
 @inject IDialogService DialogService
@@ -100,8 +99,6 @@
 
             _selectedDepartment = _departments.FirstOrDefault(x =>
                 string.Equals(x.Code, "K3B", StringComparison.OrdinalIgnoreCase));
-
-            SelectedDepartmentContext.SetDepartment(_selectedDepartment);
         }
         catch (Exception ex)
         {
@@ -118,7 +115,6 @@
     private Task OnDepartmentChanged(DepartmentDto? value)
     {
         SelectedDepartment = value;
-        SelectedDepartmentContext.SetDepartment(value);
         return Task.CompletedTask;
     }
 

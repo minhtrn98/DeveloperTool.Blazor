@@ -41,17 +41,6 @@
                                  ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Employee>" Label="Tài xế" Variant="Variant.Outlined" FullWidth="true"
                                  Clearable="true" MaxItems="20" Class="mb-3" />
 
-                @* <MudGrid>
-                    <MudItem xs="12" md="6">
-                        <MudTextField @bind-Value="companyId" Label="CompanyId" Variant="Variant.Outlined" FullWidth="true"
-                                      Class="mb-3" />
-                    </MudItem>
-                    <MudItem xs="12" md="6">
-                        <MudTextField @bind-Value="departmentId" Label="DepartmentId" Variant="Variant.Outlined"
-                                      FullWidth="true" Class="mb-3" />
-                    </MudItem>
-                </MudGrid> *@
-
                 <MudSelect T="Guid" @bind-Value="pairingReasonTypeId" Label="Lý do ghép xe" Variant="Variant.Outlined"
                            FullWidth="true" Class="mb-3">
                     @foreach (var item in pairingReasonTypes)
@@ -142,8 +131,6 @@
 
 @code {
     private string accessToken = string.Empty;
-    private string companyId = "01000000-7000-5000-0000-000000000001";
-    private string departmentId = "ed4e5a8e-6f02-4d8f-9d1d-2fdca4d0981c";
 
     private Guid vehicleId;
     private Guid pairingReasonTypeId;
@@ -485,8 +472,6 @@
 
         ApiCallResult result = await PairingService.SendPairingAsync(
             accessToken,
-            companyId,
-            departmentId,
             request);
         if (result.IsSuccess)
         {
@@ -515,8 +500,6 @@
 
         ApiCallResult result = await PairingService.SendSwapDriverAsync(
             accessToken,
-            companyId,
-            departmentId,
             request);
         if (result.IsSuccess)
         {
