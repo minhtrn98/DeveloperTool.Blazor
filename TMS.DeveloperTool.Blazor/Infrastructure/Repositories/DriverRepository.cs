@@ -8,10 +8,12 @@ namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 public sealed class DriverRepository
 {
     private readonly ApplicationDbQuery _dbQuery;
+    private readonly CacheService _cacheService;
 
-    public DriverRepository([FromKeyedServices("DriverDb")] ApplicationDbQuery dbQuery)
+    public DriverRepository([FromKeyedServices("DriverDb")] ApplicationDbQuery dbQuery, CacheService cacheService)
     {
         _dbQuery = dbQuery;
+        _cacheService=cacheService;
     }
 
     public async Task<Dictionary<Guid, string>> GetDriverNamesAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
@@ -121,5 +123,24 @@ public sealed class DriverRepository
         """;
         IEnumerable<string> permissions = await _dbQuery.QueryAsync<string>(sql, null, cancellationToken);
         return permissions.ToList();
+    }
+
+    public async Task<List<DepartmentDto>> GetDepartmentsAsync(CancellationToken cancellationToken)
+    {
+        IEnumerable<DepartmentDto>? cache = _cacheService.GetDepartmentsCache();
+        if (cache != null)
+        {
+            return cache.ToList();
+        }
+
+        const string sql = """
+            SELECT id as "Id", code as "Code", name as "Name", company_id as "CompanyId"
+            FROM public.departments
+        """;
+        IEnumerable<DepartmentDto> departments = await _dbQuery.QueryAsync<DepartmentDto>(sql, null, cancellationToken);
+
+        _cacheService.SetDepartmentsCache(departments);
+
+        return departments.ToList();
     }
 }

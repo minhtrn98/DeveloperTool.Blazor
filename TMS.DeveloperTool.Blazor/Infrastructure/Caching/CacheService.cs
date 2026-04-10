@@ -13,11 +13,25 @@ public sealed class CacheService
         _cache["PostOffices"] = postOffices;
     }
 
+    public void SetDepartmentsCache(IEnumerable<DepartmentDto> departmentDtos)
+    {
+        _cache["DepartmentDtos"] = departmentDtos;
+    }
+
     public IEnumerable<PostOffice>? GetPostOfficesCache()
     {
         if (_cache.TryGetValue("PostOffices", out var cachedValue) && cachedValue is IEnumerable<PostOffice> postOffices)
         {
             return postOffices;
+        }
+        return null;
+    }
+
+    public IEnumerable<DepartmentDto>? GetDepartmentsCache()
+    {
+        if (_cache.TryGetValue("DepartmentDtos", out var cachedValue) && cachedValue is IEnumerable<DepartmentDto> departmentDtos)
+        {
+            return departmentDtos;
         }
         return null;
     }

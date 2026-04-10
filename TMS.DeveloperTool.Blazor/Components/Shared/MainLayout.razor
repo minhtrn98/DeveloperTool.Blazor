@@ -1,8 +1,11 @@
-﻿@using TMS.DeveloperTool.Blazor.Infrastructure.Security
+﻿@using TMS.DeveloperTool.Blazor.Infrastructure.Http
+@using TMS.DeveloperTool.Blazor.Infrastructure.Security
 @using TMS.DeveloperTool.Blazor.Services
 @using TMS.DeveloperTool.Blazor.Components.Dialogs
 @inherits LayoutComponentBase
 @inject MyEmployeeService MyEmployeeService
+@inject DriverRepository DriverRepository
+@inject SelectedDepartmentContext SelectedDepartmentContext
 @inject ISnackbar Snackbar
 @inject IWebHostEnvironment WebHostEnvironment
 @inject IDialogService DialogService
@@ -46,8 +49,11 @@
                    StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="ShowAddDriverDialog" Class="me-2">
             <MudText>Thêm nhân viên</MudText>
         </MudButton>
+        <MudAutocomplete T="DepartmentDto" Value="SelectedDepartment" ValueChanged="OnDepartmentChanged"
+                         SearchFunc="SearchDepartments" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<DepartmentDto>"
+                         Label="Department" Variant="Variant.Outlined" Dense="true" Clearable="true"
+                         MaxItems="20" Style="max-width: 400px;" FullWidth="false" />
         <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" />
-        <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Inherit" Edge="Edge.End" />
     </MudAppBar>
     <MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
         <NavMenu />
@@ -69,12 +75,14 @@
     private bool _isDarkMode = true;
     private bool _isGeneratingTokens;
     private bool _isSyncingDrivers;
+    private List<DepartmentDto> _departments = [];
+    private DepartmentDto? _selectedDepartment;
     private MudTheme? _theme = null;
     private string CurrentEnvironment => WebHostEnvironment.EnvironmentName;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        base.OnInitialized();
+        await base.OnInitializedAsync();
 
         _theme = new()
         {
@@ -82,6 +90,42 @@
             PaletteDark = _darkPalette,
             LayoutProperties = new LayoutProperties()
         };
+
+        try
+        {
+            _departments = (await DriverRepository.GetDepartmentsAsync(CancellationToken.None))
+                .OrderBy(x => x.Code)
+                .ThenBy(x => x.Name)
+                .ToList();
+
+            _selectedDepartment = _departments.FirstOrDefault(x =>
+                string.Equals(x.Code, "K3B", StringComparison.OrdinalIgnoreCase));
+
+            SelectedDepartmentContext.SetDepartment(_selectedDepartment);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không tải được danh sách phòng ban: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private DepartmentDto? SelectedDepartment
+    {
+        get => _selectedDepartment;
+        set => _selectedDepartment = value;
+    }
+
+    private Task OnDepartmentChanged(DepartmentDto? value)
+    {
+        SelectedDepartment = value;
+        SelectedDepartmentContext.SetDepartment(value);
+        return Task.CompletedTask;
+    }
+
+    private Task<IEnumerable<DepartmentDto>> SearchDepartments(string value, CancellationToken cancellationToken)
+    {
+        IEnumerable<DepartmentDto> results = AutocompleteSearchHelper.SearchByLike(_departments, value, orderByRelevance: false);
+        return Task.FromResult(results);
     }
 
     private void DrawerToggle()
