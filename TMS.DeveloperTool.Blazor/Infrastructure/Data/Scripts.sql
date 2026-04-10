@@ -31,7 +31,18 @@ CREATE TABLE employees (
     code VARCHAR(50) NOT NULL
 );
 
+CREATE TABLE request_histories (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    method TEXT NOT NULL,
+    service TEXT NOT NULL,
+    endpoint TEXT NOT NULL,
+    json_body TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX idx_route_checkpoints_template_id ON route_checkpoints (template_id);
+CREATE INDEX idx_request_histories_created_at ON request_histories (created_at DESC);
 
 -- init data for vehicles table
 INSERT INTO

@@ -1,0 +1,126 @@
+@using TMS.DeveloperTool.Blazor.Features.ApiRequest.Services
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">History</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <div class="d-flex align-center ga-3 mb-3">
+            <MudTextField @bind-Value="searchText" Label="Search" Variant="Variant.Outlined" FullWidth="true" />
+            <MudButton Variant="Variant.Outlined" Class="ms-2" Color="Color.Error" OnClick="DeleteAllAsync" Disabled="@(Histories.Count == 0)" Style="height: 56px; min-height: 56px; white-space: nowrap;">
+                Clear
+            </MudButton>
+        </div>
+
+        @if (filteredHistories.Count == 0)
+        {
+            <MudText Color="Color.Secondary">No history results found.</MudText>
+        }
+        else
+        {
+            <MudTable T="RequestHistory" Items="filteredHistories" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>Created At (VN)</MudTh>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Method</MudTh>
+                    <MudTh>Service</MudTh>
+                    <MudTh>Endpoint</MudTh>
+                    <MudTh class="text-end">Action</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Created At">@context.CreatedAt.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss")</MudTd>
+                    <MudTd DataLabel="Name">@context.Name</MudTd>
+                    <MudTd DataLabel="Method">@context.Method</MudTd>
+                    <MudTd DataLabel="Service">@context.Service</MudTd>
+                    <MudTd DataLabel="Endpoint">@context.Endpoint</MudTd>
+                    <MudTd DataLabel="Action">
+                        <div class="d-flex justify-end ga-2">
+                            <MudButton
+                                Color="Color.Primary"
+                                Size="Size.Small"
+                                AriaLabel="Select history"
+                                OnClick="() => SelectHistory(context)"
+                            >
+                                Select
+                            </MudButton>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           AriaLabel="Delete history"
+                                           OnClick="() => DeleteOneAsync(context)" />
+                        </div>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Inject]
+    private ApiRequestHistoryService ApiRequestHistoryService { get; set; } = default!;
+
+    [Inject]
+    private IDialogService DialogService { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public List<RequestHistory> Histories { get; set; } = [];
+
+    private string searchText = string.Empty;
+
+    private List<RequestHistory> filteredHistories => Histories
+        .Where(x =>
+            string.IsNullOrWhiteSpace(searchText) ||
+            x.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+            x.Method.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+            x.Service.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+            x.Endpoint.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    private void SelectHistory(RequestHistory history)
+    {
+        MudDialog.Close(DialogResult.Ok(history));
+    }
+
+    private void Close()
+    {
+        MudDialog.Close();
+    }
+
+    private async Task DeleteOneAsync(RequestHistory history)
+    {
+        await ApiRequestHistoryService.DeleteByIdAsync(history.Id, CancellationToken.None);
+        Histories.RemoveAll(x => x.Id == history.Id);
+        Snackbar.Add("Request history deleted.", Severity.Success);
+    }
+
+    private async Task DeleteAllAsync()
+    {
+        bool? confirmed = await DialogService.ShowMessageBox(
+            "Confirm Delete",
+            "Are you sure you want to delete all request history?",
+            yesText: "Delete All",
+            cancelText: "Cancel");
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await ApiRequestHistoryService.DeleteAllAsync(CancellationToken.None);
+        Histories.Clear();
+        Snackbar.Add("All request history deleted.", Severity.Success);
+    }
+}
+

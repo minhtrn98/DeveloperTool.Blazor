@@ -1,4 +1,5 @@
 using Refit;
+using TMS.DeveloperTool.Blazor.Features.ApiRequest.Services;
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services.Strategies;
 using TMS.DeveloperTool.Blazor.Features.Pairing.Services;
@@ -74,6 +75,7 @@ public static class ExternalApiServiceExtensions
         services.AddScoped<JsonBuilderService>();
         services.AddScoped<MyEmployeeService>();
         services.AddScoped<VehicleStatusService>();
+        services.AddScoped<ApiRequestHistoryService>();
 
         services.AddSingleton<EventService>();
         services.AddSingleton<JwtTokenService>();

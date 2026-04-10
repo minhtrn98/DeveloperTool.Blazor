@@ -4,10 +4,13 @@
 @using System.Text.Encodings.Web
 @using System.Text
 @using System.Text.Json
+@using TMS.DeveloperTool.Blazor.Features.ApiRequest.Services
 @using TMS.DeveloperTool.Blazor.Services
 @inject IHttpClientFactory HttpClientFactory
 @inject MyEmployeeService MyEmployeeService
+@inject ApiRequestHistoryService ApiRequestHistoryService
 @inject ApiUrlsOptions ApiUrlsOptions
+@inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 
@@ -20,6 +23,9 @@
                 <MudText Typo="Typo.h5" Class="mb-4">Request</MudText>
 
                 <MudGrid Class="mb-3">
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="requestName" Label="Request Name" Variant="Variant.Outlined" FullWidth="true" />
+                    </MudItem>
                     <MudItem xs="12" md="2">
                         <MudSelect T="string" @bind-Value="selectedMethod" Label="Method" Variant="Variant.Outlined" FullWidth="true">
                             @foreach (string method in methodOptions)
@@ -54,8 +60,11 @@
                 <MudTextField @bind-Value="requestBody" Label="Body (JSON)" Variant="Variant.Outlined" FullWidth="true"
                               Lines="12" AutoGrow="true" Class="mb-4" />
 
-                <div class="d-flex align-center ga-3">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSubmitting" OnClick="SendRequestAsync">
+                <div class="d-flex align-center justify-end ga-3">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ShowHistoryAsync">
+                        History
+                    </MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.Send" Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSubmitting" OnClick="SendRequestAsync" Class="ms-2">
                         @if (isSubmitting)
                         {
                             <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
@@ -63,7 +72,7 @@
                         }
                         else
                         {
-                            <MudText>Send Request</MudText>
+                            <MudText>Send</MudText>
                         }
                     </MudButton>
                 </div>
@@ -98,10 +107,8 @@
                     <MudText Typo="Typo.subtitle2">Body</MudText>
                     <div class="d-flex align-center">
                         <MudSwitch T="bool" @bind-Value="isBeautyView" @bind-Value:after="OnResponseBodyViewChanged" Color="Color.Primary" Label="Beauty" />
-                        <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.ContentCopy"
-                                   Disabled="@(responseBody == "(empty)")" OnClick="CopyResponseBodyAsync" Class="ms-4">
-                            Copy
-                        </MudButton>
+                        <MudIconButton Variant="Variant.Outlined" Size="Size.Small" Icon="@Icons.Material.Filled.ContentCopy"
+                                   Disabled="@(responseBody == "(empty)")" OnClick="CopyResponseBodyAsync" Class="ms-4" />
                     </div>
                 </div>
                 <MudPaper Outlined="true" Class="pa-3 response-block">
@@ -138,6 +145,7 @@
     private List<Employee> emps = [];
 
     private Employee? selectedDriver;
+    private string requestName = string.Empty;
     private string selectedMethod = "POST";
     private string selectedService = string.Empty;
     private string selectedDomain = string.Empty;
@@ -200,7 +208,7 @@
 
     private Task OnServiceChanged()
     {
-        selectedDomain = serviceOptions.FirstOrDefault(x => x.Name == selectedService)?.Domain ?? string.Empty;
+        selectedDomain = ResolveSelectedDomain(selectedService);
         return Task.CompletedTask;
     }
 
@@ -264,6 +272,7 @@
             responseHeaders = headerLines.Count == 0 ? "(empty)" : string.Join(Environment.NewLine, headerLines);
             rawResponseBody = string.IsNullOrWhiteSpace(content) ? "(empty)" : content;
             UpdateDisplayedResponseBody();
+            await SaveRequestHistoryAsync();
 
             if (response.IsSuccessStatusCode)
             {
@@ -333,6 +342,73 @@
         string domain = selectedDomain.Trim().TrimEnd('/');
         string normalizedEndpoint = NormalizeRelativeEndpoint(endpointValue);
         return string.IsNullOrWhiteSpace(domain) ? string.Empty : $"{domain}{normalizedEndpoint}";
+    }
+
+    private async Task ShowHistoryAsync()
+    {
+        List<RequestHistory> histories = await ApiRequestHistoryService.GetLatestAsync(100, CancellationToken.None);
+        if (histories.Count == 0)
+        {
+            Snackbar.Add("No request history found.", Severity.Info);
+            return;
+        }
+
+        DialogParameters<RequestHistoryDialog> parameters = new()
+        {
+            { x => x.Histories, histories }
+        };
+
+        DialogOptions options = new()
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        IDialogReference dialog = await DialogService.ShowAsync<RequestHistoryDialog>("Request History", parameters, options);
+        DialogResult? result = await dialog.Result;
+        if (result is { Canceled: false, Data: RequestHistory selectedHistory })
+        {
+            ApplyHistory(selectedHistory);
+            Snackbar.Add("Request history loaded.", Severity.Success);
+        }
+    }
+
+    private void ApplyHistory(RequestHistory history)
+    {
+        requestName = history.Name;
+        selectedMethod = history.Method;
+        selectedService = history.Service;
+        selectedDomain = ResolveSelectedDomain(selectedService);
+        endpoint = history.Endpoint;
+        requestBody = history.JsonBody;
+    }
+
+    private async Task SaveRequestHistoryAsync()
+    {
+        try
+        {
+            string historyName = string.IsNullOrWhiteSpace(requestName)
+                ? $"{selectedMethod} {selectedService} {endpoint}".Trim()
+                : requestName.Trim();
+
+            await ApiRequestHistoryService.SaveRequestAsync(
+                historyName,
+                selectedMethod,
+                selectedService,
+                endpoint,
+                requestBody,
+                CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Cannot save request history: {ex.Message}", Severity.Warning);
+        }
+    }
+
+    private string ResolveSelectedDomain(string serviceName)
+    {
+        return serviceOptions.FirstOrDefault(x => x.Name == serviceName)?.Domain ?? string.Empty;
     }
 
     private static string NormalizeRelativeEndpoint(string endpointValue)

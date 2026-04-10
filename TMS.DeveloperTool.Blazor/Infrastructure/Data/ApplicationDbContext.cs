@@ -13,6 +13,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Employee> Employees { get; set; }
     public DbSet<RouteCheckPoint> RouteCheckPoints { get; set; }
     public DbSet<RouteCheckPointTemplate> RouteCheckPointTemplates { get; set; }
+    public DbSet<RequestHistory> RequestHistories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,6 +31,9 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<RouteCheckPoint>()
             .ToTable("route_checkpoints");
+
+        modelBuilder.Entity<RequestHistory>()
+            .ToTable("request_histories");
 
         // Configure column names to match PostgreSQL schema
         modelBuilder.Entity<RouteCheckPointTemplate>(entity =>
@@ -66,6 +70,17 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Code).HasColumnName("code");
             entity.Ignore(e => e.Email);
             entity.Ignore(e => e.Phone);
+        });
+
+        modelBuilder.Entity<RequestHistory>(entity =>
+        {
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.Method).HasColumnName("method");
+            entity.Property(e => e.Service).HasColumnName("service");
+            entity.Property(e => e.Endpoint).HasColumnName("endpoint");
+            entity.Property(e => e.JsonBody).HasColumnName("json_body");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
         });
     }
 }
