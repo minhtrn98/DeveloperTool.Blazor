@@ -42,12 +42,12 @@ public sealed class FleetRepository
         return vehicles.ToList();
     }
 
-    public async Task<(int totalCount, List<VehicleDropdownItemDto>)> SearchADDVehicleWithPaging(int page, int pageSize, string? searchValue, CancellationToken cancellationToken = default)
+    public async Task<(int totalCount, List<VehicleDropdownItemDto>)> SearchVehicleWithPaging(int page, int pageSize, string? searchValue, CancellationToken cancellationToken = default)
     {
         const string sql = """
             SELECT "Id", "Code", "LicensePlate", "DeptManagerCode"
             FROM public.mv_vehicles_with_status
-            where "DeptManagerCode" = 'ADD' and (@SearchValue IS NULL OR "SearchValue" ILIKE @SearchValue)
+            where (@SearchValue IS NULL OR "SearchValue" ILIKE @SearchValue)
             order by "LicensePlate"
             limit @PageSize offset @Offset
         """;
@@ -55,7 +55,7 @@ public sealed class FleetRepository
         const string sqlCount = """
             SELECT count(1)
             FROM public.mv_vehicles_with_status
-            where "DeptManagerCode" = 'ADD' and (@SearchValue IS NULL OR "SearchValue" ILIKE @SearchValue)
+            where (@SearchValue IS NULL OR "SearchValue" ILIKE @SearchValue)
         """;
 
         object parameters = new { PageSize = pageSize, Offset = (page - 1) * pageSize, SearchValue = $"%{searchValue}%" };

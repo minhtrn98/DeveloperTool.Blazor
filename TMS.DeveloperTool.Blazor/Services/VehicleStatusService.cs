@@ -28,7 +28,7 @@ public sealed class VehicleStatusService
         string? normalizedSearch = NormalizeLicensePlate(searchValue);
 
         // get all vehicles
-        var (totalCount, vehiclePlates) = await _fleetRepository.SearchADDVehicleWithPaging(safePageIndex, safePageSize, normalizedSearch, cancellationToken);
+        var (totalCount, vehiclePlates) = await _fleetRepository.SearchVehicleWithPaging(safePageIndex, safePageSize, normalizedSearch, cancellationToken);
 
         // call api to get vehicle status tracking info
         foreach (VehicleDropdownItemDto vehicle in vehiclePlates)
