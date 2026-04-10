@@ -31,7 +31,7 @@ public sealed class JwtTokenService
         List<Claim> claims =
         [
             new(JwtRegisteredClaimNames.Sub, employeeId),
-            new(JwtRegisteredClaimNames.Email, ""),
+            new(JwtRegisteredClaimNames.Email, employee.Email ?? string.Empty),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(JwtRegisteredClaimNames.Aud, _jwtSetting.Audience),
             new(ClaimTypes.NameIdentifier, employee.Name),
@@ -39,7 +39,7 @@ public sealed class JwtTokenService
             new("employeeCode", employee.Code),
             new("fullName", employee.Name),
             new("jobTitleName", ""),
-            new("phone", "0000000000"),
+            new("phone", employee.Phone ?? "0000000000"),
             new("companyId", "01000000-7000-5000-0000-000000000001"),
             new("isAdmin", isAdmin.ToString()),
             new("pv", permissionsVersion.ToString()), // phiên bản
