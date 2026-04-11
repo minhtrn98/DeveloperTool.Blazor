@@ -88,6 +88,7 @@ public static class ExternalApiServiceExtensions
 
         services.AddSingleton<EventService>();
         services.AddSingleton<JwtTokenService>();
+        services.AddSingleton<DepartmentChangedNotifier>();
 
         return services;
     }

@@ -14,6 +14,7 @@ public sealed record DepartmentDto : IDisplaySearchItem
     public bool Like(string searchTerm)
     {
         return Code.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-               Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
+               Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+               DisplayString == searchTerm;
     }
 }

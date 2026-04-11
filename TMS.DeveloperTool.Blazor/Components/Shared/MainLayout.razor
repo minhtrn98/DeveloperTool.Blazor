@@ -1,8 +1,10 @@
 ﻿@using TMS.DeveloperTool.Blazor.Infrastructure.Http
 @using TMS.DeveloperTool.Blazor.Infrastructure.Security
+@using TMS.DeveloperTool.Blazor.Infrastructure.Messaging
 @using TMS.DeveloperTool.Blazor.Services
 @using TMS.DeveloperTool.Blazor.Components.Dialogs
 @inherits LayoutComponentBase
+@implements IDisposable
 @inject MyEmployeeService MyEmployeeService
 @inject DriverRepository DriverRepository
 @inject ISnackbar Snackbar
@@ -10,6 +12,7 @@
 @inject IDialogService DialogService
 @inject CacheService CacheService
 @inject BrowserContext BrowserContext
+@inject DepartmentChangedNotifier DepartmentChangedNotifier
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
@@ -21,7 +24,6 @@
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
                        OnClick="@((e) => DrawerToggle())" />
         <MudText Typo="Typo.h5" Class="ml-3">TMS DeveloperTools [@CurrentEnvironment]</MudText>
-        <MudText Typo="Typo.h5" Class="ml-3">@BrowserContext.BrowserId</MudText>
         <MudSpacer />
         <MudButton Variant="Variant.Filled" Color="Color.Secondary"
                    Disabled="@(_isGeneratingTokens || _isSyncingDrivers)" StartIcon="@Icons.Material.Filled.Sync"
@@ -109,6 +111,8 @@
             {
                 CacheService.SetSessionDepartment(BrowserContext.BrowserId, _selectedDepartment);
             }
+
+            DepartmentChangedNotifier.OnDepartmentChanged += OnDepartmentChangedFromOtherTab;
         }
         catch (Exception ex)
         {
@@ -136,13 +140,34 @@
             CacheService.RemoveSessionDepartment(browserId);
         }
 
+        DepartmentChangedNotifier.Notify(browserId, value);
+
         return Task.CompletedTask;
+    }
+
+    private void OnDepartmentChangedFromOtherTab(string browserId, DepartmentDto? department)
+    {
+        if (browserId != (BrowserContext.BrowserId ?? string.Empty))
+        {
+            return;
+        }
+
+        // Event fires on a thread-pool thread — must marshal back to the circuit
+        InvokeAsync(() =>
+        {
+            _selectedDepartment = department;
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        DepartmentChangedNotifier.OnDepartmentChanged -= OnDepartmentChangedFromOtherTab;
     }
 
     private Task<IEnumerable<DepartmentDto>> SearchDepartments(string value, CancellationToken cancellationToken)
     {
-        IEnumerable<DepartmentDto> results = AutocompleteSearchHelper.SearchByLike(_departments, value, orderByRelevance:
-false);
+        IEnumerable<DepartmentDto> results = AutocompleteSearchHelper.SearchByLike(_departments, value);
         return Task.FromResult(results);
     }
 
