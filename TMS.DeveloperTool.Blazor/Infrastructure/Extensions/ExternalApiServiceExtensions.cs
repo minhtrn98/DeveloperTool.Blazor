@@ -21,6 +21,13 @@ public static class ExternalApiServiceExtensions
     {
         services.AddHttpClient();
         services.AddTransient<LoggingHttpHandler>();
+        services.AddTransient<DepartmentHeaderHandler>();
+
+        // Named HttpClient for ApiRequestPage with department headers
+        services.AddHttpClient("ApiRequest")
+            .AddHttpMessageHandler<DepartmentHeaderHandler>()
+            .AddHttpMessageHandler<LoggingHttpHandler>()
+            ;
 
         // Fleet API with custom Refit settings
         RefitSettings refitSettings = new(new SystemTextJsonContentSerializer(
@@ -36,6 +43,7 @@ public static class ExternalApiServiceExtensions
                 ApiUrlsOptions apiUrls = sp.GetRequiredService<ApiUrlsOptions>();
                 c.BaseAddress = new Uri(apiUrls.Fleet);
             })
+            .AddHttpMessageHandler<DepartmentHeaderHandler>()
             .AddHttpMessageHandler<LoggingHttpHandler>();
 
         // Pickup Task API
@@ -45,6 +53,7 @@ public static class ExternalApiServiceExtensions
                 ApiUrlsOptions apiUrls = sp.GetRequiredService<ApiUrlsOptions>();
                 c.BaseAddress = new Uri(apiUrls.Order);
             })
+            .AddHttpMessageHandler<DepartmentHeaderHandler>()
             .AddHttpMessageHandler<LoggingHttpHandler>();
 
         // QuanLyXe Vehicle Status API

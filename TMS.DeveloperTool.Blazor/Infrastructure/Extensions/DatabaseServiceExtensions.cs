@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using TMS.DeveloperTool.Blazor.Features.DriverChange.Services;
+using TMS.DeveloperTool.Blazor.Infrastructure.Security;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Extensions;
 
@@ -47,6 +48,7 @@ public static class DatabaseServiceExtensions
     {
         services.AddSingleton<RequestChangeDriverMonitorService>();
         services.AddSingleton<CacheService>();
+        services.AddScoped<BrowserContext>();
         return services;
     }
 

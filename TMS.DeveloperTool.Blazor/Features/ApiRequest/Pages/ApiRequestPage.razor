@@ -24,10 +24,12 @@
 
                 <MudGrid Class="mb-3">
                     <MudItem xs="12">
-                        <MudTextField @bind-Value="requestName" Label="Request Name" Variant="Variant.Outlined" FullWidth="true" />
+                        <MudTextField @bind-Value="requestName" Label="Request Name" Variant="Variant.Outlined"
+                                      FullWidth="true" />
                     </MudItem>
                     <MudItem xs="12" md="2">
-                        <MudSelect T="string" @bind-Value="selectedMethod" Label="Method" Variant="Variant.Outlined" FullWidth="true">
+                        <MudSelect T="string" @bind-Value="selectedMethod" Label="Method" Variant="Variant.Outlined"
+                                   FullWidth="true">
                             @foreach (string method in methodOptions)
                             {
                                 <MudSelectItem Value="@method">@method</MudSelectItem>
@@ -44,18 +46,22 @@
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" md="3">
-                        <MudTextField Value="@selectedDomain" Label="Domain" Variant="Variant.Outlined" FullWidth="true" ReadOnly="true" />
+                        <MudTextField Value="@selectedDomain" Label="Domain" Variant="Variant.Outlined" FullWidth="true"
+                                      ReadOnly="true" />
                     </MudItem>
                     <MudItem xs="12" md="5">
-                        <MudTextField @bind-Value="endpoint" Label="Endpoint" Variant="Variant.Outlined" FullWidth="true" />
+                        <MudTextField @bind-Value="endpoint" Label="Endpoint" Variant="Variant.Outlined"
+                                      FullWidth="true" />
                     </MudItem>
                 </MudGrid>
 
-                <MudAutocomplete T="Employee" Value="SelectedDriver" ValueChanged="OnDriverChanged" SearchFunc="SearchDrivers"
-                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Employee>" Label="Driver" Variant="Variant.Outlined" FullWidth="true"
-                                 Clearable="true" MaxItems="20" Class="mb-3" />
+                <MudAutocomplete T="Employee" Value="SelectedDriver" ValueChanged="OnDriverChanged"
+                                 SearchFunc="SearchDrivers" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Employee>"
+                                 Label="Driver" Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20"
+                                 Class="mb-3" />
 
-                <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="3" Class="mb-3" />
+                <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true"
+                              Lines="3" Class="mb-3" />
 
                 <MudTextField @bind-Value="requestBody" Label="Body (JSON)" Variant="Variant.Outlined" FullWidth="true"
                               Lines="12" AutoGrow="true" Class="mb-4" />
@@ -64,7 +70,8 @@
                     <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ShowHistoryAsync">
                         History
                     </MudButton>
-                    <MudButton StartIcon="@Icons.Material.Filled.Send" Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSubmitting" OnClick="SendRequestAsync" Class="ms-2">
+                    <MudButton StartIcon="@Icons.Material.Filled.Send" Variant="Variant.Filled" Color="Color.Primary"
+                               Disabled="@isSubmitting" OnClick="SendRequestAsync" Class="ms-2">
                         @if (isSubmitting)
                         {
                             <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
@@ -106,9 +113,11 @@
                 <div class="d-flex align-center justify-space-between mb-2">
                     <MudText Typo="Typo.subtitle2">Body</MudText>
                     <div class="d-flex align-center">
-                        <MudSwitch T="bool" @bind-Value="isBeautyView" @bind-Value:after="OnResponseBodyViewChanged" Color="Color.Primary" Label="Beauty" />
-                        <MudIconButton Variant="Variant.Outlined" Size="Size.Small" Icon="@Icons.Material.Filled.ContentCopy"
-                                   Disabled="@(responseBody == "(empty)")" OnClick="CopyResponseBodyAsync" Class="ms-4" />
+                        <MudSwitch T="bool" @bind-Value="isBeautyView" @bind-Value:after="OnResponseBodyViewChanged"
+                                   Color="Color.Primary" Label="Beauty" />
+                        <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
+                                       Icon="@Icons.Material.Filled.ContentCopy" Disabled="@(responseBody == "(empty)")"
+                                       OnClick="CopyResponseBodyAsync" Class="ms-4" />
                     </div>
                 </div>
                 <MudPaper Outlined="true" Class="pa-3 response-block">
@@ -242,7 +251,7 @@
         isSubmitting = true;
         try
         {
-            using HttpClient client = HttpClientFactory.CreateClient();
+            using HttpClient client = HttpClientFactory.CreateClient("ApiRequest");
             using HttpRequestMessage request = new(new HttpMethod(selectedMethod), requestUrl);
 
             string normalizedToken = NormalizeToken(accessToken);

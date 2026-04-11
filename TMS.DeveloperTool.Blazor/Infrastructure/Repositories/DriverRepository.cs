@@ -13,7 +13,7 @@ public sealed class DriverRepository
     public DriverRepository([FromKeyedServices("DriverDb")] ApplicationDbQuery dbQuery, CacheService cacheService)
     {
         _dbQuery = dbQuery;
-        _cacheService=cacheService;
+        _cacheService = cacheService;
     }
 
     public async Task<Dictionary<Guid, string>> GetDriverNamesAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)

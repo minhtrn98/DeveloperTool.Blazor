@@ -7,6 +7,16 @@ public sealed class CacheService
 {
     // Implement caching functionalities here using in-memory data structures with singleton lifetime.
     private readonly ConcurrentDictionary<string, object> _cache = new();
+    private readonly ConcurrentDictionary<string, DepartmentDto> _sessionDepartments = new();
+
+    public void SetSessionDepartment(string sessionId, DepartmentDto department)
+        => _sessionDepartments[sessionId] = department;
+
+    public DepartmentDto? GetSessionDepartment(string sessionId)
+        => _sessionDepartments.TryGetValue(sessionId, out DepartmentDto? dept) ? dept : null;
+
+    public void RemoveSessionDepartment(string sessionId)
+        => _sessionDepartments.TryRemove(sessionId, out _);
 
     public void SetPostOfficesCache(IEnumerable<PostOffice> postOffices)
     {

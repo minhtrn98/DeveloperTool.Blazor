@@ -1,6 +1,35 @@
-﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(NotFound)">
+﻿@using TMS.DeveloperTool.Blazor.Infrastructure.Security
+@inject PersistentComponentState AppState
+@inject BrowserContext BrowserContext
+@implements IDisposable
+
+<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(NotFound)">
     <Found Context="routeData">
         <RouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>
+
+@code {
+    private PersistingComponentStateSubscription _subscription;
+
+    protected override void OnInitialized()
+    {
+        if (AppState.TryTakeFromJson<string>(BrowserContext.Key, out string? persisted))
+        {
+            // Circuit phase: restore value that was captured during SSR
+            BrowserContext.BrowserId = persisted!;
+        }
+        else
+        {
+            // SSR phase: BrowserContext already read cookie in constructor — persist it for the circuit
+            _subscription = AppState.RegisterOnPersisting(() =>
+            {
+                AppState.PersistAsJson(BrowserContext.Key, BrowserContext.BrowserId);
+                return Task.CompletedTask;
+            });
+        }
+    }
+
+    public void Dispose() => _subscription.Dispose();
+}

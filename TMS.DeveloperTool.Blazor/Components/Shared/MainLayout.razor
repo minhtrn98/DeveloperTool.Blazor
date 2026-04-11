@@ -8,6 +8,8 @@
 @inject ISnackbar Snackbar
 @inject IWebHostEnvironment WebHostEnvironment
 @inject IDialogService DialogService
+@inject CacheService CacheService
+@inject BrowserContext BrowserContext
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
@@ -19,9 +21,11 @@
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
                        OnClick="@((e) => DrawerToggle())" />
         <MudText Typo="Typo.h5" Class="ml-3">TMS DeveloperTools [@CurrentEnvironment]</MudText>
+        <MudText Typo="Typo.h5" Class="ml-3">@BrowserContext.BrowserId</MudText>
         <MudSpacer />
-        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Disabled="@(_isGeneratingTokens || _isSyncingDrivers)"
-                   StartIcon="@Icons.Material.Filled.Sync" OnClick="SyncDriversAsync" Class="me-2">
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary"
+                   Disabled="@(_isGeneratingTokens || _isSyncingDrivers)" StartIcon="@Icons.Material.Filled.Sync"
+                   OnClick="SyncDriversAsync" Class="me-2">
             @if (_isSyncingDrivers)
             {
                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
@@ -44,14 +48,14 @@
                 <MudText>Tạo token</MudText>
             }
         </MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Tertiary"
-                   StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="ShowAddDriverDialog" Class="me-2">
+        <MudButton Variant="Variant.Filled" Color="Color.Tertiary" StartIcon="@Icons.Material.Filled.PersonAdd"
+                   OnClick="ShowAddDriverDialog" Class="me-2">
             <MudText>Thêm nhân viên</MudText>
         </MudButton>
         <MudAutocomplete T="DepartmentDto" Value="SelectedDepartment" ValueChanged="OnDepartmentChanged"
                          SearchFunc="SearchDepartments" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<DepartmentDto>"
-                         Label="Department" Variant="Variant.Outlined" Dense="true" Clearable="true"
-                         MaxItems="20" Style="max-width: 400px;" FullWidth="false" />
+                         Label="Department" Variant="Variant.Outlined" Dense="true" Clearable="true" MaxItems="20"
+                         Style="max-width: 400px;" FullWidth="false" />
         <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" />
     </MudAppBar>
     <MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
@@ -70,6 +74,7 @@
 </div>
 
 @code {
+    private const string DefaultDepartmentCode = "K3B";
     private bool _drawerOpen = true;
     private bool _isDarkMode = true;
     private bool _isGeneratingTokens;
@@ -97,8 +102,13 @@
                 .ThenBy(x => x.Name)
                 .ToList();
 
-            _selectedDepartment = _departments.FirstOrDefault(x =>
-                string.Equals(x.Code, "K3B", StringComparison.OrdinalIgnoreCase));
+            _selectedDepartment = CacheService.GetSessionDepartment(BrowserContext.BrowserId)
+                ?? _departments.FirstOrDefault(x => string.Equals(x.Code, DefaultDepartmentCode, StringComparison.OrdinalIgnoreCase));
+
+            if (_selectedDepartment is not null)
+            {
+                CacheService.SetSessionDepartment(BrowserContext.BrowserId, _selectedDepartment);
+            }
         }
         catch (Exception ex)
         {
@@ -115,12 +125,24 @@
     private Task OnDepartmentChanged(DepartmentDto? value)
     {
         SelectedDepartment = value;
+
+        string browserId = BrowserContext.BrowserId ?? string.Empty;
+        if (value is not null)
+        {
+            CacheService.SetSessionDepartment(browserId, value);
+        }
+        else
+        {
+            CacheService.RemoveSessionDepartment(browserId);
+        }
+
         return Task.CompletedTask;
     }
 
     private Task<IEnumerable<DepartmentDto>> SearchDepartments(string value, CancellationToken cancellationToken)
     {
-        IEnumerable<DepartmentDto> results = AutocompleteSearchHelper.SearchByLike(_departments, value, orderByRelevance: false);
+        IEnumerable<DepartmentDto> results = AutocompleteSearchHelper.SearchByLike(_departments, value, orderByRelevance:
+false);
         return Task.FromResult(results);
     }
 

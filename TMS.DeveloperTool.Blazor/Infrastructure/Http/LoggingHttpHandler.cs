@@ -10,10 +10,16 @@ public sealed class LoggingHttpHandler(ILogger<LoggingHttpHandler> logger) : Del
             body = await request.Content.ReadAsStringAsync(cancellationToken);
         }
 
-        logger.LogInformation(
-            "[Refit] {Method} {Url}\nBody: {Body}",
+        logger.LogInformation("""
+            [Refit] Sending request
+            {Method} {Url}
+            {Headers}
+
+            {Body}
+            """,
             request.Method,
             request.RequestUri,
+            string.Join("\n", request.Headers.Select(h => $"{h.Key}: {string.Join(";", h.Value)}")),
             body);
 
         HttpResponseMessage response = await base.SendAsync(request, cancellationToken);
@@ -25,7 +31,7 @@ public sealed class LoggingHttpHandler(ILogger<LoggingHttpHandler> logger) : Del
             responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
         }
         logger.LogInformation(
-            "[Refit] {Method} {Url} responded with {StatusCode}\nBody: {Body}",
+            "[Refit] {Method} {Url} responded with {StatusCode}\nBody:\n{Body}",
             request.Method,
             request.RequestUri,
             response.StatusCode,
