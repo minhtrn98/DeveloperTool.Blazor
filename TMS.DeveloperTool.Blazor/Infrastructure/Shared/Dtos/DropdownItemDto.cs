@@ -16,7 +16,7 @@ public sealed record PlanningDropdownItemDto(Guid Id, string Code, string Name, 
 {
     public string? FirstStop { get; set; }
 
-    public override string DisplayString => $"[{DepartmentCode}] [{Status}] {Name}";
+    public override string DisplayString => $"[{DepartmentCode}] [{Status}] {Code} - {Name}";
 
     public override bool Like(string searchTerm)
     {
