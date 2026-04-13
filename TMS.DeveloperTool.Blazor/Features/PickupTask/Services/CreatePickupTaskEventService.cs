@@ -111,8 +111,8 @@ public sealed class CreatePickupTaskEventService(
             SetValue(jsonNode, "pickupProvinceId", input.ProvinceId ?? string.Empty);
             SetValue(jsonNode, "pickupProvinceName", input.ProvinceName ?? string.Empty);
             SetValue(jsonNode, "pickupAddress", input.StreetAddress ?? string.Empty);
-            SetValue(jsonNode, "pickupLongitude", input.Lon ?? 0);
-            SetValue(jsonNode, "pickupLatitude", input.Lat ?? 0);
+            //SetValue(jsonNode, "pickupLongitude", input.Lon ?? 0);
+            //SetValue(jsonNode, "pickupLatitude", input.Lat ?? 0);
             UpdatePickupTaskIdPrefix(jsonNode, input.PostOfficeCode);
         }
 
@@ -217,7 +217,14 @@ public sealed class CreatePickupTaskEventService(
                 CreatePickupTaskEventInput input = new()
                 {
                     PostOfficeCode = detail.PostOfficeCode,
-                    PostOfficeName = postOffice?.PostOfficeName ?? detail.PostOfficeCode,
+                    PostOfficeName = postOffice?.PostOfficeName,
+                    WardId = postOffice?.WardId,
+                    WardName = postOffice?.WardName,
+                    ProvinceId = postOffice?.ProvinceId,
+                    ProvinceName = postOffice?.ProvinceName,
+                    StreetAddress = postOffice?.StreetAddress,
+                    Lon = postOffice?.Longitude,
+                    Lat = postOffice?.Latitude,
                     StatusId = baseInput.StatusId,
                     StatusName = baseInput.StatusName,
                     ServiceTypeId = baseInput.ServiceTypeId,
@@ -341,6 +348,10 @@ public sealed record EnumOption(string Value, string Description) : Infrastructu
 
 public sealed record CreatePickupTaskEventInput
 {
+    public CreatePickupTaskEventInput()
+    {
+        
+    }
     public string? PostOfficeCode { get; set; }
     public string? PostOfficeName { get; set; }
     public string? WardId { get; set; }
