@@ -9,6 +9,7 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject MyEmployeeService MyEmployeeService
 @inject ApiRequestHistoryService ApiRequestHistoryService
+@inject ApiRequestBodyFormatterService ApiRequestBodyFormatterService
 @inject ApiUrlsOptions ApiUrlsOptions
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -67,6 +68,9 @@
                               Lines="12" AutoGrow="true" Class="mb-4" />
 
                 <div class="d-flex align-center justify-end ga-3">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="FormatRequestBody">
+                        Format Body
+                    </MudButton>
                     <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ShowHistoryAsync">
                         History
                     </MudButton>
@@ -225,6 +229,25 @@
     {
         IEnumerable<Employee> results = AutocompleteSearchHelper.SearchByLike(emps, value, orderByRelevance: false);
         return Task.FromResult(results);
+    }
+
+    private void FormatRequestBody()
+    {
+        if (string.IsNullOrWhiteSpace(requestBody))
+        {
+            Snackbar.Add("Body is empty.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            requestBody = ApiRequestBodyFormatterService.NormalizeAndFormatJson(requestBody);
+            Snackbar.Add("Request body formatted.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Cannot format body: {ex.Message}", Severity.Warning);
+        }
     }
 
     private async Task SendRequestAsync()

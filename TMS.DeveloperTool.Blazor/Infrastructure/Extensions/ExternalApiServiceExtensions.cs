@@ -85,6 +85,7 @@ public static class ExternalApiServiceExtensions
         services.AddScoped<MyEmployeeService>();
         services.AddScoped<VehicleStatusService>();
         services.AddScoped<ApiRequestHistoryService>();
+        services.AddScoped<ApiRequestBodyFormatterService>();
 
         services.AddSingleton<EventService>();
         services.AddSingleton<JwtTokenService>();
