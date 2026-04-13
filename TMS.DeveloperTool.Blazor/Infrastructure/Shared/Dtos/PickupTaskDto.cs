@@ -8,4 +8,5 @@ public sealed record PickupTaskDto
     public string? AssignedDriverName { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime? ScheduledPickupDate { get; set; }
+    public short? PickupPriority { get; set; }
 }

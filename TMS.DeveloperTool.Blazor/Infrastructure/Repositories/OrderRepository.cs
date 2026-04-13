@@ -99,9 +99,15 @@ public sealed class OrderRepository
                 p.assigned_driver_code as "AssignedDriverCode",
                 p.assigned_driver_name as "AssignedDriverName",
                 p.status::text as "Status",
-                p.scheduled_pickup_date as "ScheduledPickupDate"
+                p.scheduled_pickup_date as "ScheduledPickupDate",
+                pai.driver_pickup_priority as "PickupPriority"
             from public.pickup_tasks p
-            order by p.scheduled_pickup_date desc nulls last, p.pickup_task_id;
+            join public.pickup_task_assigned_info pai on pai.pickup_task_id = p.pickup_task_id and pai.is_active = true
+            order by p.assigned_driver_code nulls last,
+                pai.driver_pickup_priority nulls last,
+                p.scheduled_pickup_date desc nulls last,
+                p.dispatched_at desc nulls last,
+                p.pickup_task_id;
             """;
         IEnumerable<PickupTaskDto> pickupTasks = await _dbQuery.QueryAsync<PickupTaskDto>(sql, null, cancellationToken);
         return pickupTasks.ToList();

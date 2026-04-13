@@ -51,6 +51,7 @@
                     <MudTh>Tài xế</MudTh>
                     <MudTh>Trạng thái</MudTh>
                     <MudTh>Ngày lấy hàng dự kiến</MudTh>
+                    <MudTh>Thứ tự ưu tiên</MudTh>
                     <MudTh>Hành động</MudTh>
                 </HeaderContent>
                 <RowTemplate>
@@ -76,6 +77,7 @@
                         </MudChip>
                     </MudTd>
                     <MudTd DataLabel="Scheduled Pickup Date">@FormatDate(context.ScheduledPickupDate)</MudTd>
+                    <MudTd DataLabel="Pickup Priority">@context.PickupPriority</MudTd>
                     <MudTd DataLabel="Actions">
                         <MudMenu Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
                                  Disabled="@IsBusy(context.PickupTaskId)">

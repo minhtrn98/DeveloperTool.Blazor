@@ -54,10 +54,11 @@
                    OnClick="ShowAddDriverDialog" Class="me-2">
             <MudText>Thêm nhân viên</MudText>
         </MudButton>
-        <MudAutocomplete T="DepartmentDto" Value="SelectedDepartment" ValueChanged="OnDepartmentChanged"
-                         SearchFunc="SearchDepartments" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<DepartmentDto>"
-                         Label="Department" Variant="Variant.Outlined" Dense="true" Clearable="true" MaxItems="20"
-                         Style="max-width: 400px;" FullWidth="false" />
+        <MudStack Style="width: 400px">
+            <MudAutocomplete T="DepartmentDto" Value="SelectedDepartment" ValueChanged="OnDepartmentChanged"
+                             SearchFunc="SearchDepartments" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<DepartmentDto>"
+                             Label="Department" Variant="Variant.Outlined" Dense="true" Clearable="true" MaxItems="20" />
+        </MudStack>
         <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" />
     </MudAppBar>
     <MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
