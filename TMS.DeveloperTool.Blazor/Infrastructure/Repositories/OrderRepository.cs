@@ -104,9 +104,10 @@ public sealed class OrderRepository
             from public.pickup_tasks p
             join public.pickup_task_assigned_info pai on pai.pickup_task_id = p.pickup_task_id and pai.is_active = true
             order by p.assigned_driver_code nulls last,
+                p.status desc,
                 pai.driver_pickup_priority nulls last,
-                p.scheduled_pickup_date desc nulls last,
-                p.dispatched_at desc nulls last,
+                p.scheduled_pickup_date nulls last,
+                p.dispatched_at nulls last,
                 p.pickup_task_id;
             """;
         IEnumerable<PickupTaskDto> pickupTasks = await _dbQuery.QueryAsync<PickupTaskDto>(sql, null, cancellationToken);
