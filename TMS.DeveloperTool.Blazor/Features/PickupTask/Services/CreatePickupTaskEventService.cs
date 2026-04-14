@@ -350,7 +350,7 @@ public sealed record CreatePickupTaskEventInput
 {
     public CreatePickupTaskEventInput()
     {
-        
+
     }
     public string? PostOfficeCode { get; set; }
     public string? PostOfficeName { get; set; }

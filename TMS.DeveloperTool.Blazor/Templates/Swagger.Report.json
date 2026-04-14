@@ -1,0 +1,1693 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "TMS.ReportService.Api",
+    "description": "A comprehensive API for TMS.ReportService.Api with validation and mapping",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/v1/driver-journey-reports/summary": {
+      "post": {
+        "tags": [
+          "Driver Journey Reports (BC hanh trinh tai xe)"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverJourneySummaryReportRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverJourneySummaryReportRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverJourneySummaryReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriverJourneySummaryResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/driver-journey-reports/detail": {
+      "post": {
+        "tags": [
+          "Driver Journey Reports (BC hanh trinh tai xe)"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverJourneyDetailReportRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverJourneyDetailReportRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverJourneyDetailReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriverJourneyDetailResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/driver-journey-reports/legs": {
+      "post": {
+        "tags": [
+          "Driver Journey Reports (BC hanh trinh tai xe)"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverJourneyLegReportRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverJourneyLegReportRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverJourneyLegReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriverJourneyLegResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/journey-reports/by-department": {
+      "post": {
+        "tags": [
+          "Journey Reports (BC lo trinh xe tai)"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyReportRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyReportRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyByDepartmentResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/journey-reports/by-vehicle": {
+      "post": {
+        "tags": [
+          "Journey Reports (BC lo trinh xe tai)"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehicleJourneyReportRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehicleJourneyReportRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehicleJourneyReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyByVehicleResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/journey-reports/by-driver": {
+      "post": {
+        "tags": [
+          "Journey Reports (BC lo trinh xe tai)"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverJourneyReportRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverJourneyReportRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverJourneyReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyByDriverResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/journey-reports/summary": {
+      "post": {
+        "tags": [
+          "Journey Reports (BC lo trinh xe tai)"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyReportRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyReportRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyReportSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/journey-reports/detail": {
+      "post": {
+        "tags": [
+          "Journey Reports (BC lo trinh xe tai)"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyDetailReportRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyDetailReportRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyDetailReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyDetailResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DriverInfo": {
+        "type": "object",
+        "properties": {
+          "driverId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driverCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "driverName": {
+            "type": "string",
+            "nullable": true
+          },
+          "driverAvatarUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DriverJourneyDetailReportRequest": {
+        "type": "object",
+        "properties": {
+          "startFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "startTo": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "zoneCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "departmentCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vehicleIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "driverIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "assignmentCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "planCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "statuses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DriverJourneyDetailResponse": {
+        "type": "object",
+        "properties": {
+          "assignmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "routeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "licensePlate": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "zoneCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "startPointCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "endPointCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "plannedRoutePath": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualRoutePath": {
+            "type": "string",
+            "nullable": true
+          },
+          "driverRoutePath": {
+            "type": "string",
+            "nullable": true
+          },
+          "additionalStops": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualDistanceKm": {
+            "type": "number",
+            "format": "double"
+          },
+          "mainDistanceKm": {
+            "type": "number",
+            "format": "double"
+          },
+          "subDistanceKm": {
+            "type": "number",
+            "format": "double"
+          },
+          "actualDurationMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "mainDurationMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "subDurationMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "driverId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driverCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "driverName": {
+            "type": "string",
+            "nullable": true
+          },
+          "driverAvatarUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DriverJourneyDetailResponsePagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DriverJourneyDetailResponse"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DriverJourneyLegReportRequest": {
+        "type": "object",
+        "properties": {
+          "startFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "startTo": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "zoneCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "departmentCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "driverIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "statuses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DriverJourneyLegResponse": {
+        "type": "object",
+        "properties": {
+          "routeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "driverId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driverCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "driverName": {
+            "type": "string",
+            "nullable": true
+          },
+          "driverAvatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "assignmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "zoneCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "plannedRoutePath": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualRoutePath": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "driverRoutePath": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "legSequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startPoint": {
+            "type": "string",
+            "nullable": true
+          },
+          "endPoint": {
+            "type": "string",
+            "nullable": true
+          },
+          "legType": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualDurationMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "actualDistanceKm": {
+            "type": "number",
+            "format": "double"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DriverJourneyLegResponsePagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DriverJourneyLegResponse"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DriverJourneyReportRequest": {
+        "type": "object",
+        "properties": {
+          "startFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "startTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "zoneCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "departmentCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "driverIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DriverJourneySummaryReportRequest": {
+        "type": "object",
+        "properties": {
+          "startFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "startTo": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "zoneCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "departmentCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "driverIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DriverJourneySummaryResponse": {
+        "type": "object",
+        "properties": {
+          "driverId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driverCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "driverName": {
+            "type": "string",
+            "nullable": true
+          },
+          "driverAvatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "zoneCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalJourneys": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "mainDurationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "actualDurationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "subDurationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "actualDistanceKm": {
+            "type": "number",
+            "format": "double"
+          },
+          "mainDistanceKm": {
+            "type": "number",
+            "format": "double"
+          },
+          "subDistanceKm": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DriverJourneySummaryResponsePagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DriverJourneySummaryResponse"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "JourneyByDepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "zoneCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalRoutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "routesWithStops": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalDistanceKm": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalPendingRoutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalInProgressRoutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCompletedRoutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCancelledRoutes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "JourneyByDepartmentResponsePagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JourneyByDepartmentResponse"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "JourneyByDriverResponse": {
+        "type": "object",
+        "properties": {
+          "driverId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driverCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "driverName": {
+            "type": "string",
+            "nullable": true
+          },
+          "driverAvatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "zoneCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalRoutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "routesWithStops": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalDistanceKm": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalItemsPickedUp": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalItemsDelivered": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPendingRoutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalInProgressRoutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCompletedRoutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCancelledRoutes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "JourneyByDriverResponsePagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JourneyByDriverResponse"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "JourneyByVehicleResponse": {
+        "type": "object",
+        "properties": {
+          "vehicleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vehicleCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "licensePlate": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "zoneCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalRoutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "routesWithStops": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalDistanceKm": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalPendingRoutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalInProgressRoutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCompletedRoutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCancelledRoutes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "JourneyByVehicleResponsePagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JourneyByVehicleResponse"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "JourneyDetailReportRequest": {
+        "type": "object",
+        "properties": {
+          "startFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "startTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "zoneCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "departmentCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vehicleIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "driverIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "planTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "statuses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "JourneyDetailResponse": {
+        "type": "object",
+        "properties": {
+          "assignmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planType": {
+            "type": "string",
+            "nullable": true
+          },
+          "planCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "licensePlate": {
+            "type": "string",
+            "nullable": true
+          },
+          "routeCode": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "drivers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DriverInfo"
+            },
+            "nullable": true
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "zoneCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "startPointCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "startPointName": {
+            "type": "string",
+            "nullable": true
+          },
+          "endPointCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "endPointName": {
+            "type": "string",
+            "nullable": true
+          },
+          "plannedRoutePath": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualRoutePath": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "additionalStops": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "actualDistanceKm": {
+            "type": "number",
+            "format": "double"
+          },
+          "actualDurationMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "assignmentStatus": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "JourneyDetailResponsePagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JourneyDetailResponse"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "JourneyReportRequest": {
+        "type": "object",
+        "properties": {
+          "startFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "startTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "zoneCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "departmentCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "JourneyReportSummary": {
+        "type": "object",
+        "properties": {
+          "totalRoutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "routesWithStops": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalDistanceKm": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalItemsPickedUp": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalItemsDelivered": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "uniqueVehicles": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "uniqueDrivers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "uniqueDepartments": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "VehicleJourneyReportRequest": {
+        "type": "object",
+        "properties": {
+          "startFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "startTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "zoneCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "departmentCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vehicleIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Driver Journey Reports (BC hanh trinh tai xe)"
+    },
+    {
+      "name": "Journey Reports (BC lo trinh xe tai)"
+    }
+  ]
+}

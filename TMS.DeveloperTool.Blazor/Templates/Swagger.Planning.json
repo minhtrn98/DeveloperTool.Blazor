@@ -1,0 +1,4814 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "TMS.PlanningService.Api",
+    "description": "A comprehensive API for TMS.PlanningService.Api with validation and mapping",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/v1/cargo-tracking": {
+      "get": {
+        "tags": [
+          "CargoTracking"
+        ],
+        "parameters": [
+          {
+            "name": "mailerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "childMailerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/CargoTrackingResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/daily-planning-aggregates/search": {
+      "post": {
+        "tags": [
+          "DailyPlanning"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetDailyPlansRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetDailyPlansRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetDailyPlansRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyPlanDtoPagedResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/daily-planning-aggregates/{id}": {
+      "get": {
+        "tags": [
+          "DailyPlanning"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyPlanDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/daily-planning-aggregates/by-ids": {
+      "post": {
+        "tags": [
+          "DailyPlanning"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DailyPlanByIdsResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/extra-services": {
+      "get": {
+        "tags": [
+          "ExtraService"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExtraServiceDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lead-times/search": {
+      "post": {
+        "tags": [
+          "LeadTime"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetLeadTimeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetLeadTimeRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetLeadTimeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadTimeConfigDtoPagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lead-times/{id}": {
+      "get": {
+        "tags": [
+          "LeadTime"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadTimeConfigDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lead-time-partners": {
+      "post": {
+        "tags": [
+          "LeadTimePartner"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLeadTimePartnerRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLeadTimePartnerRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLeadTimePartnerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadTimePartnerDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lead-time-partners/{id}": {
+      "put": {
+        "tags": [
+          "LeadTimePartner"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLeadTimePartnerRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLeadTimePartnerRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLeadTimePartnerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadTimePartnerDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lead-time-types": {
+      "get": {
+        "tags": [
+          "LeadTimeType"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LeadTimeConfigDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/normal-planning-aggregates/search": {
+      "post": {
+        "tags": [
+          "PlanningAggregate"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetRouteAggregationsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetRouteAggregationsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetRouteAggregationsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteAggregationDtoPagedResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/normal-planning-aggregates/route-aggregation-query": {
+      "post": {
+        "tags": [
+          "PlanningAggregate"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetRouteAggregationByKeyRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetRouteAggregationByKeyRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetRouteAggregationByKeyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteAggregationDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/planning-templates/search": {
+      "post": {
+        "tags": [
+          "PlanningTemplate"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetPlanningTemplatesRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetPlanningTemplatesRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetPlanningTemplatesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanningTemplateDtoPagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/planning-templates/{id}": {
+      "get": {
+        "tags": [
+          "PlanningTemplate"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanningTemplateDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "PlanningTemplate"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlanningTemplateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlanningTemplateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlanningTemplateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanningTemplateDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "PlanningTemplate"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/planning-templates": {
+      "post": {
+        "tags": [
+          "PlanningTemplate"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlanningTemplateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlanningTemplateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlanningTemplateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanningTemplateDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/planning-templates/import": {
+      "post": {
+        "tags": [
+          "PlanningTemplate"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "File": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              },
+              "encoding": {
+                "File": {
+                  "style": "form"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/planning-templates/template": {
+      "get": {
+        "tags": [
+          "PlanningTemplate"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/planning-templates/priorities": {
+      "put": {
+        "tags": [
+          "PlanningTemplate"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlanningTemplatePrioritiesRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlanningTemplatePrioritiesRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlanningTemplatePrioritiesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/planning-templates/route/{routeId}": {
+      "get": {
+        "tags": [
+          "PlanningTemplate"
+        ],
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanningTemplateDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/priority-plan/search": {
+      "post": {
+        "tags": [
+          "PriorityPlan"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetPriorityPlansRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetPriorityPlansRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetPriorityPlansRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriorityPlanDtoPagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/priority-plan/{id}": {
+      "get": {
+        "tags": [
+          "PriorityPlan"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriorityPlanDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "PriorityPlan"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePriorityPlanRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePriorityPlanRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePriorityPlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriorityPlanDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "PriorityPlan"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "PriorityPlan"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIsActivePriorityPlanRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIsActivePriorityPlanRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIsActivePriorityPlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/priority-plan": {
+      "post": {
+        "tags": [
+          "PriorityPlan"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePriorityPlanRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePriorityPlanRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePriorityPlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriorityPlanDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/priority-planning-aggregates/search": {
+      "post": {
+        "tags": [
+          "PriorityPlanningAggregate"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetPriorityPlanningAggregationsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetPriorityPlanningAggregationsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetPriorityPlanningAggregationsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteAggregationDtoPagedResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/priority-planning-aggregates/{routeKey}": {
+      "get": {
+        "tags": [
+          "PriorityPlanningAggregate"
+        ],
+        "parameters": [
+          {
+            "name": "routeKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          },
+          {
+            "name": "searchTerm",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriorityRouteAggregationDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/service-types": {
+      "get": {
+        "tags": [
+          "ServiceType"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceTypeDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/third-party-aggregates/search": {
+      "post": {
+        "tags": [
+          "ThirdPartyAggregate"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetThirdPartyRouteAggregationsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetThirdPartyRouteAggregationsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetThirdPartyRouteAggregationsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThirdPartyRouteAggregationDtoPagedResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/third-party-aggregates/route-aggregation-query": {
+      "post": {
+        "tags": [
+          "ThirdPartyAggregate"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetThirdPartyAggregationByKeyRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetThirdPartyAggregationByKeyRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetThirdPartyAggregationByKeyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteAggregationDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transport-method-types": {
+      "get": {
+        "tags": [
+          "TransportMethodType"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportMethodTypeDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transport-vehicle-types": {
+      "get": {
+        "tags": [
+          "TransportVehicleType"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportVehicleTypeDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AttributeValuesDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "BusinessOperation": {
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "CargoTrackingResponseDto": {
+        "type": "object",
+        "properties": {
+          "master": {
+            "$ref": "#/components/schemas/MailerRouteMasterDto"
+          },
+          "planRoutes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CargoTrackingRouteDto"
+            },
+            "nullable": true
+          },
+          "adjustRoutes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CargoTrackingRouteDto"
+            },
+            "nullable": true
+          },
+          "actualRoutes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CargoTrackingRouteDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CargoTrackingRouteDto": {
+        "type": "object",
+        "properties": {
+          "mailerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "childMailerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromPostOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromPostOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "toPostOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "toPostOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "leadTimeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "transportProviderType": {
+            "type": "string",
+            "nullable": true
+          },
+          "transportProviderTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "transportVehicleType": {
+            "type": "string",
+            "nullable": true
+          },
+          "transportVehicleTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "transportMethodId": {
+            "type": "string",
+            "nullable": true
+          },
+          "transportMethodName": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "fromTimeDelay": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "toTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "toTimeDelay": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "addDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "step": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "typeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "historyId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "previousStep": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "leadTimeTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "leadTimeTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "serviceTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "serviceTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "extraService": {
+            "type": "string",
+            "nullable": true
+          },
+          "extraServiceName": {
+            "type": "string",
+            "nullable": true
+          },
+          "masterCreatedDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateLeadTimePartnerRequest": {
+        "type": "object",
+        "properties": {
+          "leadTimeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "partnerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "partnerCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromTime": {
+            "type": "string",
+            "format": "date-span",
+            "nullable": true
+          },
+          "toTime": {
+            "type": "string",
+            "format": "date-span",
+            "nullable": true
+          },
+          "fromAddDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "toAddDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "senderPostOffice": {
+            "type": "string",
+            "nullable": true
+          },
+          "receivePostOffice": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatePlanningTemplateDetailRequest": {
+        "type": "object",
+        "properties": {
+          "postOfficeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromTime": {
+            "type": "string",
+            "format": "date-span"
+          },
+          "fromAddDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "toTime": {
+            "type": "string",
+            "format": "date-span"
+          },
+          "toTimeAddDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "businessOperation": {
+            "$ref": "#/components/schemas/BusinessOperation"
+          },
+          "distanceBetweenPoints": {
+            "type": "number",
+            "format": "float"
+          },
+          "stepNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "postOfficeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "isEndPoint": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatePlanningTemplateRequest": {
+        "required": [
+          "departmentCode"
+        ],
+        "type": "object",
+        "properties": {
+          "routeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "vehicleTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "routeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "postOfficeCodes": {
+            "type": "string",
+            "nullable": true
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatePlanningTemplateDetailRequest"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatePriorityPlanGroupAttrRequest": {
+        "type": "object",
+        "properties": {
+          "propertyType": {
+            "$ref": "#/components/schemas/PriorityType"
+          },
+          "locationType": {
+            "$ref": "#/components/schemas/LocationType"
+          },
+          "propertyOperator": {
+            "$ref": "#/components/schemas/PriorityTypeOperator"
+          },
+          "values": {
+            "type": "string",
+            "nullable": true
+          },
+          "logicOperator": {
+            "$ref": "#/components/schemas/LogicalOperator"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatePriorityPlanGroupRequest": {
+        "type": "object",
+        "properties": {
+          "logicOperator": {
+            "$ref": "#/components/schemas/LogicalOperator"
+          },
+          "priorityPlanGroupAttributes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatePriorityPlanGroupAttrRequest"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatePriorityPlanRequest": {
+        "type": "object",
+        "properties": {
+          "priorityPlanName": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "priorityPlanGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatePriorityPlanGroupRequest"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DailyPlanByIdsResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planningTemplateId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planStartTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "planEndTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "postOfficeCodes": {
+            "type": "string",
+            "nullable": true
+          },
+          "planningDetail": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyPlanDetail"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DailyPlanDetail": {
+        "type": "object",
+        "properties": {
+          "postOfficeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "postOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromTime": {
+            "type": "string",
+            "format": "date-span",
+            "nullable": true
+          },
+          "toTime": {
+            "type": "string",
+            "format": "date-span",
+            "nullable": true
+          },
+          "fromAddDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "toTimeAddDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "activityStartTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "activityEndTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "businessOperation": {
+            "$ref": "#/components/schemas/BusinessOperation"
+          },
+          "isEndPoint": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DailyPlanDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planningTemplateId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "executionDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalDistance": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalDuration": {
+            "type": "number",
+            "format": "double"
+          },
+          "officeCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vehicleTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vehicleTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "routeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "postOfficeCodes": {
+            "type": "string",
+            "nullable": true
+          },
+          "priorityNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualStartTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "actualEndTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteData"
+            },
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "totalEstimateWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalOnVehicleWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalDiffWeight": {
+            "type": "number",
+            "format": "double",
+            "readOnly": true
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DailyPlanDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planningTemplateId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "executionDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalDistance": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalDuration": {
+            "type": "number",
+            "format": "double"
+          },
+          "officeCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vehicleTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vehicleTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "routeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "postOfficeCodes": {
+            "type": "string",
+            "nullable": true
+          },
+          "priorityNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualStartTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "actualEndTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "routeCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalOrders": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "postOfficeDtos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyPlanPostOfficeDto"
+            },
+            "nullable": true
+          },
+          "totalEstimateWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalOnVehicleWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalDiffWeight": {
+            "type": "number",
+            "format": "double",
+            "readOnly": true
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DailyPlanDtoPagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyPlanDto"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DailyPlanPostOfficeDto": {
+        "type": "object",
+        "properties": {
+          "fromCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromName": {
+            "type": "string",
+            "nullable": true
+          },
+          "toCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "toName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DailyPlanningStatus": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "ExtraService": {
+        "type": "object",
+        "properties": {
+          "extraServiceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "extraServiceName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExtraServiceDto": {
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "serviceName": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetDailyPlansRequest": {
+        "type": "object",
+        "properties": {
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "executionDateFrom": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "executionDateTo": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/DailyPlanningStatus"
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "planningTemplateId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "vehicleTypeIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "sortOrder": {
+            "$ref": "#/components/schemas/SortOrderDailyPlan"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetLeadTimeRequest": {
+        "type": "object",
+        "properties": {
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fromPostOfficeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "toPostOfficeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "fromZoneIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "toZoneIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "leadTimeTypeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "transportMethodIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "transportVehicleIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "partnerIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "partnerFromOfficeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "partnerToOfficeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetPlanningTemplatesRequest": {
+        "type": "object",
+        "properties": {
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vehicleTypeIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "createdByIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "departmentCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "sortOrder": {
+            "$ref": "#/components/schemas/SortOrderBase"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetPriorityPlanningAggregationsRequest": {
+        "type": "object",
+        "properties": {
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fromOfficeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "toOfficeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "priorityPlanIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          },
+          "sortOrder": {
+            "$ref": "#/components/schemas/PriorityRouteAggregationSortOrder"
+          },
+          "excludeEmptyRoutes": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetPriorityPlansRequest": {
+        "type": "object",
+        "properties": {
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "sortOrder": {
+            "$ref": "#/components/schemas/SortOrderPriorityPlan"
+          },
+          "createdByIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetRouteAggregationByKeyRequest": {
+        "type": "object",
+        "properties": {
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "routeKey": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetRouteAggregationsRequest": {
+        "type": "object",
+        "properties": {
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fromOfficeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "toOfficeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "startPlanFromDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endPlanFromDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "startPlanToDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endPlanToDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "vehicleTypeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "excludeEmptyRoutes": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetThirdPartyAggregationByKeyRequest": {
+        "type": "object",
+        "properties": {
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "routeKey": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetThirdPartyRouteAggregationsRequest": {
+        "type": "object",
+        "properties": {
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fromOfficeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "zoneIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "toOfficeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "partnerIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "vehicleTypeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "isSenderMailer": {
+            "type": "boolean"
+          },
+          "excludeEmptyRoutes": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LeadTimeConfigDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
+          "leadTimeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "leadTimeTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "leadTimeTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "toOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "startTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "endTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "addDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "fromZoneId": {
+            "type": "string",
+            "nullable": true
+          },
+          "toZoneId": {
+            "type": "string",
+            "nullable": true
+          },
+          "transportProviderTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "transportVehicleTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "transportMethodName": {
+            "type": "string",
+            "nullable": true
+          },
+          "toPostOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromPostOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "leadTimePartnerDto": {
+            "$ref": "#/components/schemas/LeadTimePartnerDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LeadTimeConfigDtoPagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeadTimeConfigDto"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LeadTimePartnerDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "leadTimeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "partnerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "partnerCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "partnerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromTime": {
+            "type": "string",
+            "format": "date-span",
+            "nullable": true
+          },
+          "toTime": {
+            "type": "string",
+            "format": "date-span",
+            "nullable": true
+          },
+          "fromAddDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "toAddDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "senderPostOffice": {
+            "type": "string",
+            "nullable": true
+          },
+          "receivePostOffice": {
+            "type": "string",
+            "nullable": true
+          },
+          "senderPostOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "receivePostOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "senderPostOfficeAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "receivePostOfficeAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LocationType": {
+        "enum": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "LogicalOperator": {
+        "enum": [
+          0,
+          1
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "MailerRouteMasterDto": {
+        "type": "object",
+        "properties": {
+          "mailerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "childMailerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentPostOffice": {
+            "type": "string",
+            "nullable": true
+          },
+          "isHaveMailerPlanRoute": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromPostOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromPostOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "toPostOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "toPostOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "senderAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "receiverAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "planStartTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "planEndTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "planDurationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "adjustStartTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "adjustEndTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "adjustDurationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isForwarded": {
+            "type": "boolean"
+          },
+          "createdDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastUpdateDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUpdateUser": {
+            "type": "string",
+            "nullable": true
+          },
+          "orderMetrics": {
+            "$ref": "#/components/schemas/OrderMetrics"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OptionsCountDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrderItemDetail": {
+        "type": "object",
+        "properties": {
+          "childMailerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "mailerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "weight": {
+            "type": "number",
+            "format": "double"
+          },
+          "realWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "calWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "serviceTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualFromTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "actualToTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "packageCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "tripCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "packageIndex": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "packageOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "isDeleted": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrderItemDetailPagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemDetail"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrderItemMetric": {
+        "type": "object",
+        "properties": {
+          "orderItemId": {
+            "type": "string",
+            "nullable": true
+          },
+          "orderId": {
+            "type": "string",
+            "nullable": true
+          },
+          "weight": {
+            "type": "number",
+            "format": "double"
+          },
+          "realWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "calWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "l": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "h": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "w": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "currentStatusId": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentPostOfficeId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrderMetrics": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "nullable": true
+          },
+          "acceptedTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "currentOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemMetric"
+            },
+            "nullable": true
+          },
+          "weight": {
+            "type": "number",
+            "format": "double"
+          },
+          "realWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "calWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "isDeleted": {
+            "type": "boolean"
+          },
+          "serviceTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "serviceTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "extraServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExtraService"
+            },
+            "nullable": true
+          },
+          "currentStatusId": {
+            "type": "string",
+            "nullable": true
+          },
+          "analyzedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "senderPostOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "receiverPostOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "senderWardId": {
+            "type": "string",
+            "nullable": true
+          },
+          "receiverWardId": {
+            "type": "string",
+            "nullable": true
+          },
+          "senderProvinceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "receiverProvinceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "packages": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/OrderPackages"
+              }
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrderPackages": {
+        "type": "object",
+        "properties": {
+          "packageCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "tripCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PlanningTemplateDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planningTemplateId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "postOfficeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "postOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromTime": {
+            "type": "string",
+            "format": "date-span"
+          },
+          "fromAddDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "toTime": {
+            "type": "string",
+            "format": "date-span"
+          },
+          "toTimeAddDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "postOfficeTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "businessOperation": {
+            "$ref": "#/components/schemas/BusinessOperation"
+          },
+          "businessOperationName": {
+            "type": "string",
+            "nullable": true
+          },
+          "distanceBetweenPoints": {
+            "type": "number",
+            "format": "float"
+          },
+          "stepNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "postOfficeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "isEndPoint": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PlanningTemplateDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "routeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "startedOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "startedOfficeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "endedOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "endedOfficeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalDistance": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalDuration": {
+            "type": "number",
+            "format": "double"
+          },
+          "stopCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "priorityNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vehicleTypeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vehicleTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdByCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdByAvatar": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedByCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedByAvatar": {
+            "type": "string",
+            "nullable": true
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanningTemplateDetailDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PlanningTemplateDtoPagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanningTemplateDto"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PriorityPlanDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "priorityPlanName": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "isDeleted": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "priorityPlanGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriorityPlanGroupDto"
+            },
+            "nullable": true
+          },
+          "createdByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdByCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdByAvatar": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedByCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedByAvatar": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PriorityPlanDtoPagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriorityPlanDto"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PriorityPlanGroupAttrDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "priorityPlanGroupId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "propertyType": {
+            "$ref": "#/components/schemas/PriorityType"
+          },
+          "locationType": {
+            "$ref": "#/components/schemas/LocationType"
+          },
+          "propertyOperator": {
+            "$ref": "#/components/schemas/PriorityTypeOperator"
+          },
+          "values": {
+            "type": "string",
+            "nullable": true
+          },
+          "logicOperator": {
+            "$ref": "#/components/schemas/LogicalOperator"
+          },
+          "valueArray": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttributeValuesDto"
+            },
+            "nullable": true
+          },
+          "stepNumber": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PriorityPlanGroupDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "priorityPlanId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "logicOperator": {
+            "$ref": "#/components/schemas/LogicalOperator"
+          },
+          "stepNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "priorityAttributes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriorityPlanGroupAttrDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PriorityRouteAggregationDetailDto": {
+        "type": "object",
+        "properties": {
+          "mailerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "packageCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "tripCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "serviceTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualFromTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "planFromTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "actualToTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "planToTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "weight": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "realWeight": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "calWeight": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/PriorityRouteAggregationOrderStatus"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PriorityRouteAggregationDetailDtoPagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriorityRouteAggregationDetailDto"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PriorityRouteAggregationDto": {
+        "type": "object",
+        "properties": {
+          "routeKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "toOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "toOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualFromTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "planFromTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "actualToTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "planToTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "priorityPlanId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "priorityPlanName": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalOrders": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalAlmostDueOrders": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalOverdueOrders": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "details": {
+            "$ref": "#/components/schemas/PriorityRouteAggregationDetailDtoPagedResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PriorityRouteAggregationOrderStatus": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "PriorityRouteAggregationSortOrder": {
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "PriorityType": {
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "PriorityTypeOperator": {
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": { }
+      },
+      "RouteAggregationDto": {
+        "type": "object",
+        "properties": {
+          "routeKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromBusinessOperation": {
+            "$ref": "#/components/schemas/BusinessOperation"
+          },
+          "fromBusinessOperationName": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualFromTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "planFromTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "toOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "toOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "toBusinessOperation": {
+            "$ref": "#/components/schemas/BusinessOperation"
+          },
+          "toBusinessOperationName": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualToTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "planToTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "totalDurationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "averageDurationMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "earliestStartTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "latestEndTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "totalOrders": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalItems": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalRealWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalCalWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "transportProviderBreakdown": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OptionsCountDto"
+            },
+            "nullable": true
+          },
+          "vehicleTypeBreakdown": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OptionsCountDto"
+            },
+            "nullable": true
+          },
+          "transportMethodBreakdown": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OptionsCountDto"
+            },
+            "nullable": true
+          },
+          "priorityScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "needsOptimization": {
+            "type": "boolean"
+          },
+          "aggregatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalEstimateWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalOnVehicleWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalDiffWeight": {
+            "type": "number",
+            "format": "double",
+            "readOnly": true
+          },
+          "orderDetails": {
+            "$ref": "#/components/schemas/OrderItemDetailPagedResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteAggregationDtoPagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteAggregationDto"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteData": {
+        "type": "object",
+        "properties": {
+          "postOfficeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "postOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "businessOperation": {
+            "$ref": "#/components/schemas/BusinessOperation"
+          },
+          "businessOperationName": {
+            "type": "string",
+            "nullable": true
+          },
+          "planStartTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "planEndTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "routeKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualFromTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualToTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalEstimateWeight": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "totalOnVehicleWeight": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "totalDiffWeight": {
+            "type": "number",
+            "format": "double",
+            "nullable": true,
+            "readOnly": true
+          },
+          "earliestStartTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "latestStartTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "earliestEndTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "latestEndTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ServiceTypeDto": {
+        "type": "object",
+        "properties": {
+          "serviceTypeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "serviceTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "serviceTypeStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SortOrderBase": {
+        "enum": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "SortOrderDailyPlan": {
+        "enum": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "SortOrderPriorityPlan": {
+        "enum": [
+          0,
+          1
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "ThirdPartyRouteAggregationDto": {
+        "type": "object",
+        "properties": {
+          "routeKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "senderOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "senderOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "receiverOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "receiverOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "toOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "toOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "senderTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "receiveTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "zoneId": {
+            "type": "string",
+            "nullable": true
+          },
+          "partnerCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "partnerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "vehicleName": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalOrders": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalItems": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalWeight": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "totalCalWeight": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "totalRealWeight": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "isSenderMailer": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "orderDetails": {
+            "$ref": "#/components/schemas/OrderItemDetailPagedResult"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThirdPartyRouteAggregationDtoPagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThirdPartyRouteAggregationDto"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "isFirstPage": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "isLastPage": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TransportMethodTypeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TransportVehicleTypeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateIsActivePriorityPlanRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateLeadTimePartnerRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "leadTimeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "partnerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "partnerCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromTime": {
+            "type": "string",
+            "format": "date-span",
+            "nullable": true
+          },
+          "toTime": {
+            "type": "string",
+            "format": "date-span",
+            "nullable": true
+          },
+          "fromAddDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "toAddDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "senderPostOffice": {
+            "type": "string",
+            "nullable": true
+          },
+          "receivePostOffice": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdatePlanningTemplateDetailRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "postOfficeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromTime": {
+            "type": "string",
+            "format": "date-span"
+          },
+          "fromAddDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "toTime": {
+            "type": "string",
+            "format": "date-span"
+          },
+          "toTimeAddDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "businessOperation": {
+            "$ref": "#/components/schemas/BusinessOperation"
+          },
+          "distanceBetweenPoints": {
+            "type": "number",
+            "format": "float"
+          },
+          "stepNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isEndPoint": {
+            "type": "boolean"
+          },
+          "postOfficeCode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdatePlanningTemplatePrioritiesRequest": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpdatePlanningTemplatePriorityItem"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdatePlanningTemplatePriorityItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "priorityNumber": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdatePlanningTemplateRequest": {
+        "required": [
+          "departmentCode"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routeId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "priorityNumber": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "vehicleTypeId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "routeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "postOfficeCodes": {
+            "type": "string",
+            "nullable": true
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpdatePlanningTemplateDetailRequest"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdatePriorityPlanGroupAttrRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "priorityPlanGroupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "propertyType": {
+            "$ref": "#/components/schemas/PriorityType"
+          },
+          "locationType": {
+            "$ref": "#/components/schemas/LocationType"
+          },
+          "propertyOperator": {
+            "$ref": "#/components/schemas/PriorityTypeOperator"
+          },
+          "values": {
+            "type": "string",
+            "nullable": true
+          },
+          "logicOperator": {
+            "$ref": "#/components/schemas/LogicalOperator"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdatePriorityPlanGroupRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "priorityPlanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "logicOperator": {
+            "$ref": "#/components/schemas/LogicalOperator"
+          },
+          "priorityPlanGroupAttributes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpdatePriorityPlanGroupAttrRequest"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdatePriorityPlanRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "priorityPlanName": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "priorityPlanGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpdatePriorityPlanGroupRequest"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "CargoTracking"
+    },
+    {
+      "name": "DailyPlanning"
+    },
+    {
+      "name": "ExtraService"
+    },
+    {
+      "name": "LeadTime"
+    },
+    {
+      "name": "LeadTimePartner"
+    },
+    {
+      "name": "LeadTimeType"
+    },
+    {
+      "name": "PlanningAggregate"
+    },
+    {
+      "name": "PlanningTemplate"
+    },
+    {
+      "name": "PriorityPlan"
+    },
+    {
+      "name": "PriorityPlanningAggregate"
+    },
+    {
+      "name": "ServiceType"
+    },
+    {
+      "name": "ThirdPartyAggregate"
+    },
+    {
+      "name": "TransportMethodType"
+    },
+    {
+      "name": "TransportVehicleType"
+    }
+  ]
+}

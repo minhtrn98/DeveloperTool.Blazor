@@ -10,6 +10,7 @@
 @inject MyEmployeeService MyEmployeeService
 @inject ApiRequestHistoryService ApiRequestHistoryService
 @inject ApiRequestBodyFormatterService ApiRequestBodyFormatterService
+@inject ApiRequestSwaggerService ApiRequestSwaggerService
 @inject ApiUrlsOptions ApiUrlsOptions
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -22,6 +23,67 @@
         <MudItem xs="12" md="6">
             <MudPaper Elevation="2" Class="pa-4 request-panel">
                 <MudText Typo="Typo.h5" Class="mb-4">Request</MudText>
+
+                <MudPaper Outlined="true" Class="pa-3 mb-3 swagger-panel">
+                    <div class="d-flex flex-wrap align-center justify-space-between ga-2 mb-3">
+                        <MudText Typo="Typo.subtitle2">Swagger Endpoint</MudText>
+                        <MudText Typo="Typo.caption">@swaggerStatusText</MudText>
+                    </div>
+
+                    <MudGrid>
+                        <MudItem xs="12" md="3">
+                            <MudSelect T="string" @bind-Value="selectedService" Label="Service" Variant="Variant.Outlined"
+                                       FullWidth="true" @bind-Value:after="OnServiceChanged">
+                                @foreach (ServiceOption service in serviceOptions)
+                                {
+                                    <MudSelectItem Value="@service.Name">@service.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" md="3">
+                            <MudSelect T="string" @bind-Value="selectedSwaggerTag" Label="Tag" Variant="Variant.Outlined"
+                                       FullWidth="true" @bind-Value:after="OnSwaggerTagChanged">
+                                @foreach (string tag in swaggerTagOptions)
+                                {
+                                    <MudSelectItem Value="@tag">@tag</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudAutocomplete T="SwaggerEndpointOption" Value="selectedSwaggerEndpoint"
+                                             ValueChanged="OnSwaggerEndpointChanged" SearchFunc="SearchSwaggerEndpoints"
+                                             ToStringFunc="GetSwaggerEndpointDisplayText" Label="Endpoint from swagger"
+                                             Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="50" />
+                        </MudItem>
+                    </MudGrid>
+
+                    @if (selectedSwaggerEndpoint is not null)
+                    {
+                        <MudText Typo="Typo.caption" Class="d-block mt-3">
+                            @selectedSwaggerEndpoint.Tag
+                            @if (!string.IsNullOrWhiteSpace(selectedSwaggerEndpoint.Description))
+                            {
+                                <span> · @selectedSwaggerEndpoint.Description</span>
+                            }
+                        </MudText>
+
+                        @if (selectedSwaggerEndpoint.Parameters.Count > 0)
+                        {
+                            <div class="d-flex flex-wrap ga-2 mt-2">
+                                @foreach (SwaggerParameterOption parameter in selectedSwaggerEndpoint.Parameters)
+                                {
+                                    <MudChip T="string" Value="@parameter.Name" Variant="Variant.Outlined" Size="Size.Small">
+                                        @parameter.Location: @parameter.Name=@parameter.SampleValue
+                                        @if (parameter.Required)
+                                        {
+                                            <span> *</span>
+                                        }
+                                    </MudChip>
+                                }
+                            </div>
+                        }
+                    }
+                </MudPaper>
 
                 <MudGrid Class="mb-3">
                     <MudItem xs="12">
@@ -37,20 +99,11 @@
                             }
                         </MudSelect>
                     </MudItem>
-                    <MudItem xs="12" md="2">
-                        <MudSelect T="string" @bind-Value="selectedService" Label="Service" Variant="Variant.Outlined"
-                                   FullWidth="true" @bind-Value:after="OnServiceChanged">
-                            @foreach (ServiceOption service in serviceOptions)
-                            {
-                                <MudSelectItem Value="@service.Name">@service.Name</MudSelectItem>
-                            }
-                        </MudSelect>
-                    </MudItem>
                     <MudItem xs="12" md="3">
                         <MudTextField Value="@selectedDomain" Label="Domain" Variant="Variant.Outlined" FullWidth="true"
                                       ReadOnly="true" />
                     </MudItem>
-                    <MudItem xs="12" md="5">
+                    <MudItem xs="12" md="7">
                         <MudTextField @bind-Value="endpoint" Label="Endpoint" Variant="Variant.Outlined"
                                       FullWidth="true" />
                     </MudItem>
@@ -138,6 +191,10 @@
         min-height: 80vh;
     }
 
+    .swagger-panel {
+        background: rgba(0, 0, 0, 0.02);
+    }
+
     .response-block {
         min-height: 180px;
         max-height: 32vh;
@@ -156,16 +213,23 @@
     private readonly List<string> methodOptions = ["GET", "POST", "PUT", "DELETE"];
     private readonly List<ServiceOption> serviceOptions = [];
     private List<Employee> emps = [];
+    private List<string> swaggerTagOptions = [AllSwaggerTagsOption];
+    private List<SwaggerEndpointOption> swaggerEndpoints = [];
 
+    private const string AllSwaggerTagsOption = "All";
     private Employee? selectedDriver;
+    private SwaggerEndpointOption? selectedSwaggerEndpoint;
     private string requestName = string.Empty;
     private string selectedMethod = "POST";
     private string selectedService = string.Empty;
     private string selectedDomain = string.Empty;
+    private string selectedSwaggerTag = AllSwaggerTagsOption;
     private string endpoint = ApiPrefix;
     private string requestBody = string.Empty;
     private string accessToken = string.Empty;
     private bool isSubmitting;
+    private string swaggerDocumentTitle = string.Empty;
+    private string swaggerStatusText = "Swagger file not loaded.";
 
     private string responseStatus = "-";
     private string responseDuration = "-";
@@ -201,6 +265,7 @@
 
         selectedService = serviceOptions.FirstOrDefault()?.Name ?? string.Empty;
         selectedDomain = serviceOptions.FirstOrDefault()?.Domain ?? string.Empty;
+        await LoadSwaggerForSelectedServiceAsync(showNotifications: false);
     }
 
     private Employee? SelectedDriver
@@ -219,10 +284,95 @@
         return Task.CompletedTask;
     }
 
-    private Task OnServiceChanged()
+    private async Task OnServiceChanged()
     {
         selectedDomain = ResolveSelectedDomain(selectedService);
+        await LoadSwaggerForSelectedServiceAsync(showNotifications: true);
+    }
+
+    private Task OnSwaggerTagChanged()
+    {
+        if (selectedSwaggerEndpoint is not null && !IsEndpointVisible(selectedSwaggerEndpoint))
+        {
+            selectedSwaggerEndpoint = null;
+        }
+
         return Task.CompletedTask;
+    }
+
+    private async Task LoadSwaggerForSelectedServiceAsync(bool showNotifications)
+    {
+        selectedSwaggerEndpoint = null;
+        swaggerEndpoints = [];
+        swaggerTagOptions = [AllSwaggerTagsOption];
+        selectedSwaggerTag = AllSwaggerTagsOption;
+        swaggerDocumentTitle = string.Empty;
+
+        SwaggerDocumentInfo? document = await ApiRequestSwaggerService.LoadAsync(selectedService, CancellationToken.None);
+        if (document is null)
+        {
+            swaggerStatusText = $"Templates/Swagger.{selectedService}.json not found.";
+            if (showNotifications)
+            {
+                Snackbar.Add(swaggerStatusText, Severity.Info);
+            }
+
+            return;
+        }
+
+        swaggerDocumentTitle = document.Title;
+        swaggerEndpoints = document.Endpoints.ToList();
+        swaggerTagOptions = [AllSwaggerTagsOption, .. document.Tags];
+        swaggerStatusText = $"{swaggerDocumentTitle}: {swaggerEndpoints.Count} endpoints.";
+
+        if (showNotifications)
+        {
+            Snackbar.Add($"Loaded Swagger.{selectedService}.json.", Severity.Success);
+        }
+    }
+
+    private Task<IEnumerable<SwaggerEndpointOption>> SearchSwaggerEndpoints(string value, CancellationToken cancellationToken)
+    {
+        IEnumerable<SwaggerEndpointOption> filteredEndpoints = swaggerEndpoints.Where(IsEndpointVisible);
+
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            filteredEndpoints = filteredEndpoints.Where(endpointOption =>
+                endpointOption.DisplayName.Contains(value, StringComparison.OrdinalIgnoreCase)
+                || endpointOption.Tag.Contains(value, StringComparison.OrdinalIgnoreCase)
+                || endpointOption.Path.Contains(value, StringComparison.OrdinalIgnoreCase)
+                || endpointOption.Description.Contains(value, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return Task.FromResult(filteredEndpoints.Take(50));
+    }
+
+    private Task OnSwaggerEndpointChanged(SwaggerEndpointOption? endpointOption)
+    {
+        selectedSwaggerEndpoint = endpointOption;
+        if (endpointOption is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        selectedMethod = endpointOption.Method;
+        endpoint = endpointOption.Path;
+        requestBody = endpointOption.SampleRequestBody;
+        requestName = endpointOption.DisplayName;
+        return Task.CompletedTask;
+    }
+
+    private bool IsEndpointVisible(SwaggerEndpointOption endpointOption)
+    {
+        return selectedSwaggerTag == AllSwaggerTagsOption
+            || endpointOption.Tag.Equals(selectedSwaggerTag, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetSwaggerEndpointDisplayText(SwaggerEndpointOption? endpointOption)
+    {
+        return endpointOption is null
+            ? string.Empty
+            : $"[{endpointOption.Tag}] {endpointOption.DisplayName}";
     }
 
     private Task<IEnumerable<Employee>> SearchDrivers(string value, CancellationToken cancellationToken)
