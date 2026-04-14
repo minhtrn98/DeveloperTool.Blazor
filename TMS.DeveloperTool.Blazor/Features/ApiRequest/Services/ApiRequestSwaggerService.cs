@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Interfaces;
 
 namespace TMS.DeveloperTool.Blazor.Features.ApiRequest.Services;
 
@@ -615,7 +616,16 @@ public sealed record SwaggerEndpointOption(
     string Tag,
     string Description,
     string SampleRequestBody,
-    IReadOnlyList<SwaggerParameterOption> Parameters);
+    IReadOnlyList<SwaggerParameterOption> Parameters) : IDisplaySearchItem
+{
+    public string DisplayString => $"[{Tag}] {DisplayName}";
+
+    public bool Like(string searchTerm) =>
+        DisplayName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+        || Tag.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+        || Path.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+        || Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
+}
 
 public sealed record SwaggerParameterOption(
     string Name,

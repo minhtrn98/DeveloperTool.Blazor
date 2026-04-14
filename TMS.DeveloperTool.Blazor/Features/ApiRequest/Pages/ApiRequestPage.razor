@@ -52,7 +52,7 @@
                         <MudItem xs="12" md="6">
                             <MudAutocomplete T="SwaggerEndpointOption" Value="selectedSwaggerEndpoint"
                                              ValueChanged="OnSwaggerEndpointChanged" SearchFunc="SearchSwaggerEndpoints"
-                                             ToStringFunc="GetSwaggerEndpointDisplayText" Label="Endpoint from swagger"
+                                             ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<SwaggerEndpointOption>" Label="Endpoint from swagger"
                                              Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="50" />
                         </MudItem>
                     </MudGrid>
@@ -333,18 +333,9 @@
 
     private Task<IEnumerable<SwaggerEndpointOption>> SearchSwaggerEndpoints(string value, CancellationToken cancellationToken)
     {
-        IEnumerable<SwaggerEndpointOption> filteredEndpoints = swaggerEndpoints.Where(IsEndpointVisible);
-
-        if (!string.IsNullOrWhiteSpace(value))
-        {
-            filteredEndpoints = filteredEndpoints.Where(endpointOption =>
-                endpointOption.DisplayName.Contains(value, StringComparison.OrdinalIgnoreCase)
-                || endpointOption.Tag.Contains(value, StringComparison.OrdinalIgnoreCase)
-                || endpointOption.Path.Contains(value, StringComparison.OrdinalIgnoreCase)
-                || endpointOption.Description.Contains(value, StringComparison.OrdinalIgnoreCase));
-        }
-
-        return Task.FromResult(filteredEndpoints.Take(50));
+        IEnumerable<SwaggerEndpointOption> visibleEndpoints = swaggerEndpoints.Where(IsEndpointVisible);
+        IEnumerable<SwaggerEndpointOption> results = AutocompleteSearchHelper.SearchByLike(visibleEndpoints, value);
+        return Task.FromResult(results.Take(50));
     }
 
     private Task OnSwaggerEndpointChanged(SwaggerEndpointOption? endpointOption)
@@ -366,13 +357,6 @@
     {
         return selectedSwaggerTag == AllSwaggerTagsOption
             || endpointOption.Tag.Equals(selectedSwaggerTag, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static string GetSwaggerEndpointDisplayText(SwaggerEndpointOption? endpointOption)
-    {
-        return endpointOption is null
-            ? string.Empty
-            : $"[{endpointOption.Tag}] {endpointOption.DisplayName}";
     }
 
     private Task<IEnumerable<Employee>> SearchDrivers(string value, CancellationToken cancellationToken)
