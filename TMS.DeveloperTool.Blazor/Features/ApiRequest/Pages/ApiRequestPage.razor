@@ -6,6 +6,7 @@
 @using System.Text.Json
 @using TMS.DeveloperTool.Blazor.Features.ApiRequest.Services
 @using TMS.DeveloperTool.Blazor.Services
+@using TMS.DeveloperTool.Blazor.Infrastructure.Security
 @inject IHttpClientFactory HttpClientFactory
 @inject MyEmployeeService MyEmployeeService
 @inject ApiRequestHistoryService ApiRequestHistoryService
@@ -15,6 +16,8 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
+@inject CacheService CacheService
+@inject BrowserContext BrowserContext
 
 <AppPageTitle MenuName="API Request" />
 
@@ -123,6 +126,10 @@
                 <div class="d-flex align-center justify-end ga-3">
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="FormatRequestBody" Class="ms-2">
                         Format Body
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.ContentCopy"
+                               OnClick="CopyCurlAsync" Class="ms-2">
+                        cURL
                     </MudButton>
                     <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ShowHistoryAsync" Class="ms-2">
                         History
@@ -363,6 +370,50 @@
     {
         IEnumerable<Employee> results = AutocompleteSearchHelper.SearchByLike(emps, value, orderByRelevance: false);
         return Task.FromResult(results);
+    }
+
+    private async Task CopyCurlAsync()
+    {
+        string requestUrl = BuildRequestUrl();
+        if (string.IsNullOrWhiteSpace(requestUrl))
+        {
+            Snackbar.Add("Cannot build URL. Please check service and endpoint.", Severity.Warning);
+            return;
+        }
+
+        System.Text.StringBuilder sb = new();
+        sb.Append($"curl -X {selectedMethod}");
+        sb.Append($" \"{requestUrl}\"");
+
+        string normalizedToken = NormalizeToken(accessToken);
+        if (!string.IsNullOrWhiteSpace(normalizedToken))
+        {
+            sb.Append($" -H \"Authorization: Bearer {normalizedToken}\"");
+        }
+
+        DepartmentDto? department = CacheService.GetSessionDepartment(BrowserContext.BrowserId);
+        if (department is not null)
+        {
+            sb.Append($" -H \"Departmentid: {department.Id}\"");
+            sb.Append($" -H \"Companyid: {department.CompanyId}\"");
+        }
+
+        if (ShouldIncludeBody(selectedMethod) && !string.IsNullOrWhiteSpace(requestBody))
+        {
+            sb.Append(" -H \"Content-Type: application/json\"");
+            string escapedBody = requestBody.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            sb.Append($" -d \"{escapedBody}\"");
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", sb.ToString());
+            Snackbar.Add("cURL command copied.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Cannot copy cURL: {ex.Message}", Severity.Error);
+        }
     }
 
     private void FormatRequestBody()
