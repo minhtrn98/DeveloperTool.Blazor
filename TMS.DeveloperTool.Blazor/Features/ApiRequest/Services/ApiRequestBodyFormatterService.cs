@@ -5,8 +5,17 @@ using System.Text.RegularExpressions;
 
 namespace TMS.DeveloperTool.Blazor.Features.ApiRequest.Services;
 
-public sealed class ApiRequestBodyFormatterService
+public sealed partial class ApiRequestBodyFormatterService
 {
+    [GeneratedRegex(@"^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$")]
+    private static partial Regex JsonNumberPattern();
+
+    private readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        WriteIndented = true,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
     public string NormalizeAndFormatJson(string raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
@@ -35,16 +44,12 @@ public sealed class ApiRequestBodyFormatterService
         return formattedFromLooseJson;
     }
 
-    private static bool TryFormatStrictJson(string input, out string formatted)
+    private bool TryFormatStrictJson(string input, out string formatted)
     {
         try
         {
             using JsonDocument document = JsonDocument.Parse(input);
-            formatted = JsonSerializer.Serialize(document.RootElement, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            });
+            formatted = JsonSerializer.Serialize(document.RootElement, _jsonOptions);
             return true;
         }
         catch
@@ -323,6 +328,6 @@ public sealed class ApiRequestBodyFormatterService
 
     private static bool IsJsonNumber(string value)
     {
-        return Regex.IsMatch(value, @"^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$");
+        return JsonNumberPattern().IsMatch(value);
     }
 }

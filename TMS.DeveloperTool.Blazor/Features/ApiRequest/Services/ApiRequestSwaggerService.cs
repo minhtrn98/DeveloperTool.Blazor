@@ -11,6 +11,11 @@ public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
         "application/json",
         "text/json"
     ];
+    private static readonly JsonSerializerOptions _serializeOption = new ()
+    {
+        WriteIndented = true,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
 
     public async Task<SwaggerDocumentInfo?> LoadAsync(string serviceName, CancellationToken cancellationToken)
     {
@@ -30,13 +35,13 @@ public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
         return Parse(serviceName, document.RootElement);
     }
 
-    public SwaggerDocumentInfo Parse(string serviceName, string swaggerJson)
+    public static SwaggerDocumentInfo Parse(string serviceName, string swaggerJson)
     {
         using JsonDocument document = JsonDocument.Parse(swaggerJson);
         return Parse(serviceName, document.RootElement);
     }
 
-    private SwaggerDocumentInfo Parse(string serviceName, JsonElement root)
+    private static SwaggerDocumentInfo Parse(string serviceName, JsonElement root)
     {
         Dictionary<string, JsonElement> schemas = GetSchemas(root);
         List<SwaggerEndpointOption> endpoints = [];
@@ -287,14 +292,11 @@ public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
 
         if (!found)
         {
-            foreach (JsonProperty item in content.EnumerateObject())
+            JsonProperty? item = content.EnumerateObject().FirstOrDefault(x => x.Name.Contains("json", StringComparison.OrdinalIgnoreCase));
+            if (item != null)
             {
-                if (item.Name.Contains("json", StringComparison.OrdinalIgnoreCase))
-                {
-                    mediaType = item.Value;
-                    found = true;
-                    break;
-                }
+                mediaType = item.Value.Value;
+                found = true;
             }
         }
 
@@ -529,7 +531,7 @@ public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
             return element;
         }
 
-        string schemaName = reference.Split('/').Last();
+        string schemaName = reference.Split('/')[^1];
         if (!schemas.TryGetValue(schemaName, out JsonElement resolved) || !resolvingReferences.Add(schemaName))
         {
             return element;
@@ -578,11 +580,7 @@ public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
             return string.Empty;
         }
 
-        return JsonSerializer.Serialize(sample, new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-        });
+        return JsonSerializer.Serialize(sample, _serializeOption);
     }
 
     private static string ConvertSampleToString(object? sample, string fallbackName)
