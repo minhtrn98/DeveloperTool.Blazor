@@ -11,7 +11,7 @@ public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
         "application/json",
         "text/json"
     ];
-    private static readonly JsonSerializerOptions _serializeOption = new ()
+    private static readonly JsonSerializerOptions _serializeOption = new()
     {
         WriteIndented = true,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
@@ -251,6 +251,11 @@ public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
             foreach (JsonElement parameter in parameters.EnumerateArray())
             {
                 JsonElement resolvedParameter = ResolveReference(parameter, schemas, []);
+                if (resolvedParameter.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
                 if (!resolvedParameter.TryGetProperty("in", out JsonElement inElement)
                     || !string.Equals(inElement.GetString(), "body", StringComparison.OrdinalIgnoreCase))
                 {
@@ -312,7 +317,7 @@ public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
         }
 
         object? sample = TryGetExampleValue(mediaType, schemas, []);
-        if (sample is null && mediaType.TryGetProperty("schema", out JsonElement schema))
+        if (sample is null && mediaType.ValueKind == JsonValueKind.Object && mediaType.TryGetProperty("schema", out JsonElement schema))
         {
             sample = BuildSampleFromSchema(schema, schemas, [], 0);
         }
@@ -335,6 +340,11 @@ public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
         if (TryGetExampleValue(resolvedSchema, schemas, resolvingReferences) is { } exampleValue)
         {
             return exampleValue;
+        }
+
+        if (resolvedSchema.ValueKind != JsonValueKind.Object)
+        {
+            return ConvertJsonElement(resolvedSchema);
         }
 
         if (resolvedSchema.TryGetProperty("allOf", out JsonElement allOf) && allOf.ValueKind == JsonValueKind.Array)
@@ -481,6 +491,11 @@ public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
         Dictionary<string, JsonElement> schemas,
         HashSet<string> resolvingReferences)
     {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
         if (element.TryGetProperty("example", out JsonElement example))
         {
             return ConvertJsonElement(example);
@@ -520,6 +535,11 @@ public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
         Dictionary<string, JsonElement> schemas,
         HashSet<string> resolvingReferences)
     {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return element;
+        }
+
         if (!element.TryGetProperty("$ref", out JsonElement referenceElement))
         {
             return element;
