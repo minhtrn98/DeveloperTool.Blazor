@@ -179,7 +179,7 @@
                     <div class="d-flex align-center">
                         <MudSwitch T="bool" @bind-Value="isBeautyView" @bind-Value:after="OnResponseBodyViewChanged"
                                    Color="Color.Primary" Label="Beauty" />
-                        <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
+                        <MudIconButton Size="Size.Small"
                                        Icon="@Icons.Material.Filled.ContentCopy" Disabled="@(responseBody == "(empty)")"
                                        OnClick="CopyResponseBodyAsync" Class="ms-4" />
                     </div>

@@ -12,7 +12,7 @@
                       Disabled="@_isSubmitting" />
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Disabled="@_isSubmitting">Hủy</MudButton>
+        <MudButton OnClick="Cancel" Disabled="@_isSubmitting" Variant="Variant.Outlined" Color="Color.Default">Hủy</MudButton>
         <MudButton Color="Color.Success" OnClick="Submit" Disabled="@_isSubmitting" Variant="Variant.Filled">
             @if (_isSubmitting)
             {

@@ -118,10 +118,10 @@
                                             <MudPaper Elevation="0" Class="pa-2">
                                                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                                                     <MudText Typo="Typo.body2">@pickupTaskId</MudText>
-                                                    <MudButton Variant="Variant.Text" Color="Color.Secondary"
-                                                               OnClick="@(() => CopyPickupTaskId(pickupTaskId))"
-                                                               StartIcon="@Icons.Material.Filled.ContentCopy">
-                                                    </MudButton>
+                                                    <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                                                                   Color="Color.Secondary"
+                                                                   Size="Size.Small"
+                                                                   OnClick="@(() => CopyPickupTaskId(pickupTaskId))" />
                                                 </MudStack>
                                             </MudPaper>
                                         }
