@@ -6,6 +6,520 @@
     "version": "v1"
   },
   "paths": {
+    "/api/v1/cargo-rescues": {
+      "post": {
+        "tags": [
+          "CargoRescue - Yêu cầu cứu hộ hàng"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCargoRescueRequestCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCargoRescueRequestCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCargoRescueRequestCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cargo-rescues/form-data": {
+      "get": {
+        "tags": [
+          "CargoRescue - Yêu cầu cứu hộ hàng"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CargoRescueFormDataDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CargoRescueFormDataDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CargoRescueFormDataDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch-reasons": {
+      "post": {
+        "tags": [
+          "DispatchReasons - Lý do thao tác điều tin"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDispatchReasonRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDispatchReasonRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDispatchReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchReasonDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchReasonDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchReasonDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch-reasons/{id}": {
+      "put": {
+        "tags": [
+          "DispatchReasons - Lý do thao tác điều tin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDispatchReasonRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDispatchReasonRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDispatchReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchReasonDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchReasonDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchReasonDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "DispatchReasons - Lý do thao tác điều tin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchReasonDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchReasonDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchReasonDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch-reasons/search": {
+      "post": {
+        "tags": [
+          "DispatchReasons - Lý do thao tác điều tin"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetDispatchReasonsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetDispatchReasonsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetDispatchReasonsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DispatchReasonDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DispatchReasonDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DispatchReasonDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch-reasons/options": {
+      "post": {
+        "tags": [
+          "DispatchReasons - Lý do thao tác điều tin"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ReasonType"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ReasonType"
+                }
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ReasonType"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DispatchReasonOptionDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DispatchReasonOptionDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DispatchReasonOptionDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatch-reasons/by-ids": {
+      "post": {
+        "tags": [
+          "DispatchReasons - Lý do thao tác điều tin"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DispatchReasonDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DispatchReasonDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DispatchReasonDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/driver-loading-sla-configs": {
       "post": {
         "tags": [
@@ -625,6 +1139,57 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HandoverConditionListItemDtoPagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents": {
+      "post": {
+        "tags": [
+          "Incidents - Sự cố phát sinh"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportIncidentCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportIncidentCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportIncidentCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2471,126 +3036,27 @@
         }
       }
     },
-    "/api/v1/reason-definitions": {
-      "post": {
-        "tags": [
-          "ReasonDefinitions - Lý do"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateReasonDefinitionRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateReasonDefinitionRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateReasonDefinitionRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReasonDefinitionDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReasonDefinitionDto"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReasonDefinitionDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/reason-definitions/{id}": {
+    "/api/v1/pickup-tasks/pause-loading-sla": {
       "put": {
         "tags": [
-          "ReasonDefinitions - Lý do"
+          "PickupTask"
         ],
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
+            "name": "pickupTaskId",
+            "in": "query",
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "string"
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateReasonDefinitionRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateReasonDefinitionRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateReasonDefinitionRequest"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReasonDefinitionDto"
-                }
-              },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ReasonDefinitionDto"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReasonDefinitionDto"
+                  "type": "boolean"
                 }
               }
             }
@@ -2598,37 +3064,7 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
                 }
@@ -2636,19 +3072,19 @@
             }
           }
         }
-      },
-      "get": {
+      }
+    },
+    "/api/v1/pickup-tasks/resume-loading-sla": {
+      "put": {
         "tags": [
-          "ReasonDefinitions - Lý do"
+          "PickupTask"
         ],
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
+            "name": "pickupTaskId",
+            "in": "query",
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "string"
             }
           }
         ],
@@ -2656,37 +3092,17 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReasonDefinitionDto"
-                }
-              },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ReasonDefinitionDto"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReasonDefinitionDto"
+                  "type": "boolean"
                 }
               }
             }
           },
-          "404": {
-            "description": "Not Found",
+          "400": {
+            "description": "Bad Request",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
                 }
@@ -2696,26 +3112,26 @@
         }
       }
     },
-    "/api/v1/reason-definitions/search": {
+    "/api/v1/pickup-tasks/search-customers": {
       "post": {
         "tags": [
-          "ReasonDefinitions - Lý do"
+          "PickupTask"
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GetReasonDefinitionsRequest"
+                "$ref": "#/components/schemas/GetPostOfficeCustomerRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/GetReasonDefinitionsRequest"
+                "$ref": "#/components/schemas/GetPostOfficeCustomerRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/GetReasonDefinitionsRequest"
+                "$ref": "#/components/schemas/GetPostOfficeCustomerRequest"
               }
             }
           }
@@ -2724,163 +3140,19 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ReasonDefinitionDto"
-                  }
-                }
-              },
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ReasonDefinitionDto"
-                  }
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ReasonDefinitionDto"
-                  }
+                  "$ref": "#/components/schemas/GetPickupTaskResponsePagedResult"
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/v1/reason-definitions/options": {
-      "post": {
-        "tags": [
-          "ReasonDefinitions - Lý do"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/ReasonType"
-                }
-              }
-            },
-            "text/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/ReasonType"
-                }
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/ReasonType"
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ReasonDefinitionOptionDto"
-                  }
-                }
-              },
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ReasonDefinitionOptionDto"
-                  }
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ReasonDefinitionOptionDto"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/reason-definitions/by-ids": {
-      "post": {
-        "tags": [
-          "ReasonDefinitions - Lý do"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "format": "uuid"
-                }
-              }
-            },
-            "text/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "format": "uuid"
-                }
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "format": "uuid"
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ReasonDefinitionDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ReasonDefinitionDto"
-                  }
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ReasonDefinitionDto"
-                  }
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -3160,6 +3432,426 @@
           }
         }
       }
+    },
+    "/api/v1/transport-rental-reasons": {
+      "post": {
+        "tags": [
+          "TransportRentalReasons - Lý do thuê vận chuyển"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransportRentalReasonRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransportRentalReasonRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransportRentalReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransportRentalReasonDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransportRentalReasonDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransportRentalReasonDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transport-rental-reasons/{id}": {
+      "put": {
+        "tags": [
+          "TransportRentalReasons - Lý do thuê vận chuyển"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTransportRentalReasonRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTransportRentalReasonRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTransportRentalReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransportRentalReasonDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransportRentalReasonDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransportRentalReasonDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "TransportRentalReasons - Lý do thuê vận chuyển"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransportRentalReasonDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransportRentalReasonDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransportRentalReasonDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transport-rental-reasons/search": {
+      "post": {
+        "tags": [
+          "TransportRentalReasons - Lý do thuê vận chuyển"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetTransportRentalReasonsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetTransportRentalReasonsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetTransportRentalReasonsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportRentalReasonDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportRentalReasonDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportRentalReasonDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transport-rental-reasons/options": {
+      "post": {
+        "tags": [
+          "TransportRentalReasons - Lý do thuê vận chuyển"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportRentalReasonOptionDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportRentalReasonOptionDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportRentalReasonOptionDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transport-rental-reasons/by-ids": {
+      "post": {
+        "tags": [
+          "TransportRentalReasons - Lý do thuê vận chuyển"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportRentalReasonDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportRentalReasonDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransportRentalReasonDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3341,6 +4033,49 @@
           }
         },
         "additionalProperties": false
+      },
+      "CargoRescueFormDataDto": {
+        "type": "object",
+        "properties": {
+          "hasInProgressRescueRequest": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "currentVehicle": {
+            "$ref": "#/components/schemas/UserCurrentVehicleDto"
+          },
+          "maintenancePlan": {
+            "$ref": "#/components/schemas/MaintenancePlanDto"
+          },
+          "handovers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RescueHandover"
+            },
+            "nullable": true
+          },
+          "canRequestRescue": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CargoRescueRequestType": {
+        "enum": [
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "CargoRescueTriggerType": {
+        "enum": [
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
       },
       "ChartItemDto": {
         "type": "object",
@@ -3614,6 +4349,16 @@
               "type": "string"
             },
             "nullable": true
+          },
+          "reasonId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "inputDistance": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -3664,6 +4409,76 @@
         ],
         "type": "integer",
         "format": "int32"
+      },
+      "CreateCargoRescueRequestCommand": {
+        "required": [
+          "address",
+          "driverPhone",
+          "estimatedDelayMinutes",
+          "reasonId",
+          "reasonName",
+          "requestType",
+          "scheduledPickupDate",
+          "triggerType"
+        ],
+        "type": "object",
+        "properties": {
+          "requestType": {
+            "$ref": "#/components/schemas/CargoRescueRequestType"
+          },
+          "triggerType": {
+            "$ref": "#/components/schemas/CargoRescueTriggerType"
+          },
+          "reasonId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reasonName": {
+            "type": "string",
+            "nullable": true
+          },
+          "estimatedDelayMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "driverPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "scheduledPickupDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateDispatchReasonRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "$ref": "#/components/schemas/ReasonType"
+          },
+          "allowExtendTimeRequest": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
       },
       "CreateDriverLoadingSlaConfigRequest": {
         "required": [
@@ -3919,30 +4734,6 @@
         },
         "additionalProperties": false
       },
-      "CreateReasonDefinitionRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "type": {
-            "$ref": "#/components/schemas/ReasonType"
-          },
-          "allowExtendTimeRequest": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "isActive": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false
-      },
       "CreateSlaConfigurationRequest": {
         "type": "object",
         "properties": {
@@ -3957,6 +4748,29 @@
             "type": "boolean"
           },
           "isConfirmSameType": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateTransportRentalReasonRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "isWeightRequired": {
+            "type": "boolean"
+          },
+          "isApprovalRequired": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
             "type": "boolean"
           }
         },
@@ -3983,6 +4797,102 @@
         "enum": [
           1,
           2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "DispatchReasonDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "$ref": "#/components/schemas/ReasonType"
+          },
+          "typeDisplay": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "allowExtendTimeRequest": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdName": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAvatar": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DispatchReasonOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "$ref": "#/components/schemas/ReasonType"
+          },
+          "allowExtendTimeRequest": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DispatchReasonSortOrder": {
+        "enum": [
+          1,
+          2,
+          3,
+          4
         ],
         "type": "integer",
         "format": "int32"
@@ -4512,6 +5422,54 @@
           },
           "updatedAt": {
             "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetDispatchReasonsRequest": {
+        "type": "object",
+        "properties": {
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sortOrder": {
+            "$ref": "#/components/schemas/DispatchReasonSortOrder"
+          },
+          "allowExtendTimeRequests": {
+            "type": "array",
+            "items": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReasonType"
+            },
+            "nullable": true
+          },
+          "createdByIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
             "nullable": true
           }
         },
@@ -5319,6 +6277,16 @@
             "type": "number",
             "format": "double",
             "nullable": true
+          },
+          "arrivalEstimatedTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "loadingSlaRemainingSeconds": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -5376,6 +6344,28 @@
         },
         "additionalProperties": false
       },
+      "GetPostOfficeCustomerRequest": {
+        "type": "object",
+        "properties": {
+          "postOfficeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "GetPostOfficeTaskCountsRequest": {
         "type": "object",
         "properties": {
@@ -5406,54 +6396,6 @@
         },
         "additionalProperties": false
       },
-      "GetReasonDefinitionsRequest": {
-        "type": "object",
-        "properties": {
-          "searchTerm": {
-            "type": "string",
-            "nullable": true
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sortOrder": {
-            "$ref": "#/components/schemas/ReasonDefinitionSortOrder"
-          },
-          "allowExtendTimeRequests": {
-            "type": "array",
-            "items": {
-              "type": "boolean",
-              "nullable": true
-            },
-            "nullable": true
-          },
-          "isActive": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "types": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ReasonType"
-            },
-            "nullable": true
-          },
-          "createdByIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "GetSlaConfigurationsRequest": {
         "type": "object",
         "properties": {
@@ -5474,6 +6416,47 @@
           },
           "sortOrder": {
             "$ref": "#/components/schemas/SlaConfigurationSortOrder"
+          },
+          "createdByIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GetTransportRentalReasonsRequest": {
+        "type": "object",
+        "properties": {
+          "searchTerm": {
+            "type": "string",
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sortOrder": {
+            "$ref": "#/components/schemas/TransportRentalReasonSortOrder"
+          },
+          "isWeightRequired": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "isApprovalRequired": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "nullable": true
           },
           "createdByIds": {
             "type": "array",
@@ -5865,12 +6848,15 @@
             "type": "string",
             "format": "date-time"
           },
-          "pickupTaskId": {
+          "operationReferenceCode": {
             "type": "string",
             "nullable": true
           },
-          "operationReferenceCode": {
-            "type": "string",
+          "pickupTaskIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
             "nullable": true
           },
           "standardEvidences": {
@@ -5960,33 +6946,6 @@
           "method": {
             "$ref": "#/components/schemas/HandoverMethod"
           },
-          "orderCode": {
-            "type": "string",
-            "nullable": true
-          },
-          "serviceTypeId": {
-            "type": "string",
-            "nullable": true
-          },
-          "serviceTypeName": {
-            "type": "string",
-            "nullable": true
-          },
-          "totalItems": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalWeight": {
-            "type": "number",
-            "format": "double"
-          },
-          "packages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HandoverPackageDto"
-            },
-            "nullable": true
-          },
           "specialEvidences": {
             "type": "array",
             "items": {
@@ -6004,36 +6963,6 @@
         ],
         "type": "integer",
         "format": "int32"
-      },
-      "HandoverPackageDto": {
-        "type": "object",
-        "properties": {
-          "itemCode": {
-            "type": "string",
-            "nullable": true
-          },
-          "weight": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "l": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "w": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "h": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
       },
       "HandoverParticipantDto": {
         "type": "object",
@@ -6138,6 +7067,91 @@
         ],
         "type": "integer",
         "format": "int32"
+      },
+      "IncidentReferenceType": {
+        "enum": [
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "MaintenancePlanDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "vehicleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "maintenanceGroupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "maintenanceType": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "partnerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "expectedDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actualDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "partnerCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "partnerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "postOfficeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "postOfficeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "licensePlate": {
+            "type": "string",
+            "nullable": true
+          },
+          "deptManagerCode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
       },
       "ManualAssignPickupTaskRequest": {
         "type": "object",
@@ -6624,6 +7638,22 @@
           "paymentMethod": {
             "$ref": "#/components/schemas/PaymentMethod"
           },
+          "debitCustomerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "debitCustomerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "debitRepresentativeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "debitRepresentativeName": {
+            "type": "string",
+            "nullable": true
+          },
           "payerName": {
             "type": "string",
             "nullable": true
@@ -6708,7 +7738,8 @@
           11,
           12,
           15,
-          16
+          16,
+          17
         ],
         "type": "integer",
         "format": "int32"
@@ -7419,6 +8450,16 @@
             "format": "double",
             "nullable": true
           },
+          "arrivalEstimatedTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "loadingSlaRemainingSeconds": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
           "orders": {
             "type": "array",
             "items": {
@@ -7608,102 +8649,6 @@
         },
         "additionalProperties": { }
       },
-      "ReasonDefinitionDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "code": {
-            "type": "string",
-            "nullable": true
-          },
-          "type": {
-            "$ref": "#/components/schemas/ReasonType"
-          },
-          "typeDisplay": {
-            "type": "string",
-            "nullable": true,
-            "readOnly": true
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "allowExtendTimeRequest": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "isActive": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "createdBy": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "createdName": {
-            "type": "string",
-            "nullable": true
-          },
-          "createdCode": {
-            "type": "string",
-            "nullable": true
-          },
-          "createdAvatar": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "ReasonDefinitionOptionDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "code": {
-            "type": "string",
-            "nullable": true
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "type": {
-            "$ref": "#/components/schemas/ReasonType"
-          },
-          "allowExtendTimeRequest": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "ReasonDefinitionSortOrder": {
-        "enum": [
-          1,
-          2,
-          3,
-          4
-        ],
-        "type": "integer",
-        "format": "int32"
-      },
       "ReasonType": {
         "enum": [
           1,
@@ -7711,10 +8656,39 @@
           3,
           4,
           5,
-          99
+          6
         ],
         "type": "integer",
         "format": "int32"
+      },
+      "ReportIncidentCommand": {
+        "type": "object",
+        "properties": {
+          "referenceType": {
+            "$ref": "#/components/schemas/IncidentReferenceType"
+          },
+          "referenceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "businessOperation": {
+            "$ref": "#/components/schemas/BusinessOperation"
+          },
+          "reasonId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "extraMinutes": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
       },
       "ReschedulePickupTaskRequest": {
         "type": "object",
@@ -7727,11 +8701,112 @@
             "type": "string",
             "format": "date-time"
           },
-          "reason": {
+          "reasonId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderItemIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RescueHandover": {
+        "required": [
+          "details",
+          "handoverCode"
+        ],
+        "type": "object",
+        "properties": {
+          "handoverCode": {
             "type": "string",
             "nullable": true
           },
-          "orderItemIds": {
+          "totalWeights": {
+            "type": "number",
+            "format": "double",
+            "readOnly": true
+          },
+          "totalOrders": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "totalItems": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RescueHandoverDetail"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RescueHandoverDetail": {
+        "required": [
+          "orders",
+          "pickupTaskId"
+        ],
+        "type": "object",
+        "properties": {
+          "pickupTaskId": {
+            "type": "string",
+            "nullable": true
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RescueHandoverOrder"
+            },
+            "nullable": true
+          },
+          "totalWeights": {
+            "type": "number",
+            "format": "double",
+            "readOnly": true
+          },
+          "totalOrders": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "totalItems": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RescueHandoverOrder": {
+        "required": [
+          "orderId",
+          "totalWeights"
+        ],
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "nullable": true
+          },
+          "serviceType": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalWeights": {
+            "type": "number",
+            "format": "double"
+          },
+          "itemIds": {
             "type": "array",
             "items": {
               "type": "string"
@@ -7940,7 +9015,9 @@
       "SlaType": {
         "enum": [
           0,
-          1
+          1,
+          2,
+          3
         ],
         "type": "integer",
         "format": "int32"
@@ -8005,7 +9082,11 @@
             "format": "uuid",
             "nullable": true
           },
-          "reason": {
+          "reasonId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetDepartmentCode": {
             "type": "string",
             "nullable": true
           }
@@ -8027,9 +9108,160 @@
             "type": "string",
             "nullable": true
           },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true
+          },
           "isDispatcher": {
             "type": "boolean",
             "nullable": true
+          },
+          "departmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "operationStatusDisplay": {
+            "type": "string",
+            "nullable": true
+          },
+          "operationStatus": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "pairingStatusDisplay": {
+            "type": "string",
+            "nullable": true
+          },
+          "pairingStatus": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "jobTitleName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TransportRentalReasonDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "isWeightRequired": {
+            "type": "boolean"
+          },
+          "isApprovalRequired": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdName": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAvatar": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TransportRentalReasonOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "isWeightRequired": {
+            "type": "boolean"
+          },
+          "isApprovalRequired": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TransportRentalReasonSortOrder": {
+        "enum": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "UpdateDispatchReasonRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "$ref": "#/components/schemas/ReasonType"
+          },
+          "allowExtendTimeRequest": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -8141,34 +9373,6 @@
         },
         "additionalProperties": false
       },
-      "UpdateReasonDefinitionRequest": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "type": {
-            "$ref": "#/components/schemas/ReasonType"
-          },
-          "allowExtendTimeRequest": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "isActive": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false
-      },
       "UpdateSlaConfigurationRequest": {
         "type": "object",
         "properties": {
@@ -8185,6 +9389,100 @@
           },
           "isConfirmSameType": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateTransportRentalReasonRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "isWeightRequired": {
+            "type": "boolean"
+          },
+          "isApprovalRequired": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserCurrentVehicleDto": {
+        "type": "object",
+        "properties": {
+          "vehicleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "licensePlate": {
+            "type": "string",
+            "nullable": true
+          },
+          "assignmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "assignmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "isMainDriver": {
+            "type": "boolean"
+          },
+          "pairedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "odometerBefore": {
+            "type": "number",
+            "format": "double"
+          },
+          "odometer": {
+            "type": "number",
+            "format": "double"
+          },
+          "assignmentStatus": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "planId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "planCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planDepartmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planDepartmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "vehicleCapacityKg": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -8255,10 +9553,19 @@
   },
   "tags": [
     {
+      "name": "CargoRescue - Yêu cầu cứu hộ hàng"
+    },
+    {
+      "name": "DispatchReasons - Lý do thao tác điều tin"
+    },
+    {
       "name": "Driver Loading SLA Configurations"
     },
     {
       "name": "HandoverConditions - Điều kiện bàn giao"
+    },
+    {
+      "name": "Incidents - Sự cố phát sinh"
     },
     {
       "name": "Order"
@@ -8267,10 +9574,10 @@
       "name": "PickupTask"
     },
     {
-      "name": "ReasonDefinitions - Lý do"
+      "name": "SLA Configurations"
     },
     {
-      "name": "SLA Configurations"
+      "name": "TransportRentalReasons - Lý do thuê vận chuyển"
     }
   ]
 }

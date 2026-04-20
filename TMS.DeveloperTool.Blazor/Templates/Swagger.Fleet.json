@@ -4520,6 +4520,45 @@
         }
       }
     },
+    "/api/v1/maintenance-plans/pending-mobile": {
+      "get": {
+        "tags": [
+          "Maintenances - Bảo trì"
+        ],
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaintenancePlanDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/maintenances/search": {
       "post": {
         "tags": [
@@ -15750,6 +15789,31 @@
           "odometer": {
             "type": "number",
             "format": "double"
+          },
+          "assignmentStatus": {
+            "$ref": "#/components/schemas/AssignmentStatus"
+          },
+          "planId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "planCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planDepartmentCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planDepartmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "vehicleCapacityKg": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           }
         },
         "additionalProperties": false
