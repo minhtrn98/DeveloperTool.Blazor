@@ -1,0 +1,101 @@
+@using System.IdentityModel.Tokens.Jwt
+@using System.Security.Claims
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Token Claims</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        @if (!string.IsNullOrWhiteSpace(parseError))
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-3">@parseError</MudAlert>
+        }
+        else if (claims.Count == 0)
+        {
+            <MudText Color="Color.Secondary">No claims found.</MudText>
+        }
+        else
+        {
+            <MudTable T="TokenClaimItem" Items="claims" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>Claim</MudTh>
+                    <MudTh>Value</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Claim">@context.Type</MudTd>
+                    <MudTd DataLabel="Value">@context.Value</MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close" Variant="Variant.Outlined" Color="Color.Default">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string Token { get; set; } = string.Empty;
+
+    private readonly JwtSecurityTokenHandler tokenHandler = new();
+    private readonly List<TokenClaimItem> claims = [];
+    private string parseError = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        parseError = string.Empty;
+        claims.Clear();
+
+        string normalizedToken = NormalizeToken(Token);
+        if (string.IsNullOrWhiteSpace(normalizedToken))
+        {
+            parseError = "Bearer token is empty.";
+            return;
+        }
+
+        try
+        {
+            JwtSecurityToken jwtToken = tokenHandler.ReadJwtToken(normalizedToken);
+            claims.AddRange(jwtToken.Claims.Select(MapClaim));
+        }
+        catch (Exception ex)
+        {
+            parseError = $"Cannot parse token: {ex.Message}";
+        }
+    }
+
+    private void Close()
+    {
+        MudDialog.Close();
+    }
+
+    private static TokenClaimItem MapClaim(Claim claim)
+    {
+        if (claim.Type is JwtRegisteredClaimNames.Exp or JwtRegisteredClaimNames.Nbf or JwtRegisteredClaimNames.Iat)
+        {
+            if (long.TryParse(claim.Value, out long unixTimeSeconds))
+            {
+                DateTimeOffset utcDateTime = DateTimeOffset.FromUnixTimeSeconds(unixTimeSeconds);
+                string value = $"{claim.Value} ({utcDateTime:yyyy-MM-dd HH:mm:ss} UTC)";
+                return new TokenClaimItem(claim.Type, value);
+            }
+        }
+
+        return new TokenClaimItem(claim.Type, claim.Value);
+    }
+
+    private static string NormalizeToken(string token)
+    {
+        string trimmed = token.Trim();
+        return trimmed.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? trimmed[7..].Trim()
+            : trimmed;
+    }
+
+    private sealed record TokenClaimItem(string Type, string Value);
+}

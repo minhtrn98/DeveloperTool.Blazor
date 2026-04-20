@@ -18,8 +18,8 @@
                          SearchFunc="SearchDrivers" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Employee>" Label="Tài xế"
                          Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" Class="mb-3" />
 
-        <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="4"
-                      Class="mb-3" />
+        <MudBearerTokenField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true" Lines="4"
+                     Class="mb-3" />
 
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@isLoading" OnClick="RefreshAsync" Class="mb-3">
             @if (isLoading)

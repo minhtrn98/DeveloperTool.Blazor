@@ -117,8 +117,8 @@
                                  Label="Driver" Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20"
                                  Class="mb-3" />
 
-                <MudTextField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true"
-                              Lines="3" Class="mb-3" />
+                <MudBearerTokenField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true"
+                                     Lines="3" Class="mb-3" />
 
                 <MudTextField @bind-Value="requestBody" Label="Body (JSON)" Variant="Variant.Outlined" FullWidth="true"
                               Lines="12" AutoGrow="true" Class="mb-4" />
