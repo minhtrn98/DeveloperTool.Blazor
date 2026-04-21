@@ -1,9 +1,7 @@
 @page "/api-request"
 @using System.Diagnostics
 @using System.Net.Http.Headers
-@using System.Text.Encodings.Web
 @using System.Text
-@using System.Text.Json
 @using TMS.DeveloperTool.Blazor.Features.ApiRequest.Services
 @using TMS.DeveloperTool.Blazor.Services
 @using TMS.DeveloperTool.Blazor.Infrastructure.Security
@@ -120,13 +118,10 @@
                 <MudBearerTokenField @bind-Value="accessToken" Label="Bearer Token" Variant="Variant.Outlined" FullWidth="true"
                                      Lines="3" Class="mb-3" />
 
-                <MudTextField @bind-Value="requestBody" Label="Body (JSON)" Variant="Variant.Outlined" FullWidth="true"
+                <MudJsonField @bind-Value="requestBody" Label="Body (JSON)" Variant="Variant.Outlined" FullWidth="true"
                               Lines="12" AutoGrow="true" Class="mb-4" />
 
                 <div class="d-flex align-center justify-end ga-3">
-                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="FormatRequestBody" Class="ms-2">
-                        Format Body
-                    </MudButton>
                     <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.ContentCopy"
                                OnClick="CopyCurlAsync" Class="ms-2">
                         cURL
@@ -174,19 +169,8 @@
                     <pre>@responseHeaders</pre>
                 </MudPaper>
 
-                <div class="d-flex align-center justify-space-between mb-2">
-                    <MudText Typo="Typo.subtitle2">Body</MudText>
-                    <div class="d-flex align-center">
-                        <MudSwitch T="bool" @bind-Value="isBeautyView" @bind-Value:after="OnResponseBodyViewChanged"
-                                   Color="Color.Primary" Label="Beauty" />
-                        <MudIconButton Size="Size.Small"
-                                       Icon="@Icons.Material.Filled.ContentCopy" Disabled="@(responseBody == "(empty)")"
-                                       OnClick="CopyResponseBodyAsync" Class="ms-4" />
-                    </div>
-                </div>
-                <MudPaper Outlined="true" Class="pa-3 response-block">
-                    <pre>@responseBody</pre>
-                </MudPaper>
+                <MudJsonField @bind-Value="responseBody" Label="Body" Variant="Variant.Outlined" FullWidth="true"
+                              Lines="12" AutoGrow="true" ReadOnly="true" />
             </MudPaper>
         </MudItem>
     </MudGrid>
@@ -241,11 +225,8 @@
     private string responseStatus = "-";
     private string responseDuration = "-";
     private string responseContentType = "-";
-    private string responseMediaType = string.Empty;
     private string responseHeaders = "(empty)";
-    private string rawResponseBody = "(empty)";
     private string responseBody = "(empty)";
-    private bool isBeautyView;
 
     private string resolvedUrl => BuildRequestUrl();
 
@@ -416,25 +397,6 @@
         }
     }
 
-    private void FormatRequestBody()
-    {
-        if (string.IsNullOrWhiteSpace(requestBody))
-        {
-            Snackbar.Add("Body is empty.", Severity.Warning);
-            return;
-        }
-
-        try
-        {
-            requestBody = ApiRequestBodyFormatterService.NormalizeAndFormatJson(requestBody);
-            Snackbar.Add("Request body formatted.", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Cannot format body: {ex.Message}", Severity.Warning);
-        }
-    }
-
     private async Task SendRequestAsync()
     {
         if (string.IsNullOrWhiteSpace(selectedDomain))
@@ -481,14 +443,12 @@
             responseStatus = $"{(int)response.StatusCode} {response.ReasonPhrase}";
             responseDuration = $"{stopwatch.ElapsedMilliseconds} ms";
             responseContentType = response.Content.Headers.ContentType?.ToString() ?? "-";
-            responseMediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
 
             List<string> headerLines = [];
             headerLines.AddRange(response.Headers.SelectMany(h => h.Value.Select(v => $"{h.Key}: {v}")));
             headerLines.AddRange(response.Content.Headers.SelectMany(h => h.Value.Select(v => $"{h.Key}: {v}")));
             responseHeaders = headerLines.Count == 0 ? "(empty)" : string.Join(Environment.NewLine, headerLines);
-            rawResponseBody = string.IsNullOrWhiteSpace(content) ? "(empty)" : content;
-            UpdateDisplayedResponseBody();
+            responseBody = string.IsNullOrWhiteSpace(content) ? "(empty)" : content;
             await SaveRequestHistoryAsync();
 
             if (response.IsSuccessStatusCode)
@@ -505,41 +465,13 @@
             responseStatus = "Exception";
             responseDuration = "-";
             responseContentType = "-";
-            responseMediaType = string.Empty;
             responseHeaders = "(empty)";
-            rawResponseBody = ex.ToString();
-            UpdateDisplayedResponseBody();
+            responseBody = ex.ToString();
             Snackbar.Add($"Request error: {ex.Message}", Severity.Error);
         }
         finally
         {
             isSubmitting = false;
-        }
-    }
-
-    private void UpdateDisplayedResponseBody()
-    {
-        responseBody = isBeautyView
-            ? FormatResponseBody(rawResponseBody, responseMediaType)
-            : rawResponseBody;
-    }
-
-    private Task OnResponseBodyViewChanged()
-    {
-        UpdateDisplayedResponseBody();
-        return Task.CompletedTask;
-    }
-
-    private async Task CopyResponseBodyAsync()
-    {
-        try
-        {
-            await JS.InvokeVoidAsync("navigator.clipboard.writeText", responseBody);
-            Snackbar.Add("Response body copied.", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Cannot copy response body: {ex.Message}", Severity.Error);
         }
     }
 
@@ -660,37 +592,6 @@
         }
 
         return trimmed;
-    }
-
-    private static string FormatResponseBody(string content, string? mediaType)
-    {
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            return "(empty)";
-        }
-
-        string trimmed = content.Trim();
-        bool looksLikeJson = trimmed.StartsWith('{') || trimmed.StartsWith('[');
-        bool isJsonContentType = mediaType?.Contains("json", StringComparison.OrdinalIgnoreCase) == true;
-
-        if (!looksLikeJson && !isJsonContentType)
-        {
-            return content;
-        }
-
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(content);
-            return JsonSerializer.Serialize(document.RootElement, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            });
-        }
-        catch
-        {
-            return content;
-        }
     }
 
     private sealed record ServiceOption(string Name, string Domain);

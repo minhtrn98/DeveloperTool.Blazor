@@ -1,0 +1,123 @@
+@using System.Text.Encodings.Web
+@using System.Text.Json
+
+@inherits MudTextField<string>
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+
+<div class="@Class">
+    <MudTextField T="string"
+                  Value="Value"
+                  ValueChanged="OnValueChanged"
+                  Label="@Label"
+                  Variant="@Variant"
+                  FullWidth="@FullWidth"
+                  ReadOnly="@ReadOnly"
+                  Lines="@Lines"
+                  AutoGrow="@AutoGrow" />
+
+    <div class="d-flex justify-end ga-1 mt-1">
+        @if (ShowFormatButton)
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.AutoFixHigh"
+                           Color="Color.Info"
+                           Size="Size.Small"
+                           Disabled="@DisableActionButtons"
+                           OnClick="FormatJsonAsync" />
+        }
+        @if (ShowCopyButton)
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                           Color="Color.Secondary"
+                           Size="Size.Small"
+                           Disabled="@DisableActionButtons"
+                           OnClick="CopyValueAsync" />
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Gets or sets whether action buttons are disabled when the value is empty.
+    /// </summary>
+    [Parameter]
+    public bool DisableButtonsWhenEmpty { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the format button is visible.
+    /// </summary>
+    [Parameter]
+    public bool ShowFormatButton { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the copy button is visible.
+    /// </summary>
+    [Parameter]
+    public bool ShowCopyButton { get; set; } = true;
+
+    private bool DisableActionButtons => DisableButtonsWhenEmpty && string.IsNullOrWhiteSpace(Value);
+
+    private async Task OnValueChanged(string? value)
+    {
+        string newValue = value ?? string.Empty;
+        Value = newValue;
+        await ValueChanged.InvokeAsync(newValue);
+    }
+
+    private async Task FormatJsonAsync()
+    {
+        if (!ShowFormatButton)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Value))
+        {
+            Snackbar.Add("JSON is empty.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(Value);
+            string formatted = JsonSerializer.Serialize(document.RootElement, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+
+            Value = formatted;
+            await ValueChanged.InvokeAsync(formatted);
+            Snackbar.Add("JSON formatted.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Cannot format JSON: {ex.Message}", Severity.Warning);
+        }
+    }
+
+    private async Task CopyValueAsync()
+    {
+        if (!ShowCopyButton)
+        {
+            return;
+        }
+
+        string value = Value ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            Snackbar.Add("Nothing to copy.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", value);
+            Snackbar.Add("Copied to clipboard.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Cannot copy text: {ex.Message}", Severity.Error);
+        }
+    }
+}
