@@ -299,7 +299,7 @@
         SwaggerDocumentInfo? document = await ApiRequestSwaggerService.LoadAsync(selectedService, CancellationToken.None);
         if (document is null)
         {
-            swaggerStatusText = $"Templates/Swagger.{selectedService}.json not found.";
+            swaggerStatusText = $"Swagger not available for {selectedService}.";
             if (showNotifications)
             {
                 Snackbar.Add(swaggerStatusText, Severity.Info);
@@ -315,7 +315,7 @@
 
         if (showNotifications)
         {
-            Snackbar.Add($"Loaded Swagger.{selectedService}.json.", Severity.Success);
+            Snackbar.Add($"Loaded swagger for {selectedService}.", Severity.Success);
         }
     }
 

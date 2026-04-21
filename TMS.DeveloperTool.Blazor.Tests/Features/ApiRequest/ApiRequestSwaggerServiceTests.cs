@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Hosting;
 using System.Text.Json;
 using TMS.DeveloperTool.Blazor.Features.ApiRequest.Services;
 
@@ -114,9 +113,7 @@ public class ApiRequestSwaggerServiceTests
     [Fact]
     public void Parse_ShouldExtractEndpointsAndGenerateSampleRequestBody()
     {
-        ApiRequestSwaggerService service = new(Mock.Of<IWebHostEnvironment>());
-
-        SwaggerDocumentInfo document = service.Parse("Order", SwaggerJson);
+        SwaggerDocumentInfo document = ApiRequestSwaggerService.Parse("Order", SwaggerJson);
 
         document.Title.Should().Be("Order API");
         document.Tags.Should().ContainSingle().Which.Should().Be("Order");
@@ -134,9 +131,7 @@ public class ApiRequestSwaggerServiceTests
     [Fact]
     public void Parse_ShouldApplyPathAndQueryParameterSamplesToEndpointPath()
     {
-        ApiRequestSwaggerService service = new(Mock.Of<IWebHostEnvironment>());
-
-        SwaggerDocumentInfo document = service.Parse("Order", SwaggerJson);
+        SwaggerDocumentInfo document = ApiRequestSwaggerService.Parse("Order", SwaggerJson);
 
         SwaggerEndpointOption updateEndpoint = document.Endpoints.Single(x => x.Key == "PUT:/api/v1/orders/{id}");
         updateEndpoint.Path.Should().Be("/api/v1/orders/00000000-0000-0000-0000-000000000000?includeDetails=false");

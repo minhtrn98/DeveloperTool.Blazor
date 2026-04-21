@@ -5,8 +5,12 @@ using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Interfaces;
 
 namespace TMS.DeveloperTool.Blazor.Features.ApiRequest.Services;
 
-public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
+public sealed class ApiRequestSwaggerService(
+    IWebHostEnvironment environment,
+    ApiUrlsOptions apiUrls,
+    IHttpClientFactory httpClientFactory)
 {
+    private static readonly TimeSpan SwaggerFetchTimeout = TimeSpan.FromSeconds(5);
     private static readonly string[] PreferredJsonContentTypes = [
         "application/json",
         "text/json"
@@ -24,6 +28,49 @@ public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
             return null;
         }
 
+        string? baseUrl = ResolveBaseUrl(serviceName);
+        if (baseUrl is not null)
+        {
+            SwaggerDocumentInfo? fromHttp = await TryLoadFromHttpAsync(serviceName, baseUrl, cancellationToken);
+            if (fromHttp is not null)
+            {
+                return fromHttp;
+            }
+        }
+
+        return await TryLoadFromFileAsync(serviceName, cancellationToken);
+    }
+
+    private async Task<SwaggerDocumentInfo?> TryLoadFromHttpAsync(
+        string serviceName,
+        string baseUrl,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            using CancellationTokenSource timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(SwaggerFetchTimeout);
+
+            HttpClient httpClient = httpClientFactory.CreateClient();
+            string url = $"{baseUrl.TrimEnd('/')}/swagger/v1/swagger.json";
+            using HttpResponseMessage response = await httpClient.GetAsync(url, timeoutCts.Token);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using JsonDocument document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+            return Parse(serviceName, document.RootElement);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private async Task<SwaggerDocumentInfo?> TryLoadFromFileAsync(string serviceName, CancellationToken cancellationToken)
+    {
         string filePath = Path.Combine(environment.ContentRootPath, "Templates", $"Swagger.{serviceName}.json");
         if (!File.Exists(filePath))
         {
@@ -34,6 +81,22 @@ public sealed class ApiRequestSwaggerService(IWebHostEnvironment environment)
         using JsonDocument document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
         return Parse(serviceName, document.RootElement);
     }
+
+    private string? ResolveBaseUrl(string serviceName) => serviceName switch
+    {
+        "Fleet" => apiUrls.Fleet,
+        "Driver" => apiUrls.Driver,
+        "Cost" => apiUrls.Cost,
+        "Route" => apiUrls.Route,
+        "Order" => apiUrls.Order,
+        "Planning" => apiUrls.Planning,
+        "Tracking" => apiUrls.Tracking,
+        "Notification" => apiUrls.Notification,
+        "Audit" => apiUrls.Audit,
+        "File" => apiUrls.File,
+        "Report" => apiUrls.Report,
+        _ => null
+    };
 
     public static SwaggerDocumentInfo Parse(string serviceName, string swaggerJson)
     {
