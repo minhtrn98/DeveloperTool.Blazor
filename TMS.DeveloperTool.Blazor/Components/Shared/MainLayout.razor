@@ -25,19 +25,6 @@
                        OnClick="@((e) => DrawerToggle())" />
         <MudText Typo="Typo.h5" Class="ml-3">TMS DeveloperTools [@CurrentEnvironment]</MudText>
         <MudSpacer />
-        <MudButton Variant="Variant.Filled" Color="Color.Secondary"
-                   Disabled="@(_isGeneratingTokens || _isSyncingDrivers)" StartIcon="@Icons.Material.Filled.Sync"
-                   OnClick="SyncDriversAsync" Class="me-2">
-            @if (_isSyncingDrivers)
-            {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
-                <MudText>Đang đồng bộ nv</MudText>
-            }
-            else
-            {
-                <MudText>Đồng bộ nv</MudText>
-            }
-        </MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_isGeneratingTokens || _isSyncingDrivers)"
                    StartIcon="@Icons.Material.Filled.VpnKey" OnClick="GenerateDriverTokensAsync" Class="me-2">
             @if (_isGeneratingTokens)
@@ -52,7 +39,20 @@
         </MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Tertiary" StartIcon="@Icons.Material.Filled.PersonAdd"
                    OnClick="ShowAddDriverDialog" Class="me-2">
-            <MudText>Thêm nhân viên</MudText>
+            <MudText>Thêm NV</MudText>
+        </MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary"
+                   Disabled="@(_isGeneratingTokens || _isSyncingDrivers)" StartIcon="@Icons.Material.Filled.Sync"
+                   OnClick="SyncDriversAsync" Class="me-2">
+            @if (_isSyncingDrivers)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                <MudText>Đang đồng bộ NV</MudText>
+            }
+            else
+            {
+                <MudText>Đồng bộ NV</MudText>
+            }
         </MudButton>
         <MudStack Style="width: 400px">
             <MudAutocomplete T="DepartmentDto" Value="SelectedDepartment" ValueChanged="OnDepartmentChanged"
