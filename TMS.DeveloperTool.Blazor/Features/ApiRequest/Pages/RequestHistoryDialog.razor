@@ -44,10 +44,13 @@
                             >
                                 Select
                             </MudButton>
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Color="Color.Error"
-                                           Size="Size.Small"
-                                           OnClick="() => DeleteOneAsync(context)" />
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Error"
+                                       Size="Size.Small"
+                                       Class="ms-2"
+                                       OnClick="() => DeleteOneAsync(context)">
+                                Delete
+                            </MudButton>
                         </div>
                     </MudTd>
                 </RowTemplate>
