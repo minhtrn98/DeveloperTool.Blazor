@@ -170,7 +170,7 @@
                 </MudPaper>
 
                 <MudJsonField @bind-Value="responseBody" Label="Body" Variant="Variant.Outlined" FullWidth="true"
-                              Lines="12" AutoGrow="true" ReadOnly="true" />
+                              Lines="12" AutoGrow="true" ReadOnly="true" Placeholder="(empty)" />
             </MudPaper>
         </MudItem>
     </MudGrid>
@@ -226,7 +226,7 @@
     private string responseDuration = "-";
     private string responseContentType = "-";
     private string responseHeaders = "(empty)";
-    private string responseBody = "(empty)";
+    private string? responseBody = null;
 
     private string resolvedUrl => BuildRequestUrl();
 
@@ -448,7 +448,7 @@
             headerLines.AddRange(response.Headers.SelectMany(h => h.Value.Select(v => $"{h.Key}: {v}")));
             headerLines.AddRange(response.Content.Headers.SelectMany(h => h.Value.Select(v => $"{h.Key}: {v}")));
             responseHeaders = headerLines.Count == 0 ? "(empty)" : string.Join(Environment.NewLine, headerLines);
-            responseBody = string.IsNullOrWhiteSpace(content) ? "(empty)" : content;
+            responseBody = content;
             await SaveRequestHistoryAsync();
 
             if (response.IsSuccessStatusCode)

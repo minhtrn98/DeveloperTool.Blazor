@@ -3,7 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace TMS.DeveloperTool.Blazor.Features.ApiRequest.Services;
+namespace TMS.DeveloperTool.Blazor.Services;
 
 public sealed partial class ApiRequestBodyFormatterService
 {

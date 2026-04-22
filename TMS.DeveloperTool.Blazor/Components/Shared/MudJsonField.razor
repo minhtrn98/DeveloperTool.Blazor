@@ -1,9 +1,9 @@
-@using System.Text.Encodings.Web
-@using System.Text.Json
+@using TMS.DeveloperTool.Blazor.Services
 
 @inherits MudTextField<string>
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
+@inject ApiRequestBodyFormatterService BodyFormatter
 
 <div class="@Class">
     <MudTextField T="string"
@@ -22,7 +22,6 @@
             <MudIconButton Icon="@Icons.Material.Filled.AutoFixHigh"
                            Color="Color.Info"
                            Size="Size.Small"
-                           Disabled="@DisableActionButtons"
                            OnClick="FormatJsonAsync" />
         }
         @if (ShowCopyButton)
@@ -30,7 +29,6 @@
             <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
                            Color="Color.Secondary"
                            Size="Size.Small"
-                           Disabled="@DisableActionButtons"
                            OnClick="CopyValueAsync" />
         }
     </div>
@@ -41,21 +39,19 @@
     /// Gets or sets whether action buttons are disabled when the value is empty.
     /// </summary>
     [Parameter]
-    public bool DisableButtonsWhenEmpty { get; set; } = true;
+    public bool DisableButtonsWhenEmpty { get; init; } = true;
 
     /// <summary>
     /// Gets or sets whether the format button is visible.
     /// </summary>
     [Parameter]
-    public bool ShowFormatButton { get; set; } = true;
+    public bool ShowFormatButton { get; init; } = true;
 
     /// <summary>
     /// Gets or sets whether the copy button is visible.
     /// </summary>
     [Parameter]
-    public bool ShowCopyButton { get; set; } = true;
-
-    private bool DisableActionButtons => DisableButtonsWhenEmpty && string.IsNullOrWhiteSpace(Value);
+    public bool ShowCopyButton { get; init; } = true;
 
     private async Task OnValueChanged(string? value)
     {
@@ -79,13 +75,7 @@
 
         try
         {
-            using JsonDocument document = JsonDocument.Parse(Value);
-            string formatted = JsonSerializer.Serialize(document.RootElement, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            });
-
+            string formatted = BodyFormatter.NormalizeAndFormatJson(Value);
             Value = formatted;
             await ValueChanged.InvokeAsync(formatted);
             Snackbar.Add("JSON formatted.", Severity.Success);
