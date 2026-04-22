@@ -12,18 +12,14 @@ public sealed class ApiRequestHistoryService(ApplicationDbContext dbContext)
         string jsonBody,
         CancellationToken cancellationToken)
     {
-        RequestHistory item = new()
-        {
-            Name = name,
-            Method = method,
-            Service = service,
-            Endpoint = endpoint,
-            JsonBody = jsonBody,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
+        DateTimeOffset now = DateTimeOffset.UtcNow;
 
-        await dbContext.RequestHistories.AddAsync(item, cancellationToken);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO request_histories (name, method, service, endpoint, json_body, created_at)
+            VALUES ({name}, {method}, {service}, {endpoint}, {jsonBody}, {now})
+            ON CONFLICT (name, method, service, endpoint, json_body)
+            DO UPDATE SET created_at = EXCLUDED.created_at;
+            """, cancellationToken);
     }
 
     public async Task<List<RequestHistory>> GetLatestAsync(int take, CancellationToken cancellationToken)

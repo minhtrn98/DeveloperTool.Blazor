@@ -81,6 +81,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Endpoint).HasColumnName("endpoint");
             entity.Property(e => e.JsonBody).HasColumnName("json_body");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(e => new { e.Name, e.Method, e.Service, e.Endpoint, e.JsonBody })
+                .IsUnique();
         });
     }
 }

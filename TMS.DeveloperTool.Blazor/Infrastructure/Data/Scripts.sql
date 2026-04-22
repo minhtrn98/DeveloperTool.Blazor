@@ -43,6 +43,7 @@ CREATE TABLE request_histories (
 
 CREATE INDEX idx_route_checkpoints_template_id ON route_checkpoints (template_id);
 CREATE INDEX idx_request_histories_created_at ON request_histories (created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_request_histories_signature ON public.request_histories (name, method, service, endpoint, json_body);
 
 -- init data for vehicles table
 INSERT INTO
