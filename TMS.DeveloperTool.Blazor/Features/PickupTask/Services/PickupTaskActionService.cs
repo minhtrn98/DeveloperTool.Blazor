@@ -9,7 +9,7 @@ public sealed class PickupTaskActionService(IPickupTaskApi api)
         => api.AcceptAsync(pickupTaskId, $"Bearer {bearerToken}", cancellationToken);
 
     public Task ConfirmArrivedAsync(string pickupTaskId, string bearerToken, CancellationToken cancellationToken = default)
-        => api.ConfirmArrivedAsync(new ConfirmArrivalRequest([pickupTaskId]), $"Bearer {bearerToken}", cancellationToken);
+        => api.ConfirmArrivedAsync(ConfirmArrivalRequest.Create(pickupTaskId), $"Bearer {bearerToken}", cancellationToken);
 
     public Task DriverCancelAsync(
         string pickupTaskId,
