@@ -45,6 +45,7 @@ public static class ApplicationConstants
         public const string JobTrigger = "/job-trigger";
         public const string ApiRequest = "/api-request";
         public const string ManifestOrders = "/manifest/orders";
+        public const string ManifestList = "/manifest/list";
     }
 
     public static class EnvironmentNames

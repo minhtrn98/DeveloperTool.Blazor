@@ -1,0 +1,152 @@
+@using TMS.DeveloperTool.Blazor.Features.Manifest.Services
+@using TMS.DeveloperTool.Blazor.Features.Manifest.Contracts
+@using TMS.DeveloperTool.Blazor.Domain.Enums
+@inject DeliveryManifestService DeliveryManifestService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Đơn hàng trong sổ phát <b>@ManifestCode</b></MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="searchValue"
+                      Label="Tìm theo mã đơn"
+                      Placeholder="Ví dụ: VN123456789"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true"
+                      DebounceInterval="200"
+                      Class="mb-3"
+                      @bind-Value:after="ApplyFilter" />
+
+        <MudTable T="GetOrderInManifestResponse"
+                  Items="displayOrders"
+                  Loading="@isLoading"
+                  Hover="true"
+                  Dense="true"
+                  Elevation="0"
+                  RowClass="cursor-pointer"
+                  OnRowClick="OnRowClickedAsync">
+            <HeaderContent>
+                <MudTh>Mã đơn hàng</MudTh>
+                <MudTh>Loại đơn</MudTh>
+                <MudTh>Trạng thái</MudTh>
+                <MudTh>Người nhận</MudTh>
+                <MudTh>Địa chỉ nhận</MudTh>
+                <MudTh>Số kiện</MudTh>
+                <MudTh>KL (kg)</MudTh>
+                <MudTh>COD (₫)</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Mã đơn hàng"><b>@context.OrderId</b></MudTd>
+                <MudTd DataLabel="Loại đơn">
+                    <MudChip T="string"
+                             Color="@(context.OrderType == OrderType.Cod ? Color.Warning : Color.Info)"
+                             Size="Size.Small"
+                             Ripple="false">
+                        @(context.OrderType == OrderType.Cod ? "COD" : "Thường")
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Trạng thái">
+                    <MudChip T="string"
+                             Color="@GetStatusColor(context.OrderStatus)"
+                             Size="Size.Small"
+                             Ripple="false">
+                        @GetStatusLabel(context.OrderStatus)
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Người nhận">@DisplayText(context.ReceiverName)</MudTd>
+                <MudTd DataLabel="Địa chỉ nhận">@DisplayText(context.ReceiverAddress)</MudTd>
+                <MudTd DataLabel="Số kiện">@context.TotalItems</MudTd>
+                <MudTd DataLabel="KL (kg)">@(context.TotalWeight.HasValue ? context.TotalWeight.Value.ToString("F3") : "-")</MudTd>
+                <MudTd DataLabel="COD (₫)">@(context.TotalCodAmount.HasValue ? context.TotalCodAmount.Value.ToString("N0") : "-")</MudTd>
+            </RowTemplate>
+            <LoadingContent>
+                <MudText Class="pa-4">Đang tải dữ liệu...</MudText>
+            </LoadingContent>
+            <NoRecordsContent>
+                <MudText Class="pa-4">Không có đơn hàng nào.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </DialogContent>
+    <DialogActions>
+        <MudText Typo="Typo.body2" Class="flex-grow-1 ml-2" Color="Color.Secondary">
+            @displayOrders.Count / @allOrders.Count đơn
+        </MudText>
+        <MudButton OnClick="@(() => MudDialog.Cancel())" Variant="Variant.Outlined" Color="Color.Default">Đóng</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public Guid ManifestId { get; set; }
+    [Parameter] public string ManifestCode { get; set; } = string.Empty;
+
+    private bool isLoading;
+    private string searchValue = string.Empty;
+    private List<GetOrderInManifestResponse> allOrders = [];
+    private List<GetOrderInManifestResponse> displayOrders = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        try
+        {
+            allOrders = await DeliveryManifestService.GetOrdersInManifestAsync(ManifestId, CancellationToken.None);
+            ApplyFilter();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải đơn hàng: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OnRowClickedAsync(TableRowClickEventArgs<GetOrderInManifestResponse> args)
+    {
+        if (args.Item is null) return;
+        DialogParameters<ManifestOrderDetailDialog> parameters = new()
+        {
+            { d => d.ManifestId, ManifestId },
+            { d => d.OrderId, args.Item.OrderId },
+        };
+        DialogOptions options = new() { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<ManifestOrderDetailDialog>(args.Item.OrderId, parameters, options);
+    }
+
+    private void ApplyFilter()
+    {
+        displayOrders = string.IsNullOrWhiteSpace(searchValue)
+            ? allOrders
+            : allOrders.Where(o => o.OrderId.Contains(searchValue, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private static Color GetStatusColor(OrderStatus status) => status switch
+    {
+        OrderStatus.Delivered => Color.Success,
+        OrderStatus.Returned => Color.Success,
+        OrderStatus.Cancelled or OrderStatus.Lost or OrderStatus.Confiscated
+            or OrderStatus.PartiallyConfiscated or OrderStatus.PartiallyDestroyed => Color.Error,
+        OrderStatus.Delivering or OrderStatus.InDeliveryManifest => Color.Primary,
+        OrderStatus.Returning or OrderStatus.DeliveryIncomplete or OrderStatus.DeliveryRescheduled
+            or OrderStatus.Misrouted or OrderStatus.PartiallyMisrouted => Color.Warning,
+        _ => Color.Default,
+    };
+
+    private static string GetStatusLabel(OrderStatus status)
+    {
+        System.Reflection.FieldInfo? field = status.GetType().GetField(status.ToString());
+        if (field?.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false)
+                is System.ComponentModel.DescriptionAttribute[] { Length: > 0 } attrs)
+            return attrs[0].Description;
+        return $"#{(int)status}";
+    }
+
+    private static string DisplayText(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+}

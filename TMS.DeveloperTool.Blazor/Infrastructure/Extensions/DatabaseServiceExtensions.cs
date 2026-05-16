@@ -76,6 +76,7 @@ public static class DatabaseServiceExtensions
         services.AddScoped<RouteRepository>();
         services.AddScoped<PlanningRepository>();
         services.AddScoped<OrderRepository>();
+        services.AddScoped<ManifestRepository>();
         services.AddScoped<TrackingRepository>();
         return services;
     }

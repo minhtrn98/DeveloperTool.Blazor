@@ -1,0 +1,214 @@
+@using TMS.DeveloperTool.Blazor.Features.Manifest.Services
+@using TMS.DeveloperTool.Blazor.Features.Manifest.Contracts
+@using TMS.DeveloperTool.Blazor.Domain.Enums
+@inject DeliveryManifestService DeliveryManifestService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Chi tiết vận đơn</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (isLoading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-3" />
+        }
+        else if (detail is null)
+        {
+            <MudAlert Severity="Severity.Warning">Không tìm thấy thông tin đơn hàng.</MudAlert>
+        }
+        else
+        {
+            <MudPaper Elevation="1" Class="pa-3 mb-4 rounded-lg">
+                <div class="d-flex justify-space-between align-center mb-1">
+                    <MudText Typo="Typo.h6"><b>@detail.OrderId</b></MudText>
+                    <MudChip T="string" Color="@GetStatusColor(detail.OrderStatus)" Size="Size.Small" Ripple="false">
+                        @GetStatusLabel(detail.OrderStatus)
+                    </MudChip>
+                </div>
+                <MudChip T="string"
+                         Color="@(detail.OrderType == OrderType.Cod ? Color.Warning : Color.Info)"
+                         Size="Size.Small" Ripple="false">
+                    @(detail.OrderType == OrderType.Cod ? "COD" : "Chuyển phát nhanh")
+                </MudChip>
+            </MudPaper>
+
+            <MudText Typo="Typo.subtitle2" Class="mb-2">
+                <MudIcon Icon="@Icons.Material.Filled.Description" Size="Size.Small" Class="mr-1" />
+                Thông tin vận đơn
+            </MudText>
+
+            <MudList T="string" Dense="true" DisablePadding="true" Class="mb-4">
+                <MudListItem T="string" DisableRipple="true">
+                    <div class="d-flex align-center justify-space-between py-1">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-width:140px">Người nhận</MudText>
+                        @if (detail.ReceiverName is not null)
+                        {
+                            <div class="d-flex align-center gap-2">
+                                <MudAvatar Color="Color.Primary" Size="Size.Small" Style="font-size:0.7rem">
+                                    @GetInitials(detail.ReceiverName)
+                                </MudAvatar>
+                                <div>
+                                    <MudText Typo="Typo.body2"><b>@detail.ReceiverName</b></MudText>
+                                    @if (detail.ReceiverId is not null)
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@detail.ReceiverId</MudText>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2">—</MudText>
+                        }
+                    </div>
+                </MudListItem>
+                <MudDivider />
+                <MudListItem T="string" DisableRipple="true">
+                    <div class="d-flex align-start justify-space-between py-1">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-width:140px">Địa chỉ phát</MudText>
+                        <MudText Typo="Typo.body2" Style="text-align:right">@DisplayText(detail.ReceiverAddress)</MudText>
+                    </div>
+                </MudListItem>
+                <MudDivider />
+                <MudListItem T="string" DisableRipple="true">
+                    <div class="d-flex align-center justify-space-between py-1">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-width:140px">Bưu cục phát</MudText>
+                        <MudText Typo="Typo.body2">@DisplayText(detail.ReceiverPostOfficeName)</MudText>
+                    </div>
+                </MudListItem>
+                @if (detail.PicName is not null)
+                {
+                    <MudDivider />
+                    <MudListItem T="string" DisableRipple="true">
+                        <div class="d-flex align-center justify-space-between py-1">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-width:140px">Giao nhận phụ trách</MudText>
+                            <div class="d-flex align-center gap-2">
+                                <MudAvatar Color="Color.Secondary" Size="Size.Small" Style="font-size:0.7rem">
+                                    @GetInitials(detail.PicName)
+                                </MudAvatar>
+                                <div>
+                                    <MudText Typo="Typo.body2"><b>@detail.PicName</b></MudText>
+                                    @if (detail.PicCode is not null)
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@detail.PicCode</MudText>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </MudListItem>
+                }
+            </MudList>
+
+            <MudText Typo="Typo.subtitle2" Class="mb-2">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" Class="mr-1" />
+                Danh sách kiện (@detail.Items.Length)
+            </MudText>
+
+            <div class="d-flex gap-2 mb-3">
+                <MudChip T="string" Color="Color.Success" Variant="Variant.Outlined" Size="Size.Small" Ripple="false">
+                    Trọng lượng @(detail.TotalWeight.HasValue ? $"{detail.TotalWeight.Value:F0} kg" : "—")
+                </MudChip>
+                <MudChip T="string" Color="Color.Default" Variant="Variant.Outlined" Size="Size.Small" Ripple="false">
+                    Số lượng @detail.TotalItems kiện
+                </MudChip>
+            </div>
+
+            <MudList T="string" Dense="true" DisablePadding="true">
+                @foreach (GetManifestOrderItemDetail item in detail.Items)
+                {
+                    <MudListItem T="string" DisableRipple="true">
+                        <div class="d-flex align-center justify-space-between py-1">
+                            <MudText Typo="Typo.body2"><b>@item.OrderItemId</b></MudText>
+                            <MudChip T="string"
+                                     Color="@GetItemStatusColor(item.Status)"
+                                     Size="Size.Small"
+                                     Ripple="false">
+                                @GetItemStatusLabel(item.Status)
+                            </MudChip>
+                        </div>
+                    </MudListItem>
+                    <MudDivider />
+                }
+            </MudList>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => MudDialog.Cancel())" Variant="Variant.Outlined" Color="Color.Default">Đóng</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public Guid ManifestId { get; set; }
+    [Parameter] public string OrderId { get; set; } = string.Empty;
+
+    private bool isLoading;
+    private GetManifestOrderDetailResponse? detail;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        try
+        {
+            detail = await DeliveryManifestService.GetManifestOrderDetailAsync(ManifestId, OrderId, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải chi tiết đơn hàng: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static string GetInitials(string name)
+    {
+        string[] parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant()
+            : name.Length > 0 ? name[0].ToString().ToUpperInvariant() : "?";
+    }
+
+    private static Color GetStatusColor(OrderStatus status) => status switch
+    {
+        OrderStatus.Delivered => Color.Success,
+        OrderStatus.Returned => Color.Success,
+        OrderStatus.Cancelled or OrderStatus.Lost or OrderStatus.Confiscated
+            or OrderStatus.PartiallyConfiscated or OrderStatus.PartiallyDestroyed => Color.Error,
+        OrderStatus.Delivering or OrderStatus.InDeliveryManifest => Color.Primary,
+        OrderStatus.Returning or OrderStatus.DeliveryIncomplete or OrderStatus.DeliveryRescheduled
+            or OrderStatus.Misrouted or OrderStatus.PartiallyMisrouted => Color.Warning,
+        _ => Color.Default,
+    };
+
+    private static string GetStatusLabel(OrderStatus status)
+    {
+        System.Reflection.FieldInfo? field = status.GetType().GetField(status.ToString());
+        if (field?.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false)
+                is System.ComponentModel.DescriptionAttribute[] { Length: > 0 } attrs)
+            return attrs[0].Description;
+        return $"#{(int)status}";
+    }
+
+    private static Color GetItemStatusColor(DeliveryItemStatus status) => status switch
+    {
+        DeliveryItemStatus.Delivered => Color.Success,
+        DeliveryItemStatus.Loaded => Color.Primary,
+        DeliveryItemStatus.Returning or DeliveryItemStatus.DeliveryRescheduled => Color.Warning,
+        DeliveryItemStatus.Lost or DeliveryItemStatus.Confiscated or DeliveryItemStatus.Destroyed => Color.Error,
+        _ => Color.Default,
+    };
+
+    private static string GetItemStatusLabel(DeliveryItemStatus status)
+    {
+        System.Reflection.FieldInfo? field = status.GetType().GetField(status.ToString());
+        if (field?.GetCustomAttributes(typeof(System.ComponentModel.DescriptionAttribute), false)
+                is System.ComponentModel.DescriptionAttribute[] { Length: > 0 } attrs)
+            return attrs[0].Description;
+        return $"#{(int)status}";
+    }
+
+    private static string DisplayText(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
+}

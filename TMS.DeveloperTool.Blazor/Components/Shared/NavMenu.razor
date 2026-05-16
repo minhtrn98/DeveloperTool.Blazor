@@ -52,6 +52,7 @@
     @if (ShouldShow(ApplicationConstants.MenuKeys.Manifests))
     {
         <MudNavGroup Title="Sổ phát" Expanded="false">
+            <MudNavLink Href="@ApplicationConstants.Routes.ManifestList" Match="NavLinkMatch.All">Danh sách sổ phát</MudNavLink>
             <MudNavLink Href="@ApplicationConstants.Routes.ManifestOrders" Match="NavLinkMatch.All">Đơn hàng</MudNavLink>
         </MudNavGroup>
     }

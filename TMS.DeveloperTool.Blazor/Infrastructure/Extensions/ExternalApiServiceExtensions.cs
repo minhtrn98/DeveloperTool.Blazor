@@ -99,6 +99,7 @@ public static class ExternalApiServiceExtensions
         services.AddScoped<ApiRequestBodyFormatterService>();
         services.AddScoped<ApiRequestSwaggerService>();
         services.AddScoped<ManifestOrderService>();
+        services.AddScoped<DeliveryManifestService>();
 
         services.AddSingleton<EventService>();
         services.AddSingleton<JwtTokenService>();
