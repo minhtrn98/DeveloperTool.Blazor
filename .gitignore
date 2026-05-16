@@ -491,3 +491,6 @@ appsettings.Local.json
 /docs/
 
 private.pem
+
+# LSCache files
+*.lscache

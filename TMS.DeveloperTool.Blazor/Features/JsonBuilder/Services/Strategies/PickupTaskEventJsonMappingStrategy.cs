@@ -6,7 +6,6 @@ using TMS.DeveloperTool.Blazor.Features.Routing.Models;
 namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services.Strategies;
 
 public sealed class PickupTaskEventJsonMappingStrategy(
-        OrderRepository orderRepository,
         RouteRepository routeRepository,
         EventService eventService
     ) : JsonTypeMappingStrategyBase
@@ -15,10 +14,7 @@ public sealed class PickupTaskEventJsonMappingStrategy(
     public override string JsonType => TypeName;
 
     private readonly IReadOnlyDictionary<string, JsonKeyValueBuilder> _keyValueBuilders =
-        new Dictionary<string, JsonKeyValueBuilder>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["orders"] = async () => await BuildOrdersValueAsync(orderRepository)
-        };
+        new Dictionary<string, JsonKeyValueBuilder>(StringComparer.OrdinalIgnoreCase);
 
     private readonly Lazy<Task<IReadOnlyDictionary<string, JsonKeyMapping>>> _jsonKeyMappingsTask =
         new(() => BuildMappingsAsync(routeRepository), LazyThreadSafetyMode.ExecutionAndPublication);
@@ -155,51 +151,4 @@ public sealed class PickupTaskEventJsonMappingStrategy(
         return source.ToDictionary(kvp => (object)kvp.Key, kvp => (object)kvp.Value);
     }
 
-    private static async Task<object> BuildOrdersValueAsync(OrderRepository orderRepository)
-    {
-        List<OrderDto> orders = await orderRepository.GetAllOrdersAsync();
-        List<OrderItemDto> orderItems = await orderRepository.GetAllOrderItemsAsync();
-
-        Dictionary<string, List<PickupTaskEventOrderItemDto>> orderItemsByOrderId = orderItems
-            .Where(orderItem => !string.IsNullOrWhiteSpace(orderItem.OrderId))
-            .GroupBy(orderItem => orderItem.OrderId, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(
-                group => group.Key,
-                group => group
-                    .Select(orderItem => new PickupTaskEventOrderItemDto(
-                        orderItem.OrderId,
-                        orderItem.OrderItemId,
-                        orderItem.Weight,
-                        orderItem.L,
-                        orderItem.H,
-                        orderItem.W,
-                        orderItem.HasPickupTask))
-                    .ToList(),
-                StringComparer.OrdinalIgnoreCase);
-
-        List<PickupTaskEventOrderDto> orderDtos = orders
-            .Where(order => !string.IsNullOrWhiteSpace(order.OrderId))
-            .Select(order => new PickupTaskEventOrderDto(
-                order.OrderId,
-                FormatCreatedAt(order.CreatedAt),
-                order.Weight,
-                order.L,
-                order.H,
-                order.W,
-                order.HasPickupTask,
-                orderItemsByOrderId.GetValueOrDefault(order.OrderId, [])))
-            .ToList();
-
-        const int take = 5;
-        List<PickupTaskEventOrderDto> orderWithoutPt = orderDtos.Where(o => !o.HasPickupTask).Take(take).ToList();
-
-        return orderWithoutPt.Count > 0
-            ? orderWithoutPt
-            : orderDtos;
-    }
-
-    private static string FormatCreatedAt(DateTime value)
-    {
-        return value.ToLocalTime().ToString("O");
-    }
 }

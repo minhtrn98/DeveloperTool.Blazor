@@ -133,49 +133,6 @@
                 </MudItem>
             </MudGrid>
 
-            <MudDivider Class="my-4" />
-
-            @* Orders section *@
-            <MudText Typo="Typo.h6" Class="mb-3">
-                Đơn hàng
-                <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
-                    Đã chọn: @selectedOrderIds.Count / @allOrders.Count
-                </MudChip>
-            </MudText>
-
-            <MudStack Row="true" Class="mb-3" Justify="Justify.FlexEnd">
-                <MudCheckBox T="bool" @bind-Value="showOnlyWithoutPickupTask" Label="Chỉ hiện đơn chưa có điều tin"
-                             Color="Color.Primary" />
-            </MudStack>
-
-            <MudTable Items="@FilteredOrders" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" MultiSelection="true"
-                      @bind-SelectedItems="selectedOrderSet" FixedHeader="true">
-                <HeaderContent>
-                    <MudTh>Mã đơn hàng</MudTh>
-                    <MudTh>Ngày tạo</MudTh>
-                    <MudTh>Trọng lượng</MudTh>
-                    <MudTh>Kích thước (L×H×W)</MudTh>
-                    <MudTh>Có điều tin</MudTh>
-                    <MudTh>Số kiện</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="OrderId">@context.OrderId</MudTd>
-                    <MudTd DataLabel="CreatedAt">@FormatCreatedAt(context.CreatedAt)</MudTd>
-                    <MudTd DataLabel="Weight">@context.Weight</MudTd>
-                    <MudTd DataLabel="Dimensions">@context.L × @context.H × @context.W</MudTd>
-                    <MudTd DataLabel="HasPickupTask">
-                        @if (context.HasPickupTask)
-                        {
-                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                        }
-                        else
-                        {
-                            <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error" Size="Size.Small" />
-                        }
-                    </MudTd>
-                    <MudTd DataLabel="Items">@context.Items.Count</MudTd>
-                </RowTemplate>
-            </MudTable>
         }
     </MudPaper>
 </MudContainer>
@@ -204,30 +161,11 @@
     private TimeSpan? scheduledPickupTime = new TimeSpan(8, 0, 0);
 
     // Orders
-    private List<PickupTaskEventOrderDto> allOrders = [];
-    private HashSet<PickupTaskEventOrderDto> selectedOrderSet = [];
-    private HashSet<string> selectedOrderIds = [];
-    private bool showOnlyWithoutPickupTask = true;
     private int ordersPerEvent = 1;
 
     // Output
     private string jsonOutput = string.Empty;
     private readonly List<string> successfulPickupTaskIds = [];
-
-    private IEnumerable<PickupTaskEventOrderDto> FilteredOrders
-    {
-        get
-        {
-            IEnumerable<PickupTaskEventOrderDto> result = allOrders;
-
-            if (showOnlyWithoutPickupTask)
-            {
-                result = result.Where(o => !o.HasPickupTask);
-            }
-
-            return result;
-        }
-    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -239,8 +177,6 @@
             serviceTypeOptions = CreatePickupTaskEventService.GetServiceTypeOptions();
             dispatchTypeOptions = CreatePickupTaskEventService.GetDispatchTypeOptions();
             dispatchMethodOptions = CreatePickupTaskEventService.GetDispatchMethodOptions();
-            allOrders = await Service.GetOrdersAsync();
-
             // Pre-select defaults
             selectedStatus = statusOptions.FirstOrDefault();
             selectedServiceType = serviceTypeOptions.FirstOrDefault();
@@ -322,7 +258,6 @@
                 ServiceTypeName = selectedServiceType?.Description,
                 DispatchType = selectedDispatchType is not null ? int.Parse(selectedDispatchType.Value) : null,
                 DispatchMethod = selectedDispatchMethod is not null ? int.Parse(selectedDispatchMethod.Value) : null,
-                SelectedOrders = selectedOrderSet.ToList(),
                 ScheduledPickupDate = scheduledPickupDate?.Add(scheduledPickupTime ?? TimeSpan.Zero)
             };
 

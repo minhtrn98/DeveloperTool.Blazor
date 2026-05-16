@@ -10,7 +10,6 @@ using TMS.DeveloperTool.Blazor.Features.Routing.Models;
 namespace TMS.DeveloperTool.Blazor.Features.PickupTask.Services;
 
 public sealed class CreatePickupTaskEventService(
-    OrderRepository orderRepository,
     RouteRepository routeRepository,
     PlanningRepository planningRepository,
     EventService eventService,
@@ -64,30 +63,6 @@ public sealed class CreatePickupTaskEventService(
     {
         return EnumExtensions.ToList<DispatchMethod>()
             .Select(x => new EnumOption(x.Value.ToString(), x.Description))
-            .ToList();
-    }
-
-    public async Task<List<PickupTaskEventOrderDto>> GetOrdersAsync()
-    {
-        List<OrderDto> orders = await orderRepository.GetAllOrdersAsync();
-        List<OrderItemDto> orderItems = await orderRepository.GetAllOrderItemsAsync();
-
-        Dictionary<string, List<PickupTaskEventOrderItemDto>> orderItemsByOrderId = orderItems
-            .Where(oi => !string.IsNullOrWhiteSpace(oi.OrderId))
-            .GroupBy(oi => oi.OrderId, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(
-                g => g.Key,
-                g => g.Select(oi => new PickupTaskEventOrderItemDto(
-                    oi.OrderId, oi.OrderItemId, oi.Weight, oi.L, oi.H, oi.W, oi.HasPickupTask)).ToList(),
-                StringComparer.OrdinalIgnoreCase);
-
-        return orders
-            .Where(o => !string.IsNullOrWhiteSpace(o.OrderId))
-            .Select(o => new PickupTaskEventOrderDto(
-                o.OrderId,
-                o.CreatedAt.ToLocalTime().ToString("O"),
-                o.Weight, o.L, o.H, o.W, o.HasPickupTask,
-                orderItemsByOrderId.GetValueOrDefault(o.OrderId, [])))
             .ToList();
     }
 

@@ -9,30 +9,6 @@ public sealed class OrderRepository
         _dbQuery = dbQuery;
     }
 
-    public async Task<List<OrderDto>> GetAllOrdersAsync(CancellationToken cancellationToken = default)
-    {
-        const string sql = """
-            with pickup_orders as (
-                select order_id from public.pickup_task_order_items
-                union
-                select order_id from public.pickup_task_orders
-            )
-            select
-                o.order_id as "OrderId",
-                o.weight as "Weight",
-                o.w as "W",
-                o.h as "H",
-                o.l as "L",
-                o.created_at as "CreatedAt",
-                (po.order_id is not null) as "HasPickupTask"
-            from public.orders o
-            left join pickup_orders po on po.order_id = o.order_id
-            order by o.order_id;
-            """;
-        IEnumerable<OrderDto> orders = await _dbQuery.QueryAsync<OrderDto>(sql, null, cancellationToken);
-        return orders.ToList();
-    }
-
     public async Task<List<PickupTaskOrderDto>> GetOrdersByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
     {
         const string sql = """
