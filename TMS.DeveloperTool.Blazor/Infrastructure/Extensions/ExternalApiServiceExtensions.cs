@@ -2,6 +2,7 @@ using Refit;
 using TMS.DeveloperTool.Blazor.Features.ApiRequest.Services;
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services.Strategies;
+using TMS.DeveloperTool.Blazor.Features.Manifest.Services;
 using TMS.DeveloperTool.Blazor.Features.Pairing.Services;
 using TMS.DeveloperTool.Blazor.Features.PickupTask.Services;
 using TMS.DeveloperTool.Blazor.Features.Routing.Services;
@@ -67,6 +68,16 @@ public static class ExternalApiServiceExtensions
             })
             .AddHttpMessageHandler<QuanLyXeApiKeyHandler>();
 
+        // Manifest API
+        services.AddRefitClient<IManifestApi>(refitSettings)
+            .ConfigureHttpClient((sp, c) =>
+            {
+                ApiUrlsOptions apiUrls = sp.GetRequiredService<ApiUrlsOptions>();
+                c.BaseAddress = new Uri(apiUrls.Order);
+            })
+            .AddHttpMessageHandler<DepartmentHeaderHandler>()
+            .AddHttpMessageHandler<LoggingHttpHandler>();
+
         return services;
     }
 
@@ -87,6 +98,7 @@ public static class ExternalApiServiceExtensions
         services.AddScoped<ApiRequestHistoryService>();
         services.AddScoped<ApiRequestBodyFormatterService>();
         services.AddScoped<ApiRequestSwaggerService>();
+        services.AddScoped<ManifestOrderService>();
 
         services.AddSingleton<EventService>();
         services.AddSingleton<JwtTokenService>();

@@ -1,0 +1,375 @@
+@page "/manifest/orders"
+
+@using TMS.DeveloperTool.Blazor.Features.Manifest.Services
+@using TMS.DeveloperTool.Blazor.Features.Manifest.Models
+@using TMS.DeveloperTool.Blazor.Domain.Enums
+@inject ManifestOrderService ManifestOrderService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<AppPageTitle MenuName="Đơn hàng" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4">
+        <div class="d-flex justify-space-between align-center mb-4">
+            <MudText Typo="Typo.h4">Đơn hàng</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="ReloadAsync" Disabled="@isLoading">
+                Làm mới
+            </MudButton>
+        </div>
+
+        <MudGrid Class="mb-4" AlignItems="AlignItems.Center">
+            <MudItem xs="12" md="9"></MudItem>
+            <MudItem xs="12" md="3" Class="d-flex justify-end">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Success"
+                           StartIcon="@Icons.Material.Filled.Send"
+                           OnClick="OpenCreateManifestDialog"
+                           Disabled="@(GetSelectedOrderCount() == 0)">
+                    Tạo sổ phát (@GetSelectedOrderCount() đơn)
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+
+        <MudGrid Class="mb-4">
+            <MudItem xs="12">
+                <MudTextField @bind-Value="searchValue"
+                              Label="Tìm theo mã đơn hàng"
+                              Placeholder="Ví dụ: VN123456789"
+                              Variant="Variant.Outlined"
+                              FullWidth="true"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Immediate="true"
+                              DebounceInterval="200"
+                              @bind-Value:after="ApplyFilter" />
+            </MudItem>
+        </MudGrid>
+
+        <MudTable @ref="tableRef"
+                  T="Order"
+                  Items="displayOrders"
+                  Loading="@isLoading"
+                  Hover="true"
+                  Dense="true"
+                  Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh></MudTh>
+                <MudTh></MudTh>
+                <MudTh>Mã đơn hàng</MudTh>
+                <MudTh>Địa chỉ nhận</MudTh>
+                <MudTh>Bưu cục hiện tại</MudTh>
+                <MudTh>Loại đơn</MudTh>
+                <MudTh>Trạng thái</MudTh>
+                <MudTh>Loại dịch vụ</MudTh>
+                <MudTh>Ngày tạo</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>
+                    <MudCheckBox T="bool"
+                                 Value="@checkedOrders.Contains(context.OrderId)"
+                                 ValueChanged="@(v => OnOrderChecked(context, v))"
+                                 Color="Color.Primary"
+                                 Size="Size.Small" />
+                </MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@(expandedOrders.Contains(context.OrderId) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                   Size="Size.Small"
+                                   Color="Color.Secondary"
+                                   OnClick="@(() => ToggleOrderAsync(context.OrderId))" />
+                </MudTd>
+                <MudTd DataLabel="Mã đơn hàng">@context.OrderId</MudTd>
+                <MudTd DataLabel="Địa chỉ nhận">@DisplayText(context.ReceiverAddress)</MudTd>
+                <MudTd DataLabel="Bưu cục hiện tại">@DisplayText(context.CurrentPostOfficeName)</MudTd>
+                <MudTd DataLabel="Loại đơn">
+                    <MudChip T="string"
+                             Color="@(context.OrderType == OrderType.Cod ? Color.Warning : Color.Info)"
+                             Size="Size.Small"
+                             Ripple="false">
+                        @(context.OrderType == OrderType.Cod ? "Đơn COD" : "Đơn thường")
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Trạng thái">
+                    <MudChip T="string" Color="@GetStatusColor(context.CurrentStatusName)" Size="Size.Small" Ripple="false">
+                        @DisplayText(context.CurrentStatusName)
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Loại dịch vụ">@DisplayText(context.ServiceTypeName)</MudTd>
+                <MudTd DataLabel="Ngày tạo">@context.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</MudTd>
+            </RowTemplate>
+            <ChildRowContent>
+                @if (expandedOrders.Contains(context.OrderId))
+                {
+                    <MudTr>
+                        <MudTd colspan="9" Class="pa-2">
+                            @if (loadingItems.Contains(context.OrderId))
+                            {
+                                <MudText Class="pa-2">Đang tải kiện hàng...</MudText>
+                            }
+                            else if (orderItemsCache.TryGetValue(context.OrderId, out List<OrderItem>? cachedItems))
+                            {
+                                <MudTable T="OrderItem"
+                                          Items="cachedItems"
+                                          Dense="true"
+                                          Hover="true"
+                                          Elevation="0">
+                                    <RowTemplate Context="item">
+                                        <MudTd>
+                                            <MudCheckBox T="bool"
+                                                         Value="@IsItemChecked(context.OrderId, item.OrderItemId)"
+                                                         ValueChanged="@(v => OnItemChecked(context.OrderId, item.OrderItemId, v))"
+                                                         Color="Color.Primary"
+                                                         Size="Size.Small" />
+                                        </MudTd>
+                                        <MudTd DataLabel="Mã kiện hàng">@item.OrderItemId</MudTd>
+                                        <MudTd DataLabel="KL (kg)">@item.Weight?.ToString("F3")</MudTd>
+                                        <MudTd DataLabel="KL thực (kg)">@item.RealWeight?.ToString("F3")</MudTd>
+                                        <MudTd DataLabel="KL quy đổi (kg)">@item.CalWeight?.ToString("F3")</MudTd>
+                                        <MudTd DataLabel="D (cm)">@item.L?.ToString("F1")</MudTd>
+                                        <MudTd DataLabel="R (cm)">@item.W?.ToString("F1")</MudTd>
+                                        <MudTd DataLabel="C (cm)">@item.H?.ToString("F1")</MudTd>
+                                        <MudTd DataLabel="Trạng thái">
+                                            <MudChip T="string" Color="@GetStatusColor(item.CurrentStatusName)" Size="Size.Small" Ripple="false">
+                                                @DisplayText(item.CurrentStatusName)
+                                            </MudChip>
+                                        </MudTd>
+                                    </RowTemplate>
+                                    <NoRecordsContent>
+                                        <MudText Class="pa-2">Không có kiện hàng.</MudText>
+                                    </NoRecordsContent>
+                                </MudTable>
+                            }
+                        </MudTd>
+                    </MudTr>
+                }
+            </ChildRowContent>
+            <LoadingContent>
+                <MudText Class="pa-4">Đang tải dữ liệu...</MudText>
+            </LoadingContent>
+            <NoRecordsContent>
+                <MudText Class="pa-4">Không có đơn hàng nào.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudTable<Order>? tableRef;
+    private List<Order> allOrders = [];
+    private List<Order> displayOrders = [];
+    private bool isLoading;
+    private string searchValue = string.Empty;
+
+    private readonly HashSet<string> expandedOrders = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> loadingItems = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<OrderItem>> orderItemsCache = new(StringComparer.OrdinalIgnoreCase);
+
+    // order-level checkboxes (includes COD orders with no items)
+    private readonly HashSet<string> checkedOrders = new(StringComparer.OrdinalIgnoreCase);
+    // item-level checkboxes: orderId → set of checked itemIds
+    private readonly Dictionary<string, HashSet<string>> checkedItems = new(StringComparer.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllOrdersAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        expandedOrders.Clear();
+        orderItemsCache.Clear();
+        checkedOrders.Clear();
+        checkedItems.Clear();
+        await LoadAllOrdersAsync();
+    }
+
+    private async Task LoadAllOrdersAsync()
+    {
+        isLoading = true;
+        try
+        {
+            allOrders = await ManifestOrderService.GetOrdersAsync(CancellationToken.None);
+            ApplyFilter();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải dữ liệu: {ex.Message}", Severity.Error);
+            allOrders = [];
+            displayOrders = [];
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ApplyFilter()
+    {
+        displayOrders = string.IsNullOrWhiteSpace(searchValue)
+            ? allOrders
+            : allOrders.Where(o => o.OrderId.Contains(searchValue, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    // --- Checkbox logic ---
+
+    private async Task OnOrderChecked(Order order, bool isChecked)
+    {
+        if (isChecked)
+        {
+            checkedOrders.Add(order.OrderId);
+            if (!orderItemsCache.ContainsKey(order.OrderId))
+                await LoadOrderItemsAsync(order.OrderId);
+
+            if (orderItemsCache.TryGetValue(order.OrderId, out List<OrderItem>? items) && items.Count > 0)
+            {
+                checkedItems[order.OrderId] = new HashSet<string>(
+                    items.Select(i => i.OrderItemId),
+                    StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        else
+        {
+            checkedOrders.Remove(order.OrderId);
+            checkedItems.Remove(order.OrderId);
+        }
+    }
+
+    private void OnItemChecked(string orderId, string itemId, bool isChecked)
+    {
+        if (!checkedItems.TryGetValue(orderId, out HashSet<string>? itemSet))
+        {
+            itemSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            checkedItems[orderId] = itemSet;
+        }
+
+        if (isChecked)
+        {
+            itemSet.Add(itemId);
+            checkedOrders.Add(orderId);
+        }
+        else
+        {
+            itemSet.Remove(itemId);
+            if (itemSet.Count == 0)
+                checkedOrders.Remove(orderId);
+        }
+    }
+
+    private bool IsItemChecked(string orderId, string itemId)
+        => checkedItems.TryGetValue(orderId, out HashSet<string>? set) && set.Contains(itemId);
+
+    private int GetSelectedOrderCount() => checkedOrders.Count;
+
+    // --- Open dialog ---
+
+    private async Task OpenCreateManifestDialog()
+    {
+        CreateManifest manifest = BuildManifest();
+        if (manifest.Orders.Count == 0)
+        {
+            Snackbar.Add("Chưa chọn đơn hàng nào.", Severity.Warning);
+            return;
+        }
+
+        DialogParameters<CreateManifestDialog> parameters = new()
+        {
+            { d => d.Manifest, manifest }
+        };
+        DialogOptions options = new() { MaxWidth = MaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<CreateManifestDialog>("Tạo sổ phát", parameters, options);
+    }
+
+    private CreateManifest BuildManifest()
+    {
+        List<CreateManifestOrder> orders = [];
+
+        foreach (string orderId in checkedOrders)
+        {
+            Order? order = allOrders.FirstOrDefault(o => o.OrderId == orderId);
+            if (order is null) continue;
+
+            List<CreateManifestItem> items = [];
+
+            if (checkedItems.TryGetValue(orderId, out HashSet<string>? itemIds))
+            {
+                if (orderItemsCache.TryGetValue(orderId, out List<OrderItem>? cached))
+                {
+                    items = cached
+                        .Where(i => itemIds.Contains(i.OrderItemId))
+                        .Select(i => new CreateManifestItem { OrderItemId = i.OrderItemId, IsLoaded = true })
+                        .ToList();
+                }
+                else
+                {
+                    items = itemIds
+                        .Select(id => new CreateManifestItem { OrderItemId = id, IsLoaded = true })
+                        .ToList();
+                }
+            }
+
+            orders.Add(new CreateManifestOrder
+            {
+                OrderId = orderId,
+                OrderType = order.OrderType,
+                Items = items,
+            });
+        }
+
+        return new CreateManifest
+        {
+            Orders = orders,
+        };
+    }
+
+    // --- Row expand / item load ---
+
+    private async Task ToggleOrderAsync(string orderId)
+    {
+        if (expandedOrders.Contains(orderId))
+        {
+            expandedOrders.Remove(orderId);
+            return;
+        }
+
+        expandedOrders.Add(orderId);
+        if (!orderItemsCache.ContainsKey(orderId))
+        {
+            await LoadOrderItemsAsync(orderId);
+        }
+    }
+
+    private async Task LoadOrderItemsAsync(string orderId)
+    {
+        loadingItems.Add(orderId);
+        try
+        {
+            List<OrderItem> items = await ManifestOrderService.GetOrderItemsAsync(orderId, CancellationToken.None);
+            orderItemsCache[orderId] = items;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải kiện hàng: {ex.Message}", Severity.Error);
+            orderItemsCache[orderId] = [];
+        }
+        finally
+        {
+            loadingItems.Remove(orderId);
+        }
+    }
+
+    // --- Helpers ---
+
+    private static Color GetStatusColor(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status)) return Color.Default;
+        string upper = status.ToUpperInvariant();
+        if (upper.Contains("THÀNH CÔNG") || upper.Contains("ĐÃ GIAO") || upper.Contains("HOÀN THÀNH")) return Color.Success;
+        if (upper.Contains("HỦY") || upper.Contains("THẤT BẠI") || upper.Contains("LỖI")) return Color.Error;
+        if (upper.Contains("HOÀN TRẢ") || upper.Contains("TRẢ VỀ")) return Color.Warning;
+        if (upper.Contains("ĐANG") || upper.Contains("CHỜ") || upper.Contains("XỬ LÝ")) return Color.Info;
+        return Color.Default;
+    }
+
+    private static string DisplayText(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+}

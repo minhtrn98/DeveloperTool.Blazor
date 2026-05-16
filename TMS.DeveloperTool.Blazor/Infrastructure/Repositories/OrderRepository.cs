@@ -102,6 +102,61 @@ public sealed class OrderRepository
         return driverIds.ToList();
     }
 
+    public async Task<List<Order>> GetOrdersAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            select
+                o.order_id as "OrderId",
+                o.accepted_time as "AcceptedTime",
+                o.created_at as "CreatedAt",
+                o.sender_name as "SenderName",
+                o.sender_address as "SenderAddress",
+                o.sender_post_office_name as "SenderPostOfficeName",
+                o.receiver_name as "ReceiverName",
+                o.receiver_address as "ReceiverAddress",
+                o.receiver_post_office_name as "ReceiverPostOfficeName",
+                o.current_post_office_name as "CurrentPostOfficeName",
+                o.current_status_id as "CurrentStatusId",
+                o.current_status_name as "CurrentStatusName",
+                o.service_type_name as "ServiceTypeName",
+                o.weight as "Weight",
+                o.cod_amount as "CodAmount",
+                o.order_type as "OrderType"
+            from public.orders o
+            where o.is_deleted = false
+            order by o.created_at desc
+            """;
+
+        IEnumerable<Order> orders = await _dbQuery.QueryAsync<Order>(sql, null, cancellationToken);
+        return orders.ToList();
+    }
+
+    public async Task<List<OrderItem>> GetOrderItemsByOrderIdAsync(
+        string orderId, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            select
+                oi.order_item_id as "OrderItemId",
+                oi.order_id as "OrderId",
+                oi.weight as "Weight",
+                oi.real_weight as "RealWeight",
+                oi.cal_weight as "CalWeight",
+                oi.l as "L",
+                oi.h as "H",
+                oi.w as "W",
+                oi.current_post_office_name as "CurrentPostOfficeName",
+                oi.current_status_id as "CurrentStatusId",
+                oi.current_status_name as "CurrentStatusName"
+            from public.order_items oi
+            where oi.order_id = @OrderId
+            order by oi.order_item_id
+            """;
+
+        IEnumerable<OrderItem> items = await _dbQuery.QueryAsync<OrderItem>(
+            sql, new { OrderId = orderId }, cancellationToken);
+        return items.ToList();
+    }
+
     public async Task<List<PickupTaskOrderDraftDto>> GetPickupTaskOrderDraftsByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
     {
         const string sqlItem = """

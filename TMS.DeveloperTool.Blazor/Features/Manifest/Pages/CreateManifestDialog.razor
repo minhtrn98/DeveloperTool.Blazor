@@ -1,0 +1,223 @@
+@using TMS.DeveloperTool.Blazor.Features.Manifest.Services
+@using TMS.DeveloperTool.Blazor.Features.Manifest.Models
+@using TMS.DeveloperTool.Blazor.Features.Manifest.Contracts
+@using TMS.DeveloperTool.Blazor.Domain.Enums
+@inject ManifestOrderService ManifestOrderService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Tạo sổ phát</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid Class="mb-3" AlignItems="AlignItems.Center">
+            <MudItem xs="12" md="5">
+                <MudAutocomplete T="Employee"
+                                 Value="Manifest.Driver"
+                                 ValueChanged="@(v => Manifest.Driver = v)"
+                                 SearchFunc="SearchDrivers"
+                                 Label="Tài xế"
+                                 Variant="Variant.Outlined"
+                                 FullWidth="true"
+                                 Clearable="true"
+                                 MaxItems="20"
+                                 Disabled="@isSubmitting"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<Employee>" />
+            </MudItem>
+            <MudItem xs="12" md="7">
+                <MudRadioGroup T="DeliveryMode" Value="Manifest.DeliveryMode" ValueChanged="@(v => Manifest.DeliveryMode = v)">
+                    <MudRadio T="DeliveryMode" Value="DeliveryMode.FullOrder" Color="Color.Primary" Disabled="@isSubmitting">Sổ phát toàn bộ đơn</MudRadio>
+                    <MudRadio T="DeliveryMode" Value="DeliveryMode.PartialOrder" Color="Color.Primary" Disabled="@isSubmitting">Sổ phát một phần đơn</MudRadio>
+                </MudRadioGroup>
+            </MudItem>
+        </MudGrid>
+
+        @if (result is not null && result.HasErrors)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-3">
+                <MudText Typo="Typo.subtitle2">Một số đơn/kiện bị lỗi:</MudText>
+                @foreach (ManifestItemError err in result.Errors)
+                {
+                    <MudText Typo="Typo.body2">[@err.ErrorCode] @err.OrderId / @err.ItemId — @err.ErrorMessage</MudText>
+                }
+            </MudAlert>
+        }
+
+        @if (result is not null && !result.HasErrors)
+        {
+            <MudAlert Severity="Severity.Success" Class="mb-3">
+                @if (result.ExpressManifestCode is not null)
+                {
+                    <MudText Typo="Typo.body2">Sổ thường: <b>@result.ExpressManifestCode</b></MudText>
+                }
+                @if (result.CodManifestCode is not null)
+                {
+                    <MudText Typo="Typo.body2">Sổ COD: <b>@result.CodManifestCode</b></MudText>
+                }
+            </MudAlert>
+        }
+
+        <MudTable T="CreateManifestOrder"
+                  Items="Manifest.Orders"
+                  Dense="true"
+                  Hover="true"
+                  Elevation="1">
+            <HeaderContent>
+                <MudTh></MudTh>
+                <MudTh>Mã đơn hàng</MudTh>
+                <MudTh>Loại đơn</MudTh>
+                <MudTh>Số kiện</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>
+                    <MudIconButton Icon="@(expandedOrders.Contains(context.OrderId) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                   Size="Size.Small"
+                                   Color="Color.Secondary"
+                                   OnClick="@(() => ToggleOrder(context.OrderId))"
+                                   Disabled="@(context.Items.Count == 0)" />
+                </MudTd>
+                <MudTd DataLabel="Mã đơn hàng">@context.OrderId</MudTd>
+                <MudTd DataLabel="Loại đơn">
+                    <MudChip T="string"
+                             Color="@(context.OrderType == OrderType.Cod ? Color.Warning : Color.Info)"
+                             Size="Size.Small"
+                             Ripple="false">
+                        @GetOrderTypeLabel(context.OrderType)
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Số kiện">@context.Items.Count</MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Size="Size.Small"
+                                   Color="Color.Error"
+                                   OnClick="@(() => RemoveOrder(context))"
+                                   Disabled="@isSubmitting" />
+                </MudTd>
+            </RowTemplate>
+            <ChildRowContent>
+                @if (expandedOrders.Contains(context.OrderId))
+                {
+                    @foreach (CreateManifestItem item in context.Items.ToList())
+                    {
+                        <MudTr>
+                            <MudTd></MudTd>
+                            <MudTd>@item.OrderItemId</MudTd>
+                            <MudTd>
+                                <MudCheckBox @bind-Value="item.IsLoaded"
+                                             Color="Color.Primary"
+                                             Size="Size.Small"
+                                             Disabled="@isSubmitting" />
+                            </MudTd>
+                            <MudTd></MudTd>
+                            <MudTd>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Size="Size.Small"
+                                               Color="Color.Error"
+                                               OnClick="@(() => RemoveItem(context, item))"
+                                               Disabled="@isSubmitting" />
+                            </MudTd>
+                        </MudTr>
+                    }
+                }
+            </ChildRowContent>
+            <NoRecordsContent>
+                <MudText Class="pa-2">Không có đơn hàng nào được chọn.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Color="Color.Default" Disabled="@isSubmitting">Hủy</MudButton>
+        <MudButton OnClick="SubmitAsync"
+                   Variant="Variant.Filled"
+                   Color="Color.Success"
+                   Disabled="@(isSubmitting || Manifest.Driver is null || Manifest.Orders.Count == 0 || result is { HasErrors: false })"
+                   StartIcon="@Icons.Material.Filled.Send">
+            @(isSubmitting ? "Đang gửi..." : "Tạo sổ")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public CreateManifest Manifest { get; set; } = default!;
+
+    private bool isSubmitting;
+    private CommitDeliveryManifestResult? result;
+    private List<Employee> allEmployees = [];
+    private readonly HashSet<string> expandedOrders = new(StringComparer.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        foreach (CreateManifestOrder order in Manifest.Orders)
+            expandedOrders.Add(order.OrderId);
+
+        try
+        {
+            allEmployees = await ManifestOrderService.GetEmployeesAsync(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải danh sách tài xế: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private Task<IEnumerable<Employee>> SearchDrivers(string searchTerm, CancellationToken _)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(allEmployees, searchTerm));
+
+    private void ToggleOrder(string orderId)
+    {
+        if (!expandedOrders.Add(orderId))
+            expandedOrders.Remove(orderId);
+    }
+
+    private void RemoveOrder(CreateManifestOrder order)
+    {
+        Manifest.Orders.Remove(order);
+        expandedOrders.Remove(order.OrderId);
+    }
+
+    private void RemoveItem(CreateManifestOrder order, CreateManifestItem item)
+    {
+        order.Items.Remove(item);
+        if (order.Items.Count == 0)
+            expandedOrders.Remove(order.OrderId);
+    }
+
+    private async Task SubmitAsync()
+    {
+        isSubmitting = true;
+        try
+        {
+            result = await ManifestOrderService.CommitManifestAsync(Manifest, CancellationToken.None);
+            if (!result.HasErrors)
+            {
+                Snackbar.Add("Tạo sổ phát thành công!", Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Lỗi: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private static string GetDeliveryModeLabel(DeliveryMode mode) => mode switch
+    {
+        DeliveryMode.FullOrder => "Sổ phát toàn bộ đơn",
+        DeliveryMode.PartialOrder => "Sổ phát một phần đơn",
+        _ => mode.ToString(),
+    };
+
+    private static string GetOrderTypeLabel(OrderType type) => type switch
+    {
+        OrderType.Regular => "Đơn thường",
+        OrderType.Cod => "Đơn COD",
+        _ => type.ToString(),
+    };
+}

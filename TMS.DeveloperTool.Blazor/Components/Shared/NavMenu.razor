@@ -49,6 +49,13 @@
         </MudNavGroup>
     }
 
+    @if (ShouldShow(ApplicationConstants.MenuKeys.Manifests))
+    {
+        <MudNavGroup Title="Sổ phát" Expanded="false">
+            <MudNavLink Href="@ApplicationConstants.Routes.ManifestOrders" Match="NavLinkMatch.All">Đơn hàng</MudNavLink>
+        </MudNavGroup>
+    }
+
     @if (ShouldShow(ApplicationConstants.MenuKeys.TopMovingVehicles))
     {
         <MudNavLink Href="@ApplicationConstants.Routes.TopMovingVehicles" Match="NavLinkMatch.All">Top xe di chuyển
@@ -86,7 +93,8 @@
         ApplicationConstants.MenuKeys.TopMovingVehicles,
         ApplicationConstants.MenuKeys.VehicleStatuses,
         ApplicationConstants.MenuKeys.RoutingConfig,
-        ApplicationConstants.MenuKeys.ApiRequest
+        ApplicationConstants.MenuKeys.ApiRequest,
+        ApplicationConstants.MenuKeys.Manifests
     ];
 
     private HashSet<string> _allowedMenusForCurrentRequest = new (StringComparer.OrdinalIgnoreCase);

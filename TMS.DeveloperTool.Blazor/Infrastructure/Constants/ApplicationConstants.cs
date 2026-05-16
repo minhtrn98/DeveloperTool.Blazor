@@ -44,6 +44,7 @@ public static class ApplicationConstants
         public const string JsonBuilder = "/json-builder";
         public const string JobTrigger = "/job-trigger";
         public const string ApiRequest = "/api-request";
+        public const string ManifestOrders = "/manifest/orders";
     }
 
     public static class EnvironmentNames
@@ -68,6 +69,7 @@ public static class ApplicationConstants
         public const string VehicleStatuses = "VehicleStatuses";
         public const string RoutingConfig = "RoutingConfig";
         public const string ApiRequest = "ApiRequest";
+        public const string Manifests = "Manifests";
     }
 
     /// <summary>
