@@ -2,21 +2,13 @@ using TMS.DeveloperTool.Blazor.Features.Routing.Models;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 
-public sealed class RouteRepository
+public sealed class RouteRepository([FromKeyedServices("RouteDb")] ApplicationDbQuery dbQuery, CacheService cacheService)
 {
-    private readonly ApplicationDbQuery _dbQuery;
-    private readonly CacheService _cacheService;
-
-    public RouteRepository([FromKeyedServices("RouteDb")] ApplicationDbQuery dbQuery, CacheService cacheService)
-    {
-        _dbQuery = dbQuery;
-        _cacheService = cacheService;
-    }
 
     // get "PostOffices" table data
     public async Task<IEnumerable<PostOffice>> GetPostOfficesAsync(CancellationToken cancellationToken = default)
     {
-        IEnumerable<PostOffice>? cache = _cacheService.GetPostOfficesCache();
+        IEnumerable<PostOffice>? cache = cacheService.GetPostOfficesCache();
         if (cache != null)
         {
             return cache;
@@ -29,8 +21,8 @@ public sealed class RouteRepository
             join public."Provinces" on p."ProvinceId" = "Provinces"."ProvinceId"
             WHERE "Longitude" IS NOT NULL AND "Latitude" IS NOT NULL
         """;
-        IEnumerable<PostOffice> records = await _dbQuery.QueryAsync<PostOffice>(sql, null, cancellationToken);
-        _cacheService.SetPostOfficesCache(records);
+        IEnumerable<PostOffice> records = await dbQuery.QueryAsync<PostOffice>(sql, null, cancellationToken);
+        cacheService.SetPostOfficesCache(records);
 
         return records;
     }

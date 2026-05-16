@@ -38,8 +38,8 @@
                 Thông tin vận đơn
             </MudText>
 
-            <MudList T="string" Dense="true" DisablePadding="true" Class="mb-4">
-                <MudListItem T="string" DisableRipple="true">
+            <MudList T="string" Dense="true" Class="mb-4">
+                <MudListItem T="string">
                     <div class="d-flex align-center justify-space-between py-1">
                         <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-width:140px">Người nhận</MudText>
                         @if (detail.ReceiverName is not null)
@@ -64,14 +64,14 @@
                     </div>
                 </MudListItem>
                 <MudDivider />
-                <MudListItem T="string" DisableRipple="true">
+                <MudListItem T="string">
                     <div class="d-flex align-start justify-space-between py-1">
                         <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-width:140px">Địa chỉ phát</MudText>
                         <MudText Typo="Typo.body2" Style="text-align:right">@DisplayText(detail.ReceiverAddress)</MudText>
                     </div>
                 </MudListItem>
                 <MudDivider />
-                <MudListItem T="string" DisableRipple="true">
+                <MudListItem T="string">
                     <div class="d-flex align-center justify-space-between py-1">
                         <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-width:140px">Bưu cục phát</MudText>
                         <MudText Typo="Typo.body2">@DisplayText(detail.ReceiverPostOfficeName)</MudText>
@@ -80,7 +80,7 @@
                 @if (detail.PicName is not null)
                 {
                     <MudDivider />
-                    <MudListItem T="string" DisableRipple="true">
+                    <MudListItem T="string">
                         <div class="d-flex align-center justify-space-between py-1">
                             <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-width:140px">Giao nhận phụ trách</MudText>
                             <div class="d-flex align-center gap-2">
@@ -114,10 +114,10 @@
                 </MudChip>
             </div>
 
-            <MudList T="string" Dense="true" DisablePadding="true">
+            <MudList T="string" Dense="true">
                 @foreach (GetManifestOrderItemDetail item in detail.Items)
                 {
-                    <MudListItem T="string" DisableRipple="true">
+                    <MudListItem T="string">
                         <div class="d-flex align-center justify-space-between py-1">
                             <MudText Typo="Typo.body2"><b>@item.OrderItemId</b></MudText>
                             <MudChip T="string"

@@ -5,17 +5,9 @@ using TMS.DeveloperTool.Blazor.Features.Simulation.Models;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Messaging;
 
-public sealed class EventService
+public sealed class EventService(RabbitMqConfig config, ILogger<EventService> logger)
 {
-    private readonly ILogger<EventService> _logger;
-    private readonly RabbitMqConfig _config;
     private IConnection? _connection;
-
-    public EventService(RabbitMqConfig config, ILogger<EventService> logger)
-    {
-        _config = config;
-        _logger = logger;
-    }
 
     public async Task PublishTrackingEvent(VehicleTrackingEvent trackingEvent, CancellationToken cancellationToken = default)
     {
@@ -26,11 +18,11 @@ public sealed class EventService
 
         if (_connection == null)
         {
-            _logger.LogError("Failed to create a RabbitMQ connection. Message not sent.");
+            logger.LogError("Failed to create a RabbitMQ connection. Message not sent.");
             return;
         }
 
-        ExchangeConfig vehiclesExchange = _config.GetVehicleEventsExchange();
+        ExchangeConfig vehiclesExchange = config.GetVehicleEventsExchange();
         QueueConfig vehicleQueue = vehiclesExchange.GetVehicleQueue();
 
         string queueName = vehicleQueue.QueueName;
@@ -63,7 +55,7 @@ public sealed class EventService
             body: body,
             cancellationToken: cancellationToken);
 
-        _logger.LogInformation("Message published to queue '{QueueName}': {Message}", queueName, message);
+        logger.LogInformation("Message published to queue '{QueueName}': {Message}", queueName, message);
     }
 
     public async Task PublishPickupTaskEvent(string message, CancellationToken cancellationToken = default)
@@ -75,11 +67,11 @@ public sealed class EventService
 
         if (_connection == null)
         {
-            _logger.LogError("Failed to create a RabbitMQ connection. Message not sent.");
+            logger.LogError("Failed to create a RabbitMQ connection. Message not sent.");
             return;
         }
 
-        ExchangeConfig pmsEventsExchange = _config.GetPmsEventsExchange();
+        ExchangeConfig pmsEventsExchange = config.GetPmsEventsExchange();
         QueueConfig pickupTaskQueue = pmsEventsExchange.GetPickupTasksQueue();
 
         string queueName = pickupTaskQueue.QueueName;
@@ -106,7 +98,7 @@ public sealed class EventService
             body: body,
             cancellationToken: cancellationToken);
 
-        _logger.LogInformation("Message published to queue '{QueueName}': {Message}", queueName, message);
+        logger.LogInformation("Message published to queue '{QueueName}': {Message}", queueName, message);
     }
 
     private async Task CreateConnectionAsync()
@@ -115,17 +107,17 @@ public sealed class EventService
         {
             ConnectionFactory factory = new()
             {
-                HostName = _config.HostName,
-                UserName = _config.UserName,
-                Password = _config.Password
+                HostName = config.HostName,
+                UserName = config.UserName,
+                Password = config.Password
             };
 
             _connection = await factory.CreateConnectionAsync();
-            _logger.LogInformation("RabbitMQ connection created successfully.");
+            logger.LogInformation("RabbitMQ connection created successfully.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Could not create a RabbitMQ connection.");
+            logger.LogError(ex, "Could not create a RabbitMQ connection.");
         }
     }
 }

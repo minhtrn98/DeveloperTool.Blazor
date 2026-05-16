@@ -3,15 +3,8 @@ using VehicleRecord = (System.Guid Id, string LicensePlate);
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 
-public sealed class FleetRepository
+public sealed class FleetRepository([FromKeyedServices("FleetDb")] ApplicationDbQuery dbQuery)
 {
-    private readonly ApplicationDbQuery _dbQuery;
-
-    public FleetRepository([FromKeyedServices("FleetDb")] ApplicationDbQuery dbQuery)
-    {
-        _dbQuery = dbQuery;
-    }
-
     public async Task<Dictionary<Guid, string>> GetVehiclePlatesAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
     {
         const string sql = """
@@ -19,7 +12,7 @@ public sealed class FleetRepository
             FROM public."Vehicles"
             WHERE "Id" = ANY(@Ids)
         """;
-        IEnumerable<VehicleRecord> vehicles = await _dbQuery.QueryAsync<VehicleRecord>(sql, new { Ids = ids }, cancellationToken);
+        IEnumerable<VehicleRecord> vehicles = await dbQuery.QueryAsync<VehicleRecord>(sql, new { Ids = ids }, cancellationToken);
         return vehicles.ToDictionary(d => d.Id, d => d.LicensePlate);
     }
 
@@ -37,9 +30,9 @@ public sealed class FleetRepository
         """;
 
         object? parameters = isPairingAllowed.HasValue ? new { IsPairingAllowed = isPairingAllowed } : null;
-        IEnumerable<VehicleDropdownItemDto> vehicles = await _dbQuery.QueryAsync<VehicleDropdownItemDto>(sql, parameters, cancellationToken);
+        IEnumerable<VehicleDropdownItemDto> vehicles = await dbQuery.QueryAsync<VehicleDropdownItemDto>(sql, parameters, cancellationToken);
 
-        return vehicles.ToList();
+        return [.. vehicles];
     }
 
     public async Task<(int totalCount, List<VehicleDropdownItemDto>)> SearchVehicleWithPaging(int page, int pageSize, string? searchValue, CancellationToken cancellationToken = default)
@@ -59,8 +52,8 @@ public sealed class FleetRepository
         """;
 
         object parameters = new { PageSize = pageSize, Offset = (page - 1) * pageSize, SearchValue = $"%{searchValue}%" };
-        IEnumerable<VehicleDropdownItemDto> vehicles = await _dbQuery.QueryAsync<VehicleDropdownItemDto>(sql, parameters, cancellationToken);
-        int totalCount = await _dbQuery.SingleOrDefaultAsync<int>(sqlCount, new { SearchValue = $"%{searchValue}%" }, cancellationToken);
+        IEnumerable<VehicleDropdownItemDto> vehicles = await dbQuery.QueryAsync<VehicleDropdownItemDto>(sql, parameters, cancellationToken);
+        int totalCount = await dbQuery.SingleOrDefaultAsync<int>(sqlCount, new { SearchValue = $"%{searchValue}%" }, cancellationToken);
 
         return (totalCount, vehicles.ToList());
     }
@@ -71,7 +64,7 @@ public sealed class FleetRepository
             SELECT "Id"
             FROM public."Vehicles"
         """;
-        return await _dbQuery.QueryAsync<Guid>(sql, null, cancellationToken);
+        return await dbQuery.QueryAsync<Guid>(sql, null, cancellationToken);
     }
 
     public async Task<IEnumerable<DropdownItemDto<Guid>>> GetPairingReasonTypesAsync(CancellationToken cancellationToken)
@@ -81,7 +74,7 @@ public sealed class FleetRepository
             from public."PairingReasonTypes"
             where "IsDeleted" = false
         """;
-        IEnumerable<DropdownItemDto<Guid>> records = await _dbQuery.QueryAsync<DropdownItemDto<Guid>>(sql, null, cancellationToken);
+        IEnumerable<DropdownItemDto<Guid>> records = await dbQuery.QueryAsync<DropdownItemDto<Guid>>(sql, null, cancellationToken);
         return records;
     }
 
@@ -92,7 +85,7 @@ public sealed class FleetRepository
             FROM public."Vehicles"
             WHERE "Id" = @VehicleId
         """;
-        double? odometer = await _dbQuery.SingleOrDefaultAsync<double?>(sql, new { VehicleId = vehicleId }, cancellationToken);
+        double? odometer = await dbQuery.SingleOrDefaultAsync<double?>(sql, new { VehicleId = vehicleId }, cancellationToken);
         return odometer ?? 0;
     }
 
@@ -103,7 +96,7 @@ public sealed class FleetRepository
             FROM public."Vehicles"
             WHERE "ActualPlate" = @LicensePlate or "LicensePlate" = @LicensePlate
         """;
-        double? odometer = await _dbQuery.SingleOrDefaultAsync<double?>(sql, new { LicensePlate = licensePlate }, cancellationToken);
+        double? odometer = await dbQuery.SingleOrDefaultAsync<double?>(sql, new { LicensePlate = licensePlate }, cancellationToken);
         return odometer ?? 0;
     }
 
@@ -137,7 +130,7 @@ public sealed class FleetRepository
             ORDER BY vd."Code" DESC
             LIMIT 1
         """;
-        return await _dbQuery.SingleOrDefaultAsync<LatestAssignmentDto>(sql, new { VehicleId = vehicleId }, cancellationToken);
+        return await dbQuery.SingleOrDefaultAsync<LatestAssignmentDto>(sql, new { VehicleId = vehicleId }, cancellationToken);
     }
 
     public async Task<IEnumerable<PlanningDropdownItemDto>> GetInspectionPlansByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
@@ -147,7 +140,7 @@ public sealed class FleetRepository
             FROM public."InspectionPlans"
             WHERE "VehicleId" = @VehicleId and "Status" = Any(@Statuses)
         """;
-        IEnumerable<PlanningDropdownItemDto> records = await _dbQuery.QueryAsync<PlanningDropdownItemDto>(
+        IEnumerable<PlanningDropdownItemDto> records = await dbQuery.QueryAsync<PlanningDropdownItemDto>(
             sql,
             new { VehicleId = vehicleId, Statuses = new[] { (int)InspectionPlanStatus.WaitingForInspection, (int)InspectionPlanStatus.InProgress } },
             cancellationToken);
@@ -161,7 +154,7 @@ public sealed class FleetRepository
             FROM public."MaintenancePlans"
             WHERE "VehicleId" = @VehicleId and "Status" = Any(@Statuses)
         """;
-        IEnumerable<PlanningDropdownItemDto> records = await _dbQuery.QueryAsync<PlanningDropdownItemDto>(
+        IEnumerable<PlanningDropdownItemDto> records = await dbQuery.QueryAsync<PlanningDropdownItemDto>(
             sql,
             new { VehicleId = vehicleId, Statuses = new[] { (int)MaintenancePlanStatus.Pending, (int)MaintenancePlanStatus.InTransit, (int)MaintenancePlanStatus.InProgress } },
             cancellationToken);

@@ -1,14 +1,7 @@
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 
-public sealed class ManifestRepository
+public sealed class ManifestRepository([FromKeyedServices("OrderDb")] ApplicationDbQuery dbQuery)
 {
-    private readonly ApplicationDbQuery _dbQuery;
-
-    public ManifestRepository([FromKeyedServices("OrderDb")] ApplicationDbQuery dbQuery)
-    {
-        _dbQuery = dbQuery;
-    }
-
     public async Task<List<DeliveryManifest>> GetDeliveryManifestsAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """
@@ -36,7 +29,7 @@ public sealed class ManifestRepository
             order by dm.created_at desc
             """;
 
-        IEnumerable<DeliveryManifest> manifests = await _dbQuery.QueryAsync<DeliveryManifest>(sql, null, cancellationToken);
-        return manifests.ToList();
+        IEnumerable<DeliveryManifest> manifests = await dbQuery.QueryAsync<DeliveryManifest>(sql, null, cancellationToken);
+        return [.. manifests];
     }
 }

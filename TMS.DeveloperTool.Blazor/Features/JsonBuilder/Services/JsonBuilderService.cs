@@ -8,15 +8,16 @@ using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services.Strategies;
 
 namespace TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 
-public sealed class JsonBuilderService
+public sealed class JsonBuilderService(
+    IEnumerable<IJsonTypeMappingStrategy> strategies,
+    IWebHostEnvironment webHostEnvironment,
+    TimeProvider timeProvider)
 {
     private sealed record CachedBuilderResult(Lazy<Task<object>> ValueFactory, DateTimeOffset ExpiresAt);
 
     private static readonly TimeSpan KeyValueBuilderCacheTtl = TimeSpan.FromMinutes(1);
 
-    private readonly IReadOnlyDictionary<string, IJsonTypeMappingStrategy> _strategiesByJsonType;
-    private readonly IWebHostEnvironment _webHostEnvironment;
-    private readonly TimeProvider _timeProvider;
+    private readonly IReadOnlyDictionary<string, IJsonTypeMappingStrategy> _strategiesByJsonType = strategies.ToDictionary(s => s.JsonType, s => s, StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, Lazy<Task<IReadOnlyDictionary<string, JsonKeyMapping>>>> _jsonKeyMappingsCache =
         new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, CachedBuilderResult> _keyValueBuilderCache =
@@ -32,16 +33,6 @@ public sealed class JsonBuilderService
     public JsonBuilderService(IEnumerable<IJsonTypeMappingStrategy> strategies, IWebHostEnvironment webHostEnvironment)
         : this(strategies, webHostEnvironment, TimeProvider.System)
     {
-    }
-
-    public JsonBuilderService(
-        IEnumerable<IJsonTypeMappingStrategy> strategies,
-        IWebHostEnvironment webHostEnvironment,
-        TimeProvider timeProvider)
-    {
-        _strategiesByJsonType = strategies.ToDictionary(s => s.JsonType, s => s, StringComparer.OrdinalIgnoreCase);
-        _webHostEnvironment = webHostEnvironment;
-        _timeProvider = timeProvider;
     }
 
     public IReadOnlyList<string> GetJsonTypes()
@@ -61,7 +52,7 @@ public sealed class JsonBuilderService
             return null;
         }
 
-        return await strategy.LoadTemplateAsync(_webHostEnvironment);
+        return await strategy.LoadTemplateAsync(webHostEnvironment);
     }
 
     public async Task SendRequestAsync(string jsonInput, string jsonType, CancellationToken cancellationToken = default)
@@ -247,7 +238,7 @@ public sealed class JsonBuilderService
     private async Task<object> GetKeyValueBuilderResultAsync(string jsonType, string keyName, JsonKeyValueBuilder builder)
     {
         string cacheKey = $"{jsonType}:{keyName}";
-        DateTimeOffset now = _timeProvider.GetUtcNow();
+        DateTimeOffset now = timeProvider.GetUtcNow();
 
         if (_keyValueBuilderCache.TryGetValue(cacheKey, out CachedBuilderResult? cachedResult) && cachedResult.ExpiresAt > now)
         {

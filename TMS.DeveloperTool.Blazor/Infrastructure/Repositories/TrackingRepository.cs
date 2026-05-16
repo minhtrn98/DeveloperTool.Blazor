@@ -1,13 +1,7 @@
 ﻿namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 
-public sealed class TrackingRepository
+public sealed class TrackingRepository([FromKeyedServices("TrackingDb")] ApplicationDbQuery dbQuery)
 {
-    private readonly ApplicationDbQuery _dbQuery;
-    public TrackingRepository([FromKeyedServices("TrackingDb")] ApplicationDbQuery dbQuery)
-    {
-        _dbQuery = dbQuery;
-    }
-
     public IAsyncEnumerable<TopMovingVehicleDto> GetTopMovingVehiclesAsync()
     {
         const string sql = """
@@ -45,7 +39,7 @@ public sealed class TrackingRepository
             ORDER BY "MovingScore" DESC
             """;
 
-        return _dbQuery.QueryUnbufferedAsync<TopMovingVehicleDto>(sql);
+        return dbQuery.QueryUnbufferedAsync<TopMovingVehicleDto>(sql);
     }
 
 }

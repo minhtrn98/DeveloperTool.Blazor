@@ -2,19 +2,8 @@
 
 namespace TMS.DeveloperTool.Blazor.Services;
 
-public sealed class VehicleStatusService
+public sealed class VehicleStatusService(IVehicleStatusApi vehicleStatusApi, FleetRepository fleetRepository, DriverRepository driverRepository)
 {
-    private readonly IVehicleStatusApi _vehicleStatusApi;
-    private readonly FleetRepository _fleetRepository;
-    private readonly DriverRepository _driverRepository;
-
-    public VehicleStatusService(IVehicleStatusApi vehicleStatusApi, FleetRepository fleetRepository, DriverRepository driverRepository)
-    {
-        _vehicleStatusApi = vehicleStatusApi;
-        _fleetRepository = fleetRepository;
-        _driverRepository = driverRepository;
-    }
-
     public async Task<(List<VehicleStatusTrackingDto> Items, int TotalCount)> GetVehicleStatusesAsync(
         string? searchValue,
         int pageIndex,
@@ -28,13 +17,13 @@ public sealed class VehicleStatusService
         string? normalizedSearch = NormalizeLicensePlate(searchValue);
 
         // get all vehicles
-        var (totalCount, vehiclePlates) = await _fleetRepository.SearchVehicleWithPaging(safePageIndex, safePageSize, normalizedSearch, cancellationToken);
+        var (totalCount, vehiclePlates) = await fleetRepository.SearchVehicleWithPaging(safePageIndex, safePageSize, normalizedSearch, cancellationToken);
 
         // call api to get vehicle status tracking info
         foreach (VehicleDropdownItemDto vehicle in vehiclePlates)
         {
             string licensePlate = vehicle.LicensePlate.Replace("-", string.Empty).Replace(".", string.Empty);
-            VehicleStatusResponseDto vehicleStatus = await _vehicleStatusApi.GetVehicleStatusAsync(licensePlate, cancellationToken);
+            VehicleStatusResponseDto vehicleStatus = await vehicleStatusApi.GetVehicleStatusAsync(licensePlate, cancellationToken);
             string? licenseNo = vehicleStatus.Data.Count > 0
                 ? vehicleStatus.Data[0].LicenseNo
                 : null;
@@ -43,7 +32,7 @@ public sealed class VehicleStatusService
             if (!string.IsNullOrEmpty(licenseNo))
             {
                 // find driver by license no
-                emp = await _driverRepository.GetEmployeeByLicenseNoAsync(licenseNo, cancellationToken);
+                emp = await driverRepository.GetEmployeeByLicenseNoAsync(licenseNo, cancellationToken);
             }
 
             VehicleStatusTrackingDto trackingInfo = new()

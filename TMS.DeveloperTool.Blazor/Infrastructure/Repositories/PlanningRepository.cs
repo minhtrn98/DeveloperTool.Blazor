@@ -2,15 +2,8 @@ using RealPlanPostOfficeRecord = (System.Guid RealPlanId, string PostOfficeCode)
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 
-public sealed class PlanningRepository
+public sealed class PlanningRepository([FromKeyedServices("PlanningDb")] ApplicationDbQuery dbQuery)
 {
-    private readonly ApplicationDbQuery _dbQuery;
-
-    public PlanningRepository([FromKeyedServices("PlanningDb")] ApplicationDbQuery dbQuery)
-    {
-        _dbQuery = dbQuery;
-    }
-
     public async Task<IEnumerable<PlanningDropdownItemDto>> GetDailyPlanDropdownItemsAsync(CancellationToken cancellationToken)
     {
         // create gmt+7 now datetime
@@ -23,7 +16,7 @@ public sealed class PlanningRepository
             from public.real_plans
             where execution_date = '{todayGmt7}'
         """;
-        IEnumerable<PlanningDropdownItemDto> records = await _dbQuery.QueryAsync<PlanningDropdownItemDto>(sql, null, cancellationToken);
+        IEnumerable<PlanningDropdownItemDto> records = await dbQuery.QueryAsync<PlanningDropdownItemDto>(sql, null, cancellationToken);
 
         string sqlFirstStop = $"""
             select d.real_plan_id as "RealPlanId", d.post_office_code as "PostOfficeCode"
@@ -31,7 +24,7 @@ public sealed class PlanningRepository
             where d.real_plan_id = ANY(@Ids) and d.step_number = 1
         """;
         object param = new { Ids = records.Select(r => r.Id).ToArray() };
-        IEnumerable<RealPlanPostOfficeRecord> firstStops = await _dbQuery.QueryAsync<RealPlanPostOfficeRecord>(sqlFirstStop, param, cancellationToken);
+        IEnumerable<RealPlanPostOfficeRecord> firstStops = await dbQuery.QueryAsync<RealPlanPostOfficeRecord>(sqlFirstStop, param, cancellationToken);
         foreach (var record in records)
         {
             record.FirstStop = firstStops.FirstOrDefault(fs => fs.RealPlanId == record.Id).PostOfficeCode;
@@ -57,7 +50,7 @@ public sealed class PlanningRepository
             from public.real_plans
             where execution_date = '{todayGmt7}' and (@Status IS NULL OR status = @Status)
         """;
-        IEnumerable<DailyPlanDto> dailyPlans = await _dbQuery.QueryAsync<DailyPlanDto>(sqlDailyPlan, new { Status = status }, cancellationToken);
+        IEnumerable<DailyPlanDto> dailyPlans = await dbQuery.QueryAsync<DailyPlanDto>(sqlDailyPlan, new { Status = status }, cancellationToken);
         Guid[] dailyPlanIds = [.. dailyPlans.Select(dp => dp.Id)];
 
         const string sqlDailyPlanDetails = $"""
@@ -71,10 +64,10 @@ public sealed class PlanningRepository
             from public.real_plan_details d
             join UNNEST(@Ids) as r(id) on d.real_plan_id = r.id
         """;
-        IEnumerable<DailyPlanDetailDto> dailyPlanDetails = await _dbQuery.QueryAsync<DailyPlanDetailDto>(sqlDailyPlanDetails, new { Ids = dailyPlanIds }, cancellationToken);
+        IEnumerable<DailyPlanDetailDto> dailyPlanDetails = await dbQuery.QueryAsync<DailyPlanDetailDto>(sqlDailyPlanDetails, new { Ids = dailyPlanIds }, cancellationToken);
         foreach (DailyPlanDto dailyPlan in dailyPlans)
         {
-            dailyPlan.Details = dailyPlanDetails.Where(dpd => dpd.DailyPlanId == dailyPlan.Id).OrderBy(x => x.StepNumber).ToList();
+            dailyPlan.Details = [.. dailyPlanDetails.Where(dpd => dpd.DailyPlanId == dailyPlan.Id).OrderBy(x => x.StepNumber)];
         }
 
         return dailyPlans;

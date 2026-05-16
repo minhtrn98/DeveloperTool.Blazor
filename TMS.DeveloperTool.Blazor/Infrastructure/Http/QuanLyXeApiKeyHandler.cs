@@ -2,14 +2,9 @@ using Microsoft.Extensions.Options;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Http;
 
-public sealed class QuanLyXeApiKeyHandler : DelegatingHandler
+public sealed class QuanLyXeApiKeyHandler(IOptions<QuanLyXeOptions> options) : DelegatingHandler
 {
-    private readonly QuanLyXeOptions _options;
-
-    public QuanLyXeApiKeyHandler(IOptions<QuanLyXeOptions> options)
-    {
-        _options = options.Value;
-    }
+    private readonly QuanLyXeOptions _options = options.Value;
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {

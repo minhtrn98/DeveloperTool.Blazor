@@ -5,17 +5,8 @@ using RolePermissionRecord = (System.Guid RoleId, string PermissionKey);
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 
-public sealed class DriverRepository
+public sealed class DriverRepository([FromKeyedServices("DriverDb")] ApplicationDbQuery dbQuery, CacheService cacheService)
 {
-    private readonly ApplicationDbQuery _dbQuery;
-    private readonly CacheService _cacheService;
-
-    public DriverRepository([FromKeyedServices("DriverDb")] ApplicationDbQuery dbQuery, CacheService cacheService)
-    {
-        _dbQuery = dbQuery;
-        _cacheService = cacheService;
-    }
-
     public async Task<Dictionary<Guid, string>> GetDriverNamesAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
     {
         const string sql = @"
@@ -23,7 +14,7 @@ public sealed class DriverRepository
             FROM public.employees
             WHERE id = ANY(@Ids) and is_active = true
         ";
-        IEnumerable<DriverRecord> drivers = await _dbQuery.QueryAsync<DriverRecord>(sql, new { Ids = ids }, cancellationToken);
+        IEnumerable<DriverRecord> drivers = await dbQuery.QueryAsync<DriverRecord>(sql, new { Ids = ids }, cancellationToken);
         return drivers.ToDictionary(d => d.Id, d => d.Name);
     }
 
@@ -34,7 +25,7 @@ public sealed class DriverRepository
             FROM public.employees
             WHERE id = ANY(@Ids) and is_active = true
         """;
-        IEnumerable<EmployeeContactDto> contacts = await _dbQuery.QueryAsync<EmployeeContactDto>(sql, new { Ids = ids }, cancellationToken);
+        IEnumerable<EmployeeContactDto> contacts = await dbQuery.QueryAsync<EmployeeContactDto>(sql, new { Ids = ids }, cancellationToken);
         return contacts.ToDictionary(d => d.Id, d => d);
     }
 
@@ -45,7 +36,7 @@ public sealed class DriverRepository
             FROM public.employees
             WHERE code = @Code and is_active = true
         """;
-        EmployeeDto? driver = await _dbQuery.FirstOrDefaultAsync<EmployeeDto>(sql, new { Code = code }, cancellationToken);
+        EmployeeDto? driver = await dbQuery.FirstOrDefaultAsync<EmployeeDto>(sql, new { Code = code }, cancellationToken);
         return driver;
     }
 
@@ -56,7 +47,7 @@ public sealed class DriverRepository
             FROM public.employees
             WHERE license_no = @LicenseNo and is_active = true
         """;
-        EmployeeDto? driver = await _dbQuery.FirstOrDefaultAsync<EmployeeDto>(sql, new { LicenseNo = licenseNo }, cancellationToken);
+        EmployeeDto? driver = await dbQuery.FirstOrDefaultAsync<EmployeeDto>(sql, new { LicenseNo = licenseNo }, cancellationToken);
         return driver;
     }
 
@@ -69,7 +60,7 @@ public sealed class DriverRepository
             JOIN public.app_roles r ON er.role_id = r.id
             WHERE e.id = ANY(@DriverIds) and e.is_active = true
         """;
-        IEnumerable<DriverRoleRecord> driverRoles = await _dbQuery.QueryAsync<DriverRoleRecord>(sql, new { DriverIds = driverIds }, cancellationToken);
+        IEnumerable<DriverRoleRecord> driverRoles = await dbQuery.QueryAsync<DriverRoleRecord>(sql, new { DriverIds = driverIds }, cancellationToken);
         return driverRoles
             .GroupBy(dr => dr.DriverId)
             .ToDictionary(g => g.Key, g => g.Select(dr => new RoleDto(dr.RoleId, dr.RoleName, dr.PermissionsVersion)).ToArray());
@@ -84,7 +75,7 @@ public sealed class DriverRepository
             JOIN public.departments d ON ud.department_id = d.id
             WHERE e.id = ANY(@DriverIds) and e.is_active = true
         """;
-        IEnumerable<DriverDeptRecord> driverDepts = await _dbQuery.QueryAsync<DriverDeptRecord>(sql, new { DriverIds = driverIds }, cancellationToken);
+        IEnumerable<DriverDeptRecord> driverDepts = await dbQuery.QueryAsync<DriverDeptRecord>(sql, new { DriverIds = driverIds }, cancellationToken);
         return driverDepts
             .GroupBy(dr => dr.DriverId)
             .ToDictionary(g => g.Key, g => g.Select(dr => dr.DeptCode).ToArray());
@@ -98,7 +89,7 @@ public sealed class DriverRepository
             join public.app_role_permissions rp on r.id = rp.role_id
             join public.app_permissions p on rp.permission_id = p.id
         """;
-        IEnumerable<RolePermissionRecord> rolePermissions = await _dbQuery.QueryAsync<RolePermissionRecord>(sql, null, cancellationToken);
+        IEnumerable<RolePermissionRecord> rolePermissions = await dbQuery.QueryAsync<RolePermissionRecord>(sql, null, cancellationToken);
         return rolePermissions
             .GroupBy(rp => rp.RoleId)
             .ToDictionary(g => g.Key, g => g.Select(rp => rp.PermissionKey).ToArray());
@@ -111,7 +102,7 @@ public sealed class DriverRepository
             FROM public.employees
             WHERE id = @Id
         ";
-        DriverRecord? driver = await _dbQuery.FirstOrDefaultAsync<DriverRecord>(sql, new { Id = id }, cancellationToken);
+        DriverRecord? driver = await dbQuery.FirstOrDefaultAsync<DriverRecord>(sql, new { Id = id }, cancellationToken);
         return driver;
     }
 
@@ -121,26 +112,26 @@ public sealed class DriverRepository
             SELECT key as "Value"
             FROM public.app_permissions
         """;
-        IEnumerable<string> permissions = await _dbQuery.QueryAsync<string>(sql, null, cancellationToken);
-        return permissions.ToList();
+        IEnumerable<string> permissions = await dbQuery.QueryAsync<string>(sql, null, cancellationToken);
+        return [.. permissions];
     }
 
     public async Task<List<DepartmentDto>> GetDepartmentsAsync(CancellationToken cancellationToken)
     {
-        IEnumerable<DepartmentDto>? cache = _cacheService.GetDepartmentsCache();
+        IEnumerable<DepartmentDto>? cache = cacheService.GetDepartmentsCache();
         if (cache != null)
         {
-            return cache.ToList();
+            return [.. cache];
         }
 
         const string sql = """
             SELECT id as "Id", code as "Code", name as "Name", company_id as "CompanyId"
             FROM public.departments
         """;
-        IEnumerable<DepartmentDto> departments = await _dbQuery.QueryAsync<DepartmentDto>(sql, null, cancellationToken);
+        IEnumerable<DepartmentDto> departments = await dbQuery.QueryAsync<DepartmentDto>(sql, null, cancellationToken);
 
-        _cacheService.SetDepartmentsCache(departments);
+        cacheService.SetDepartmentsCache(departments);
 
-        return departments.ToList();
+        return [.. departments];
     }
 }

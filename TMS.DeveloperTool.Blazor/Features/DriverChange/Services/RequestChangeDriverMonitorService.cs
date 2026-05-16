@@ -37,7 +37,7 @@ public sealed class RequestChangeDriverMonitorService : IDisposable
 
     public List<RequestChangeDriverData> GetAllCacheItems()
     {
-        return _cacheItems.Values.OrderBy(x => x.Key).ToList();
+        return [.. _cacheItems.Values.OrderBy(x => x.Key)];
     }
 
     public async Task RefreshCacheItem()
@@ -86,14 +86,12 @@ public sealed class RequestChangeDriverMonitorService : IDisposable
                 }
             }
 
-            List<Guid> driverIds = _cacheItems.Values.Where(x => x.DriverRequestName is null)
+            List<Guid> driverIds = [.. _cacheItems.Values.Where(x => x.DriverRequestName is null)
                 .Select(x => x.DriverRequest)
-                .Distinct()
-                .ToList();
-            List<Guid> vehicleIds = _cacheItems.Values.Where(x => x.VehicleLicensePlate is null)
+                .Distinct()];
+            List<Guid> vehicleIds = [.. _cacheItems.Values.Where(x => x.VehicleLicensePlate is null)
                 .Select(x => x.VehicleId)
-                .Distinct()
-                .ToList();
+                .Distinct()];
 
             if (driverIds.Count > 0 || vehicleIds.Count > 0)
             {

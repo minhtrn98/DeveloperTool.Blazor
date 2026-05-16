@@ -8,24 +8,16 @@ public sealed class JsonKeyMapping(List<object> options, List<DependentValueMapp
 
 public sealed record DependentValueContext(object? OldValue, object? NewValue, object? OldParentValue, object? NewParentValue);
 
-public sealed class DependentValueMapping
+public sealed class DependentValueMapping(
+    string relatedKeyName,
+    Dictionary<object, object> valueMappings,
+    Func<DependentValueContext, object?>? valueResolver = null)
 {
-    private readonly Func<DependentValueContext, object?> _valueResolver;
-    private readonly bool _hasCustomValueResolver;
+    private readonly Func<DependentValueContext, object?> _valueResolver = valueResolver ?? DefaultValueResolver;
+    private readonly bool _hasCustomValueResolver = valueResolver is not null;
 
-    public string RelatedKeyName { get; }
-    public Dictionary<object, object> ValueMappings { get; }
-
-    public DependentValueMapping(
-        string relatedKeyName,
-        Dictionary<object, object> valueMappings,
-        Func<DependentValueContext, object?>? valueResolver = null)
-    {
-        RelatedKeyName = relatedKeyName;
-        ValueMappings = valueMappings;
-        _valueResolver = valueResolver ?? DefaultValueResolver;
-        _hasCustomValueResolver = valueResolver is not null;
-    }
+    public string RelatedKeyName { get; } = relatedKeyName;
+    public Dictionary<object, object> ValueMappings { get; } = valueMappings;
 
     public bool TryResolveValue(object? oldValue, object? oldParentValue, object? newParentValue, out object? resolvedValue)
     {

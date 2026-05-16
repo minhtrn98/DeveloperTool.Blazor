@@ -3,26 +3,13 @@ using TMS.DeveloperTool.Blazor.Features.Simulation.Models;
 
 namespace TMS.DeveloperTool.Blazor.Features.Simulation.Services;
 
-public sealed class FakeVehicleTransportService
+public sealed class FakeVehicleTransportService(ApplicationDbContext dbContext, ILogger<FakeVehicleTransportService> logger, EventService eventService, FleetRepository fleetRepository)
 {
-    private readonly ApplicationDbContext _dbContext;
-    private readonly EventService _eventService;
-    private readonly ILogger<FakeVehicleTransportService> _logger;
-    private readonly FleetRepository _fleetRepository;
-
-    public FakeVehicleTransportService(ApplicationDbContext dbContext, ILogger<FakeVehicleTransportService> logger, EventService eventService, FleetRepository fleetRepository)
-    {
-        _dbContext = dbContext;
-        _logger = logger;
-        _eventService = eventService;
-        _fleetRepository = fleetRepository;
-    }
-
     public async Task StartAsync(string licensePlate, Guid templateId, CancellationToken cancellationToken = default)
     {
         string actualPlate = licensePlate.Replace("-", "").Replace(".", "");
 
-        Vehicle? vehicle = await _dbContext.Vehicles
+        Vehicle? vehicle = await dbContext.Vehicles
             .FirstOrDefaultAsync(x => x.LicensePlate == actualPlate, cancellationToken);
 
         if (vehicle?.IsMoving == true)
@@ -31,7 +18,7 @@ public sealed class FakeVehicleTransportService
         }
 
         // get last odo from fleet service
-        double lastOdo = await _fleetRepository.GetVehicleOdometerAsync(licensePlate, cancellationToken);
+        double lastOdo = await fleetRepository.GetVehicleOdometerAsync(licensePlate, cancellationToken);
 
         if (vehicle is null)
         {
@@ -41,22 +28,22 @@ public sealed class FakeVehicleTransportService
                 LastOdo = lastOdo,
                 IsMoving = true
             };
-            _dbContext.Vehicles.Add(vehicle);
+            dbContext.Vehicles.Add(vehicle);
         }
         else
         {
             vehicle.LastOdo = lastOdo;
             vehicle.IsMoving = true;
         }
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         try
         {
-            RouteCheckPointTemplate template = await _dbContext.RouteCheckPointTemplates
+            RouteCheckPointTemplate template = await dbContext.RouteCheckPointTemplates
                 .AsNoTracking()
                 .Include(x => x.RouteCheckPoints)
                 .FirstAsync(x => x.Id == templateId, cancellationToken);
-            List<RouteCheckPoint> checkPoints = template.RouteCheckPoints.OrderBy(x => x.Order).ToList();
+            List<RouteCheckPoint> checkPoints = [.. template.RouteCheckPoints.OrderBy(x => x.Order)];
 
             foreach (RouteCheckPoint checkPoint in checkPoints)
             {
@@ -80,21 +67,21 @@ public sealed class FakeVehicleTransportService
                         Speed = 1
                     }
                 };
-                await _eventService.PublishTrackingEvent(vehicleTrackingData, cancellationToken);
-                await _dbContext.SaveChangesAsync(cancellationToken);
+                await eventService.PublishTrackingEvent(vehicleTrackingData, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
 
                 await Task.Delay(TimeSpan.FromSeconds(template.JumpSeconds), cancellationToken);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while simulating vehicle transport.");
+            logger.LogError(ex, "Error occurred while simulating vehicle transport.");
             throw;
         }
         finally
         {
             vehicle.IsMoving = false;
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
     }
 }

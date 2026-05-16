@@ -29,41 +29,33 @@ public sealed class CreatePickupTaskEventService(
     public async Task<List<DailyPlanDto>> GetDailyPlansAsync(string? status)
     {
         IEnumerable<DailyPlanDto> plans = await planningRepository.GetDailyPlansAsync(status, CancellationToken.None);
-        return plans.ToList();
+        return [.. plans];
     }
 
     public async Task<List<PostOffice>> GetPostOfficeOptionsAsync()
     {
         IEnumerable<PostOffice> postOffices = await routeRepository.GetPostOfficesAsync();
-        return postOffices.ToList();
+        return [.. postOffices];
     }
 
     public static List<EnumOption> GetStatusOptions()
     {
-        return EnumExtensions.ToValueDescriptionMap<PickupTaskStatusId>()
-            .Select(kvp => new EnumOption(kvp.Key, kvp.Value))
-            .ToList();
+        return [.. EnumExtensions.ToValueDescriptionMap<PickupTaskStatusId>().Select(kvp => new EnumOption(kvp.Key, kvp.Value))];
     }
 
     public static List<EnumOption> GetServiceTypeOptions()
     {
-        return EnumExtensions.ToValueDescriptionMap<TransportServiceType>()
-            .Select(kvp => new EnumOption(kvp.Key, kvp.Value))
-            .ToList();
+        return [.. EnumExtensions.ToValueDescriptionMap<TransportServiceType>().Select(kvp => new EnumOption(kvp.Key, kvp.Value))];
     }
 
     public static List<EnumOption> GetDispatchTypeOptions()
     {
-        return EnumExtensions.ToList<DispatchType>()
-            .Select(x => new EnumOption(x.Value.ToString(), x.Description))
-            .ToList();
+        return [.. EnumExtensions.ToList<DispatchType>().Select(x => new EnumOption(x.Value.ToString(), x.Description))];
     }
 
     public static List<EnumOption> GetDispatchMethodOptions()
     {
-        return EnumExtensions.ToList<DispatchMethod>()
-            .Select(x => new EnumOption(x.Value.ToString(), x.Description))
-            .ToList();
+        return [.. EnumExtensions.ToList<DispatchMethod>().Select(x => new EnumOption(x.Value.ToString(), x.Description))];
     }
 
     public string BuildJson(CreatePickupTaskEventInput input)
@@ -86,8 +78,6 @@ public sealed class CreatePickupTaskEventService(
             SetValue(jsonNode, "pickupProvinceId", input.ProvinceId ?? string.Empty);
             SetValue(jsonNode, "pickupProvinceName", input.ProvinceName ?? string.Empty);
             SetValue(jsonNode, "pickupAddress", input.StreetAddress ?? string.Empty);
-            //SetValue(jsonNode, "pickupLongitude", input.Lon ?? 0);
-            //SetValue(jsonNode, "pickupLatitude", input.Lat ?? 0);
             UpdatePickupTaskIdPrefix(jsonNode, input.PostOfficeCode);
         }
 
@@ -167,10 +157,9 @@ public sealed class CreatePickupTaskEventService(
     {
         int orderCursor = 0;
 
-        List<DailyPlanDetailDto> pickupDetails = plan.Details
+        List<DailyPlanDetailDto> pickupDetails = [.. plan.Details
             .Where(d => d.BusinessOperation is BusinessOperation.Receive or BusinessOperation.ReceiveAndDelivery)
-            .OrderBy(d => d.StepNumber)
-            .ToList();
+            .OrderBy(d => d.StepNumber)];
 
         List<string> jsonList = [];
 
@@ -184,10 +173,9 @@ public sealed class CreatePickupTaskEventService(
             TimeOnly current = detail.FromTime;
             while (current < detail.ToTime)
             {
-                List<PickupTaskEventOrderDto> ordersForCurrentEvent = baseInput.SelectedOrders
+                List<PickupTaskEventOrderDto> ordersForCurrentEvent = [.. baseInput.SelectedOrders
                     .Skip(orderCursor)
-                    .Take(ordersPerEvent)
-                    .ToList();
+                    .Take(ordersPerEvent)];
 
                 CreatePickupTaskEventInput input = new()
                 {

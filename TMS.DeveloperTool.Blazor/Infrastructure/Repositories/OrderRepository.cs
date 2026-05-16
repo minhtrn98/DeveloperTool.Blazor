@@ -1,14 +1,7 @@
 ﻿namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 
-public sealed class OrderRepository
+public sealed class OrderRepository([FromKeyedServices("OrderDb")] ApplicationDbQuery dbQuery)
 {
-    private readonly ApplicationDbQuery _dbQuery;
-
-    public OrderRepository([FromKeyedServices("OrderDb")] ApplicationDbQuery dbQuery)
-    {
-        _dbQuery = dbQuery;
-    }
-
     public async Task<List<PickupTaskOrderDto>> GetOrdersByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
     {
         const string sql = """
@@ -20,8 +13,8 @@ public sealed class OrderRepository
             where o.pickup_task_id = @PickupTaskId
             order by o.order_id;
             """;
-        IEnumerable<PickupTaskOrderDto> orders = await _dbQuery.QueryAsync<PickupTaskOrderDto>(sql, new { PickupTaskId = pickupTaskId }, cancellationToken);
-        return orders.ToList();
+        IEnumerable<PickupTaskOrderDto> orders = await dbQuery.QueryAsync<PickupTaskOrderDto>(sql, new { PickupTaskId = pickupTaskId }, cancellationToken);
+        return [.. orders];
     }
 
     public async Task<List<OrderItemDto>> GetAllOrderItemsAsync(CancellationToken cancellationToken = default)
@@ -42,8 +35,8 @@ public sealed class OrderRepository
             left join pickup_order_items po on po.order_item_id = o.order_item_id
             order by o.order_item_id;
             """;
-        IEnumerable<OrderItemDto> orderItems = await _dbQuery.QueryAsync<OrderItemDto>(sql, null, cancellationToken);
-        return orderItems.ToList();
+        IEnumerable<OrderItemDto> orderItems = await dbQuery.QueryAsync<OrderItemDto>(sql, null, cancellationToken);
+        return [.. orderItems];
     }
 
     public async Task<List<PickupTaskOrderItemDto>> GetOrderItemsByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
@@ -62,8 +55,8 @@ public sealed class OrderRepository
             where ptoi.pickup_task_id = @PickupTaskId
             order by ptoi.order_id, ptoi.order_item_id;
             """;
-        IEnumerable<PickupTaskOrderItemDto> orderItems = await _dbQuery.QueryAsync<PickupTaskOrderItemDto>(sql, new { PickupTaskId = pickupTaskId }, cancellationToken);
-        return orderItems.ToList();
+        IEnumerable<PickupTaskOrderItemDto> orderItems = await dbQuery.QueryAsync<PickupTaskOrderItemDto>(sql, new { PickupTaskId = pickupTaskId }, cancellationToken);
+        return [.. orderItems];
     }
 
     public async Task<List<PickupTaskDto>> GetAllPickupTasksAsync(CancellationToken cancellationToken = default)
@@ -86,8 +79,8 @@ public sealed class OrderRepository
                 p.dispatched_at nulls last,
                 p.pickup_task_id;
             """;
-        IEnumerable<PickupTaskDto> pickupTasks = await _dbQuery.QueryAsync<PickupTaskDto>(sql, null, cancellationToken);
-        return pickupTasks.ToList();
+        IEnumerable<PickupTaskDto> pickupTasks = await dbQuery.QueryAsync<PickupTaskDto>(sql, null, cancellationToken);
+        return [.. pickupTasks];
     }
 
     public async Task<List<Guid>> GetPickupTaskAssignedDriverIdsAsync(CancellationToken cancellationToken = default)
@@ -98,8 +91,8 @@ public sealed class OrderRepository
             where assigned_driver_id is not null
             order by assigned_driver_id;
             """;
-        IEnumerable<Guid> driverIds = await _dbQuery.QueryAsync<Guid>(sql, null, cancellationToken);
-        return driverIds.ToList();
+        IEnumerable<Guid> driverIds = await dbQuery.QueryAsync<Guid>(sql, null, cancellationToken);
+        return [.. driverIds];
     }
 
     public async Task<List<Order>> GetOrdersAsync(CancellationToken cancellationToken = default)
@@ -127,8 +120,8 @@ public sealed class OrderRepository
             order by o.created_at desc
             """;
 
-        IEnumerable<Order> orders = await _dbQuery.QueryAsync<Order>(sql, null, cancellationToken);
-        return orders.ToList();
+        IEnumerable<Order> orders = await dbQuery.QueryAsync<Order>(sql, null, cancellationToken);
+        return [.. orders];
     }
 
     public async Task<List<OrderItem>> GetOrderItemsByOrderIdAsync(
@@ -152,9 +145,9 @@ public sealed class OrderRepository
             order by oi.order_item_id
             """;
 
-        IEnumerable<OrderItem> items = await _dbQuery.QueryAsync<OrderItem>(
+        IEnumerable<OrderItem> items = await dbQuery.QueryAsync<OrderItem>(
             sql, new { OrderId = orderId }, cancellationToken);
-        return items.ToList();
+        return [.. items];
     }
 
     public async Task<List<PickupTaskOrderDraftDto>> GetPickupTaskOrderDraftsByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
@@ -169,9 +162,9 @@ public sealed class OrderRepository
             order by draft_item_id;
             """;
 
-        IEnumerable<PickupTaskOrderDraftItemDto> items = await _dbQuery.QueryAsync<PickupTaskOrderDraftItemDto>(sqlItem, new { PickupTaskId = pickupTaskId }, cancellationToken);
+        IEnumerable<PickupTaskOrderDraftItemDto> items = await dbQuery.QueryAsync<PickupTaskOrderDraftItemDto>(sqlItem, new { PickupTaskId = pickupTaskId }, cancellationToken);
 
-        List<string> draftIds = items.Select(i => i.DraftId).Distinct().ToList();
+        List<string> draftIds = [.. items.Select(i => i.DraftId).Distinct()];
 
         const string sqlDraft = """
             select
@@ -180,12 +173,12 @@ public sealed class OrderRepository
             join UNNEST(@DraftIds) as d(id) on draft_id = d.id
             order by draft_id;
             """;
-        IEnumerable<PickupTaskOrderDraftDto> drafts = await _dbQuery.QueryAsync<PickupTaskOrderDraftDto>(sqlDraft, new { DraftIds = draftIds }, cancellationToken);
+        IEnumerable<PickupTaskOrderDraftDto> drafts = await dbQuery.QueryAsync<PickupTaskOrderDraftDto>(sqlDraft, new { DraftIds = draftIds }, cancellationToken);
         foreach (var draft in drafts)
         {
-            draft.Items = items.Where(i => i.DraftId == draft.DraftId).ToList();
+            draft.Items = [.. items.Where(i => i.DraftId == draft.DraftId)];
         }
 
-        return drafts.ToList();
+        return [.. drafts];
     }
 }

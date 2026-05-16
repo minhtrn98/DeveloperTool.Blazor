@@ -245,26 +245,17 @@ public class JsonBuilderServiceTests
         updated.Should().Be(original);
     }
 
-    private sealed class FakeStrategy : IJsonTypeMappingStrategy
+    private sealed class FakeStrategy(
+        string jsonType,
+        IReadOnlyDictionary<string, JsonKeyMapping>? mappings = null,
+        IReadOnlyDictionary<string, JsonKeyValueBuilder>? keyValueBuilders = null,
+        string? template = null) : IJsonTypeMappingStrategy
     {
-        private readonly IReadOnlyDictionary<string, JsonKeyMapping> _mappings;
-        private readonly IReadOnlyDictionary<string, JsonKeyValueBuilder> _keyValueBuilders;
-        private readonly string? _template;
-
-        public FakeStrategy(
-            string jsonType,
-            IReadOnlyDictionary<string, JsonKeyMapping>? mappings = null,
-            IReadOnlyDictionary<string, JsonKeyValueBuilder>? keyValueBuilders = null,
-            string? template = null)
-        {
-            JsonType = jsonType;
-            _mappings = mappings ?? new Dictionary<string, JsonKeyMapping>(StringComparer.OrdinalIgnoreCase);
-            _keyValueBuilders = keyValueBuilders ?? new Dictionary<string, JsonKeyValueBuilder>(StringComparer.OrdinalIgnoreCase);
-            _template = template;
-        }
+        private readonly IReadOnlyDictionary<string, JsonKeyMapping> _mappings = mappings ?? new Dictionary<string, JsonKeyMapping>(StringComparer.OrdinalIgnoreCase);
+        private readonly IReadOnlyDictionary<string, JsonKeyValueBuilder> _keyValueBuilders = keyValueBuilders ?? new Dictionary<string, JsonKeyValueBuilder>(StringComparer.OrdinalIgnoreCase);
 
         public int BuildMappingsAsyncCallCount { get; private set; }
-        public string JsonType { get; }
+        public string JsonType { get; } = jsonType;
         public IReadOnlyDictionary<string, JsonKeyValueBuilder> KeyValueBuilders => _keyValueBuilders;
 
         public Task<IReadOnlyDictionary<string, JsonKeyMapping>> BuildMappingsAsync()
@@ -275,7 +266,7 @@ public class JsonBuilderServiceTests
 
         public Task<string?> LoadTemplateAsync(IWebHostEnvironment webHostEnvironment)
         {
-            return Task.FromResult(_template);
+            return Task.FromResult(template);
         }
 
         public Task SendRequestAsync(string jsonInput, CancellationToken cancellationToken = default)

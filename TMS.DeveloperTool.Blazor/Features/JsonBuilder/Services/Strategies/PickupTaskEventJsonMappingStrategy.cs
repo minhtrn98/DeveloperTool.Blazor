@@ -50,13 +50,12 @@ public sealed class PickupTaskEventJsonMappingStrategy(
 
     private static JsonKeyMapping CreatePickupPostOfficeCodeMapping(IEnumerable<PostOffice> postOffices)
     {
-        List<object> postOfficeCodes = postOffices
+        List<object> postOfficeCodes = [.. postOffices
             .Select(p => p.PostOfficeCode)
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x)
-            .Cast<object>()
-            .ToList();
+            .Cast<object>()];
         Dictionary<string, string> postOfficeCodeToNameMap = postOffices
             .Where(p => !string.IsNullOrWhiteSpace(p.PostOfficeCode) && !string.IsNullOrWhiteSpace(p.PostOfficeName))
             .GroupBy(p => p.PostOfficeCode, StringComparer.OrdinalIgnoreCase)

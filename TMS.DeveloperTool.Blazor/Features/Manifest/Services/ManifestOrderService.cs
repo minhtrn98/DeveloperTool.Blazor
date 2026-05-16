@@ -18,7 +18,7 @@ public sealed class ManifestOrderService(
     public async Task<List<Employee>> GetEmployeesAsync(CancellationToken cancellationToken)
     {
         IEnumerable<Employee> employees = await employeeService.GetAllEmployeesAsync(cancellationToken);
-        return employees.OrderBy(e => e.Code).ToList();
+        return [.. employees.OrderBy(e => e.Code)];
     }
 
     public async Task<CommitDeliveryManifestResult> CommitManifestAsync(
@@ -32,16 +32,16 @@ public sealed class ManifestOrderService(
             DeliveryMode = manifest.DeliveryMode,
             HandoverConditionId = null,
             ReceiverEvidences = [],
-            Orders = manifest.Orders.Select(o => new CommitDeliveryOrderInput
+            Orders = [.. manifest.Orders.Select(o => new CommitDeliveryOrderInput
             {
                 OrderId = o.OrderId,
                 OrderType = o.OrderType,
-                Items = o.Items.Select(i => new CommitDeliveryItemInput
+                Items = [.. o.Items.Select(i => new CommitDeliveryItemInput
                 {
                     OrderItemId = i.OrderItemId,
                     IsLoaded = i.IsLoaded,
-                }).ToList(),
-            }).ToList(),
+                })],
+            })],
             Participants =
             [
                 new CommitDeliveryParticipantInput

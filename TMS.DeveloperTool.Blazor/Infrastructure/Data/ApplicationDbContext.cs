@@ -2,13 +2,8 @@
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Data;
 
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options)
-    {
-    }
-
     public DbSet<Vehicle> Vehicles { get; set; }
     public DbSet<Employee> Employees { get; set; }
     public DbSet<RouteCheckPoint> RouteCheckPoints { get; set; }

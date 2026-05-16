@@ -5,15 +5,9 @@ using System.Security.Cryptography;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Security;
 
-public sealed class JwtTokenService
+public sealed class JwtTokenService(JwtOptions jwtOptions)
 {
-    private readonly JwtOptions _jwtSetting;
     private readonly JwtSecurityTokenHandler _handler = new();
-
-    public JwtTokenService(JwtOptions jwtOptions)
-    {
-        _jwtSetting = jwtOptions;
-    }
 
     public string CreateToken(
         Employee employee,
@@ -33,7 +27,7 @@ public sealed class JwtTokenService
             new(JwtRegisteredClaimNames.Sub, employeeId),
             new(JwtRegisteredClaimNames.Email, employee.Email ?? string.Empty),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Aud, _jwtSetting.Audience),
+            new(JwtRegisteredClaimNames.Aud, jwtOptions.Audience),
             new(ClaimTypes.NameIdentifier, employee.Name),
             new("employeeId", employeeId),
             new("employeeCode", employee.Code),
@@ -61,7 +55,7 @@ public sealed class JwtTokenService
         }
 
         DateTime utcNow = DateTime.UtcNow;
-        DateTime expiresAt = utcNow.AddMinutes(_jwtSetting.DefaultExpiresMinutes);
+        DateTime expiresAt = utcNow.AddMinutes(jwtOptions.DefaultExpiresMinutes);
 
         string privateKeyXml = File.ReadAllText("private.pem");
         RSA rsa = RSA.Create();
@@ -73,7 +67,7 @@ public sealed class JwtTokenService
         );
 
         JwtSecurityToken token = new(
-            issuer: _jwtSetting.Issuer,
+            issuer: jwtOptions.Issuer,
             audience: null,
             claims: claims,
             notBefore: utcNow,
@@ -86,6 +80,6 @@ public sealed class JwtTokenService
     public DateTimeOffset GetDefaultExpiresAtUtc(DateTimeOffset? utcNow = null)
     {
         DateTimeOffset baseTime = utcNow ?? DateTimeOffset.UtcNow;
-        return baseTime.AddMinutes(_jwtSetting.DefaultExpiresMinutes);
+        return baseTime.AddMinutes(jwtOptions.DefaultExpiresMinutes);
     }
 }

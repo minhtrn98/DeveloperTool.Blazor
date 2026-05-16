@@ -147,12 +147,11 @@ public sealed class ApiRequestSwaggerService(
             }
         }
 
-        List<string> tags = endpoints
+        List<string> tags = [.. endpoints
             .Select(x => x.Tag)
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)];
 
         return new SwaggerDocumentInfo(serviceName, title, tags, endpoints
             .OrderBy(x => x.Tag, StringComparer.OrdinalIgnoreCase)
@@ -196,11 +195,10 @@ public sealed class ApiRequestSwaggerService(
         AddParameters(pathItem, result, schemas);
         AddParameters(operation, result, schemas);
 
-        return result.Values
+        return [.. result.Values
             .OrderBy(x => x.Location, StringComparer.OrdinalIgnoreCase)
             .ThenByDescending(x => x.Required)
-            .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+            .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)];
     }
 
     private static void AddParameters(
@@ -256,10 +254,9 @@ public sealed class ApiRequestSwaggerService(
             path = path.Replace($"{{{parameter.Name}}}", Uri.EscapeDataString(parameter.SampleValue), StringComparison.Ordinal);
         }
 
-        List<string> querySegments = parameters
+        List<string> querySegments = [.. parameters
             .Where(x => x.Location.Equals("query", StringComparison.OrdinalIgnoreCase))
-            .Select(x => $"{Uri.EscapeDataString(x.Name)}={Uri.EscapeDataString(x.SampleValue)}")
-            .ToList();
+            .Select(x => $"{Uri.EscapeDataString(x.Name)}={Uri.EscapeDataString(x.SampleValue)}")];
 
         if (querySegments.Count == 0)
         {
