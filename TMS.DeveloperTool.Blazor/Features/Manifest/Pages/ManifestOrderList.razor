@@ -215,9 +215,10 @@
 
     private void ApplyFilter()
     {
-        displayOrders = string.IsNullOrWhiteSpace(searchValue)
+        string trimmed = searchValue.Trim();
+        displayOrders = string.IsNullOrEmpty(trimmed)
             ? allOrders
-            : allOrders.Where(o => o.OrderId.Contains(searchValue, StringComparison.OrdinalIgnoreCase)).ToList();
+            : allOrders.Where(o => o.OrderId.Contains(trimmed, StringComparison.OrdinalIgnoreCase)).ToList();
     }
 
     // --- Checkbox logic ---

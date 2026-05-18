@@ -119,17 +119,23 @@
     private readonly HashSet<string> processingTaskIds = [];
     private bool isLoading = true;
 
-    private IEnumerable<PickupTaskDto> FilteredPickupTasks =>
-        pickupTasks
-            .Where(task => string.IsNullOrWhiteSpace(searchId)
-                || task.PickupTaskId.Contains(searchId, StringComparison.OrdinalIgnoreCase))
-            .Where(task => selectedEmp == null
-                || (!string.IsNullOrWhiteSpace(task.AssignedDriverId)
-                    && task.AssignedDriverId.Equals(selectedEmp.EmployeeId.ToString(), StringComparison.OrdinalIgnoreCase))
-                || (!string.IsNullOrWhiteSpace(task.AssignedDriverCode)
-                    && task.AssignedDriverCode.Equals(selectedEmp.Code, StringComparison.OrdinalIgnoreCase))
-                || (!string.IsNullOrWhiteSpace(task.AssignedDriverName)
-                    && task.AssignedDriverName.Equals(selectedEmp.Name, StringComparison.OrdinalIgnoreCase)));
+    private IEnumerable<PickupTaskDto> FilteredPickupTasks
+    {
+        get
+        {
+            string trimmedId = searchId.Trim();
+            return pickupTasks
+                .Where(task => string.IsNullOrEmpty(trimmedId)
+                    || task.PickupTaskId.Contains(trimmedId, StringComparison.OrdinalIgnoreCase))
+                .Where(task => selectedEmp == null
+                    || (!string.IsNullOrWhiteSpace(task.AssignedDriverId)
+                        && task.AssignedDriverId.Equals(selectedEmp.EmployeeId.ToString(), StringComparison.OrdinalIgnoreCase))
+                    || (!string.IsNullOrWhiteSpace(task.AssignedDriverCode)
+                        && task.AssignedDriverCode.Equals(selectedEmp.Code, StringComparison.OrdinalIgnoreCase))
+                    || (!string.IsNullOrWhiteSpace(task.AssignedDriverName)
+                        && task.AssignedDriverName.Equals(selectedEmp.Name, StringComparison.OrdinalIgnoreCase)));
+        }
+    }
 
     private Employee? SelectedEmp
     {

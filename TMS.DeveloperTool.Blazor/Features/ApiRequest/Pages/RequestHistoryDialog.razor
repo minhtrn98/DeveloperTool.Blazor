@@ -81,14 +81,21 @@
 
     private string searchText = string.Empty;
 
-    private List<RequestHistory> filteredHistories => Histories
-        .Where(x =>
-            string.IsNullOrWhiteSpace(searchText) ||
-            x.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-            x.Method.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-            x.Service.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-            x.Endpoint.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-        .ToList();
+    private List<RequestHistory> filteredHistories
+    {
+        get
+        {
+            string trimmed = searchText.Trim();
+            return Histories
+                .Where(x =>
+                    string.IsNullOrEmpty(trimmed) ||
+                    x.Name.Contains(trimmed, StringComparison.OrdinalIgnoreCase) ||
+                    x.Method.Contains(trimmed, StringComparison.OrdinalIgnoreCase) ||
+                    x.Service.Contains(trimmed, StringComparison.OrdinalIgnoreCase) ||
+                    x.Endpoint.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
 
     private void SelectHistory(RequestHistory history)
     {

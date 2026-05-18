@@ -119,7 +119,7 @@
             currentPageSize = state.PageSize;
 
             (List<VehicleStatusTrackingDto> items, int totalCount) = await VehicleStatusService.GetVehicleStatusesAsync(
-                searchValue,
+                searchValue.Trim(),
                 currentPageIndex,
                 currentPageSize,
                 cancellationToken);
