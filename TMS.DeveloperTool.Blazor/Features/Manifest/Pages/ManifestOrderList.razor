@@ -20,7 +20,16 @@
         </div>
 
         <MudGrid Class="mb-4">
-            <MudItem xs="12" md="9"></MudItem>
+            <MudItem xs="12" md="6"></MudItem>
+            <MudItem xs="12" md="3" Class="d-flex justify-end">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Info"
+                           StartIcon="@Icons.Material.Filled.QrCode"
+                           OnClick="OpenBarcodeDialog"
+                           Disabled="@(GetSelectedOrderCount() == 0)">
+                    Xem barcode
+                </MudButton>
+            </MudItem>
             <MudItem xs="12" md="3" Class="d-flex justify-end">
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Success"
@@ -262,6 +271,28 @@
     private int GetSelectedOrderCount() => checkedOrders.Count;
 
     // --- Open dialog ---
+
+    private async Task OpenBarcodeDialog()
+    {
+        List<BarcodeDialog.BarcodeEntry> entries = [];
+
+        foreach (string orderId in checkedOrders.OrderBy(id => id))
+        {
+            entries.Add(new("Đơn hàng", orderId));
+            if (checkedItems.TryGetValue(orderId, out HashSet<string>? itemIds))
+            {
+                foreach (string itemId in itemIds.OrderBy(id => id))
+                    entries.Add(new("Kiện hàng", itemId));
+            }
+        }
+
+        DialogParameters<BarcodeDialog> parameters = new()
+        {
+            { d => d.Entries, entries }
+        };
+        DialogOptions options = new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<BarcodeDialog>("Barcode", parameters, options);
+    }
 
     private async Task OpenCreateManifestDialog()
     {

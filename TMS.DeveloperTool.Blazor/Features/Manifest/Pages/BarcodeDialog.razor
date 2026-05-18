@@ -1,0 +1,50 @@
+@inject IJSRuntime JS
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Barcode đơn hàng / kiện hàng</MudText>
+    </TitleContent>
+    <DialogContent>
+        <div style="max-height: 60vh; overflow-y: auto; padding-right: 4px;">
+            @for (int i = 0; i < Entries.Count; i++)
+            {
+                var entry = Entries[i];
+                var idx = i;
+                <MudPaper Elevation="1" Class="pa-3 mb-3">
+                    <MudText Typo="Typo.overline" Color="Color.Secondary">@entry.Label</MudText>
+                    <MudText Typo="Typo.subtitle2" Class="mb-1">@entry.Code</MudText>
+                    <svg id="bc-@idx" style="width: 100%; display: block;"></svg>
+                </MudPaper>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close" Variant="Variant.Outlined" Color="Color.Default">Đóng</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public List<BarcodeEntry> Entries { get; set; } = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        for (int i = 0; i < Entries.Count; i++)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("JsBarcode",
+                    $"#bc-{i}",
+                    Entries[i].Code,
+                    new { format = "CODE128", width = 2, height = 60, displayValue = true, fontSize = 14, margin = 8 });
+            }
+            catch { }
+        }
+    }
+
+    private void Close() => MudDialog.Close();
+
+    public sealed record BarcodeEntry(string Label, string Code);
+}
