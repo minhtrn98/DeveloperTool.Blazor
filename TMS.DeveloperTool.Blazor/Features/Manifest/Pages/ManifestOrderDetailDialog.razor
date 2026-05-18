@@ -142,6 +142,7 @@
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public Guid ManifestId { get; set; }
     [Parameter] public string OrderId { get; set; } = string.Empty;
+    [Parameter] public string Authorization { get; set; } = string.Empty;
 
     private bool isLoading;
     private GetManifestOrderDetailResponse? detail;
@@ -151,7 +152,7 @@
         isLoading = true;
         try
         {
-            detail = await DeliveryManifestService.GetManifestOrderDetailAsync(ManifestId, OrderId, CancellationToken.None);
+            detail = await DeliveryManifestService.GetManifestOrderDetailAsync(ManifestId, OrderId, Authorization, CancellationToken.None);
         }
         catch (Exception ex)
         {

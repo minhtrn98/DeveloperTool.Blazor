@@ -173,6 +173,7 @@
         {
             { d => d.ManifestId, args.Item.DeliveryManifestId },
             { d => d.ManifestCode, args.Item.Code },
+            { d => d.Authorization, Authorization },
         };
         DialogOptions options = new() { MaxWidth = MaxWidth.ExtraLarge, FullWidth = true, CloseOnEscapeKey = true };
         await DialogService.ShowAsync<ManifestOrdersDialog>(args.Item.Code, parameters, options);
@@ -181,8 +182,13 @@
     private Task<IEnumerable<Employee>> SearchDrivers(string term, CancellationToken _)
         => Task.FromResult(AutocompleteSearchHelper.SearchByLike(allEmployees, term));
 
+    private string Authorization => selectedDriver is null ? string.Empty : $"Bearer {selectedDriver.BearerToken}";
+
     private async Task<TableData<ManifestListItemDto>> LoadServerData(TableState state, CancellationToken ct)
     {
+        if (selectedDriver is null)
+            return new TableData<ManifestListItemDto> { TotalItems = 0, Items = [] };
+
         try
         {
             SearchManifestRequest request = new()
@@ -196,7 +202,7 @@
                 AssignedDriverId = selectedDriver?.EmployeeId,
             };
 
-            PagedResult<ManifestListItemDto> result = await DeliveryManifestService.SearchAsync(request, ct);
+            PagedResult<ManifestListItemDto> result = await DeliveryManifestService.SearchAsync(request, Authorization, ct);
             return new TableData<ManifestListItemDto>
             {
                 TotalItems = result.TotalCount,

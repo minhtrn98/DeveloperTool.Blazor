@@ -14,11 +14,13 @@ public interface IManifestApi
     [Post("/api/v1/delivery-manifests/search")]
     Task<PagedResult<ManifestListItemDto>> SearchAsync(
         [Body] SearchManifestRequest request,
+        [Header("Authorization")] string authorization,
         CancellationToken cancellationToken = default);
 
     [Get("/api/v1/delivery-manifests/{manifestId}/search")]
     Task<List<GetOrderInManifestResponse>> GetOrdersInManifestAsync(
         Guid manifestId,
+        [Header("Authorization")] string authorization,
         [Query] string? searchTerm = null,
         CancellationToken cancellationToken = default);
 
@@ -26,5 +28,6 @@ public interface IManifestApi
     Task<GetManifestOrderDetailResponse?> GetManifestOrderDetailAsync(
         Guid manifestId,
         string orderId,
+        [Header("Authorization")] string authorization,
         CancellationToken cancellationToken = default);
 }

@@ -84,6 +84,7 @@
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public Guid ManifestId { get; set; }
     [Parameter] public string ManifestCode { get; set; } = string.Empty;
+    [Parameter] public string Authorization { get; set; } = string.Empty;
 
     private bool isLoading;
     private string searchValue = string.Empty;
@@ -95,7 +96,7 @@
         isLoading = true;
         try
         {
-            allOrders = await DeliveryManifestService.GetOrdersInManifestAsync(ManifestId, CancellationToken.None);
+            allOrders = await DeliveryManifestService.GetOrdersInManifestAsync(ManifestId, Authorization, CancellationToken.None);
             ApplyFilter();
         }
         catch (Exception ex)
@@ -115,6 +116,7 @@
         {
             { d => d.ManifestId, ManifestId },
             { d => d.OrderId, args.Item.OrderId },
+            { d => d.Authorization, Authorization },
         };
         DialogOptions options = new() { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
         await DialogService.ShowAsync<ManifestOrderDetailDialog>(args.Item.OrderId, parameters, options);
