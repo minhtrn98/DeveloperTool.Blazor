@@ -3,6 +3,8 @@
 @using TMS.DeveloperTool.Blazor.Features.Manifest.Services
 @using TMS.DeveloperTool.Blazor.Features.Manifest.Models
 @using TMS.DeveloperTool.Blazor.Domain.Enums
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Helpers
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Interfaces
 @inject ManifestOrderService ManifestOrderService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
@@ -42,7 +44,7 @@
         </MudGrid>
 
         <MudGrid Class="mb-4">
-            <MudItem xs="12">
+            <MudItem xs="12" md="6">
                 <MudTextField @bind-Value="searchValue"
                               Label="Tìm theo mã đơn hàng"
                               Placeholder="Ví dụ: VN123456789"
@@ -53,6 +55,28 @@
                               Immediate="true"
                               DebounceInterval="200"
                               @bind-Value:after="ApplyFilter" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudAutocomplete T="OrderTypeOption"
+                                 Value="selectedOrderType"
+                                 ValueChanged="OnOrderTypeChanged"
+                                 SearchFunc="SearchOrderTypes"
+                                 Label="Loại đơn"
+                                 Variant="Variant.Outlined"
+                                 Clearable="true"
+                                 MaxItems="5"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<OrderTypeOption>" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudAutocomplete T="StatusOption"
+                                 Value="selectedStatus"
+                                 ValueChanged="OnStatusChanged"
+                                 SearchFunc="SearchStatuses"
+                                 Label="Trạng thái"
+                                 Variant="Variant.Outlined"
+                                 Clearable="true"
+                                 MaxItems="20"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<StatusOption>" />
             </MudItem>
         </MudGrid>
 
@@ -164,11 +188,32 @@
 </MudContainer>
 
 @code {
+    private sealed record OrderTypeOption(OrderType Value, string Description) : IDisplaySearchItem
+    {
+        public string DisplayString => Description;
+        public bool Like(string searchTerm) => Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed record StatusOption(string Name) : IDisplaySearchItem
+    {
+        public string DisplayString => Name;
+        public bool Like(string searchTerm) => Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
+    }
+
     private MudTable<Order>? tableRef;
     private List<Order> allOrders = [];
     private List<Order> displayOrders = [];
     private bool isLoading;
     private string searchValue = string.Empty;
+
+    private readonly List<OrderTypeOption> orderTypeOptions =
+    [
+        new(OrderType.Regular, "Đơn thường"),
+        new(OrderType.Cod, "Đơn COD"),
+    ];
+    private List<StatusOption> statusOptions = [];
+    private OrderTypeOption? selectedOrderType;
+    private StatusOption? selectedStatus;
 
     private readonly HashSet<string> expandedOrders = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> loadingItems = new(StringComparer.OrdinalIgnoreCase);
@@ -190,6 +235,8 @@
         orderItemsCache.Clear();
         checkedOrders.Clear();
         checkedItems.Clear();
+        selectedOrderType = null;
+        selectedStatus = null;
         await LoadAllOrdersAsync();
     }
 
@@ -199,6 +246,13 @@
         try
         {
             allOrders = await ManifestOrderService.GetOrdersAsync(CancellationToken.None);
+            statusOptions = allOrders
+                .Select(o => o.CurrentStatusName)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Order(StringComparer.OrdinalIgnoreCase)
+                .Select(s => new StatusOption(s!))
+                .ToList();
             ApplyFilter();
         }
         catch (Exception ex)
@@ -216,10 +270,21 @@
     private void ApplyFilter()
     {
         string trimmed = searchValue.Trim();
-        displayOrders = string.IsNullOrEmpty(trimmed)
-            ? allOrders
-            : allOrders.Where(o => o.OrderId.Contains(trimmed, StringComparison.OrdinalIgnoreCase)).ToList();
+        displayOrders = allOrders
+            .Where(o => string.IsNullOrEmpty(trimmed) || o.OrderId.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
+            .Where(o => selectedOrderType is null || o.OrderType == selectedOrderType.Value)
+            .Where(o => selectedStatus is null || string.Equals(o.CurrentStatusName, selectedStatus.Name, StringComparison.OrdinalIgnoreCase))
+            .ToList();
     }
+
+    private void OnOrderTypeChanged(OrderTypeOption? value) { selectedOrderType = value; ApplyFilter(); }
+    private void OnStatusChanged(StatusOption? value) { selectedStatus = value; ApplyFilter(); }
+
+    private Task<IEnumerable<OrderTypeOption>> SearchOrderTypes(string searchTerm, CancellationToken ct)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(orderTypeOptions, searchTerm));
+
+    private Task<IEnumerable<StatusOption>> SearchStatuses(string searchTerm, CancellationToken ct)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(statusOptions, searchTerm));
 
     // --- Checkbox logic ---
 
