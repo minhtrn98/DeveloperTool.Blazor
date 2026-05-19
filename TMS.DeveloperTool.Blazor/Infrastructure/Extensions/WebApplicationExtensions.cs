@@ -43,6 +43,8 @@ public static class WebApplicationExtensions
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
 
+        app.MapControllers();
+
         return app;
     }
 }

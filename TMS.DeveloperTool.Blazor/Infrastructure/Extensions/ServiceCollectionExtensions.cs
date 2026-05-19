@@ -33,6 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddMudServices();
         services.AddRazorComponents()
             .AddInteractiveServerComponents();
+        services.AddControllers();
         return services;
     }
 }
