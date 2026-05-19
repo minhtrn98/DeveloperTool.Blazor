@@ -356,7 +356,7 @@
         {
             { d => d.Entries, entries }
         };
-        DialogOptions options = new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        DialogOptions options = new() { MaxWidth = MaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true };
         await DialogService.ShowAsync<BarcodeDialog>("Barcode", parameters, options);
     }
 

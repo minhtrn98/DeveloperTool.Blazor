@@ -5,15 +5,24 @@
         <MudText Typo="Typo.h6">Barcode đơn hàng / kiện hàng</MudText>
     </TitleContent>
     <DialogContent>
-        <div style="max-height: 60vh; overflow-y: auto; padding-right: 4px;">
-            @for (int i = 0; i < Entries.Count; i++)
+        <div style="max-height: 80vh; overflow-y: auto; padding-right: 4px;">
+            @foreach (var (group, startIndex) in groupedEntries)
             {
-                var entry = Entries[i];
-                var idx = i;
-                <MudPaper Elevation="1" Class="pa-3 mb-3">
-                    <MudText Typo="Typo.overline" Color="Color.Secondary">@entry.Label</MudText>
-                    <MudText Typo="Typo.subtitle2" Class="mb-1">@entry.Code</MudText>
-                    <svg id="bc-@idx" style="width: 100%; display: block;"></svg>
+                <MudPaper Elevation="2" Class="pa-3 mb-3">
+                    <MudGrid Spacing="2">
+                        @for (int j = 0; j < group.Count; j++)
+                        {
+                            var entry = group[j];
+                            var entryIdx = startIndex + j;
+                            <MudItem xs="12" sm="4">
+                                <MudPaper Elevation="1" Class="pa-2">
+                                    <MudText Typo="Typo.overline" Color="Color.Secondary">@entry.Label</MudText>
+                                    <MudText Typo="Typo.caption" Class="mb-1">@entry.Code</MudText>
+                                    <svg id="bc-@entryIdx" style="width: 100%; display: block;"></svg>
+                                </MudPaper>
+                            </MudItem>
+                        }
+                    </MudGrid>
                 </MudPaper>
             }
         </div>
@@ -26,6 +35,26 @@
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public List<BarcodeEntry> Entries { get; set; } = [];
+
+    private List<(List<BarcodeEntry> Group, int StartIndex)> groupedEntries = [];
+
+    protected override void OnParametersSet()
+    {
+        groupedEntries = [];
+        int index = 0;
+        List<BarcodeEntry>? current = null;
+
+        foreach (BarcodeEntry entry in Entries)
+        {
+            if (entry.Label == "Đơn hàng" || current is null)
+            {
+                current = [];
+                groupedEntries.Add((current, index));
+            }
+            current.Add(entry);
+            index++;
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
