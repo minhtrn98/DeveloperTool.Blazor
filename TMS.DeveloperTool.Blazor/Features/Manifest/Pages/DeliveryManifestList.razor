@@ -89,6 +89,7 @@
                 <MudTh>Kiện đã phát</MudTh>
                 <MudTh>COD (₫)</MudTh>
                 <MudTh>Ngày tạo</MudTh>
+                <MudTh></MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Mã sổ phát"><b>@context.Code</b></MudTd>
@@ -114,6 +115,12 @@
                 <MudTd DataLabel="Đã đã phát">@context.DeliveredItems</MudTd>
                 <MudTd DataLabel="COD (₫)">@(context.TotalCodAmount.HasValue ? context.TotalCodAmount.Value.ToString("N0") : "-")</MudTd>
                 <MudTd DataLabel="Ngày tạo">@context.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</MudTd>
+                <MudTd @onclick:stopPropagation="true">
+                    <MudIconButton Icon="@Icons.Material.Filled.QrCode"
+                                   Color="Color.Info"
+                                   Size="Size.Small"
+                                   OnClick="@(() => ShowBarcodeAsync(context.Code))" />
+                </MudTd>
             </RowTemplate>
             <NoRecordsContent>
                 <MudText Class="pa-4">Không có sổ phát nào.</MudText>
@@ -165,6 +172,16 @@
     }
 
     private async Task SearchAsync() => await (tableRef?.ReloadServerData() ?? Task.CompletedTask);
+
+    private async Task ShowBarcodeAsync(string code)
+    {
+        DialogParameters<BarcodeDialog> parameters = new()
+        {
+            { d => d.Entries, [new BarcodeDialog.BarcodeEntry("Sổ phát", code)] }
+        };
+        DialogOptions options = new() { MaxWidth = MaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<BarcodeDialog>("Barcode sổ phát", parameters, options);
+    }
 
     private async Task OnRowClickedAsync(TableRowClickEventArgs<ManifestListItemDto> args)
     {

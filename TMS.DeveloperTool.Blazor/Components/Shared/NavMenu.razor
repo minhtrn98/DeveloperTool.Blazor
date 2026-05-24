@@ -57,6 +57,14 @@
         </MudNavGroup>
     }
 
+    @if (ShouldShow(ApplicationConstants.MenuKeys.LenHang))
+    {
+        <MudNavGroup Title="Lên hàng" Expanded="false">
+            <MudNavLink Href="@ApplicationConstants.Routes.LenHangChuyenThu" Match="NavLinkMatch.All">Chuyến thư</MudNavLink>
+            <MudNavLink Href="@ApplicationConstants.Routes.LenHangBuuKien" Match="NavLinkMatch.All">Bưu kiện</MudNavLink>
+        </MudNavGroup>
+    }
+
     @if (ShouldShow(ApplicationConstants.MenuKeys.TopMovingVehicles))
     {
         <MudNavLink Href="@ApplicationConstants.Routes.TopMovingVehicles" Match="NavLinkMatch.All">Top xe di chuyển
@@ -67,14 +75,6 @@
     {
         <MudNavLink Href="@ApplicationConstants.Routes.VehicleStatuses" Match="NavLinkMatch.All">Theo dõi trạng thái xe
         </MudNavLink>
-    }
-
-    @if (ShouldShow(ApplicationConstants.MenuKeys.LenHang))
-    {
-        <MudNavGroup Title="Lên hàng" Expanded="false">
-            <MudNavLink Href="@ApplicationConstants.Routes.LenHangChuyenThu" Match="NavLinkMatch.All">Chuyến thư</MudNavLink>
-            <MudNavLink Href="@ApplicationConstants.Routes.LenHangBuuKien" Match="NavLinkMatch.All">Bưu kiện</MudNavLink>
-        </MudNavGroup>
     }
 
     @if (ShouldShow(ApplicationConstants.MenuKeys.ApiRequest))
