@@ -46,6 +46,7 @@ public static class ApplicationConstants
         public const string ApiRequest = "/api-request";
         public const string ManifestOrders = "/manifest/orders";
         public const string ManifestList = "/manifest/list";
+        public const string LenHangChuyenThu = "/len-hang/chuyen-thu";
     }
 
     public static class EnvironmentNames
@@ -71,6 +72,7 @@ public static class ApplicationConstants
         public const string RoutingConfig = "RoutingConfig";
         public const string ApiRequest = "ApiRequest";
         public const string Manifests = "Manifests";
+        public const string LenHang = "LenHang";
     }
 
     /// <summary>

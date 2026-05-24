@@ -198,6 +198,50 @@ public sealed class OrderRepository([FromKeyedServices("OrderDb")] ApplicationDb
         return [.. items];
     }
 
+    public async Task<List<TripDto>> GetAllTripsAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            with item_new as (
+                select p.order_item_id, MAX(p.created_at) AS created_at
+                from public.order_packages p
+                GROUP BY p.order_item_id
+            )
+            select p1.trip_code as "TripCode", count(0) as "TotalItems"
+            from public.order_packages p1
+            join item_new p2 on p1.order_item_id = p2.order_item_id and p1.created_at = p2.created_at
+            where p1.trip_code is not null
+            group by p1.trip_code
+            order by p1.trip_code
+            """;
+        IEnumerable<TripDto> trips = await dbQuery.QueryAsync<TripDto>(sql, null, cancellationToken);
+        return [.. trips];
+    }
+
+    public async Task<List<TripPackageDto>> GetPackagesByTripCodeAsync(string tripCode, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            with item_new as (
+                select p.order_item_id, MAX(p.created_at) AS created_at
+                from public.order_packages p
+                GROUP BY p.order_item_id
+            )
+            select p1.order_id as "OrderId",
+                   p1.order_item_id as "OrderItemId",
+                   p1.order_created_at as "OrderCreatedAt",
+                   p1.post_office_id as "PostOfficeId",
+                   p1.status_id as "StatusId",
+                   p1.package_code as "PackageCode",
+                   p1.created_at as "CreatedAt",
+                   p1.updated_at as "UpdatedAt"
+            from public.order_packages p1
+            join item_new p2 on p1.order_item_id = p2.order_item_id and p1.created_at = p2.created_at
+            where p1.trip_code = @TripCode
+            order by p1.order_id, p1.order_item_id
+            """;
+        IEnumerable<TripPackageDto> items = await dbQuery.QueryAsync<TripPackageDto>(sql, new { TripCode = tripCode }, cancellationToken);
+        return [.. items];
+    }
+
     public async Task<List<PickupTaskOrderDraftDto>> GetPickupTaskOrderDraftsByPickupTaskIdAsync(string pickupTaskId, CancellationToken cancellationToken = default)
     {
         const string sqlItem = """
