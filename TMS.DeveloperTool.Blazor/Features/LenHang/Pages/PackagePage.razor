@@ -1,0 +1,270 @@
+@page "/len-hang/buu-kien"
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+@using TMS.DeveloperTool.Blazor.Infrastructure.Constants
+@using TMS.DeveloperTool.Blazor.Features.Manifest.Pages
+@using TMS.DeveloperTool.Blazor.Domain.Enums
+@using TMS.DeveloperTool.Blazor.Infrastructure.Extensions
+@inject OrderRepository OrderRepository
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<AppPageTitle MenuName="Bưu kiện" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4">
+        <div class="d-flex justify-space-between align-center mb-4">
+            <MudText Typo="Typo.h4">Danh sách bưu kiện</MudText>
+            <div class="d-flex gap-2">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Info"
+                           StartIcon="@Icons.Material.Filled.QrCode"
+                           OnClick="OpenBarcodeDialogAsync"
+                           Disabled="@(checkedPackages.Count == 0)">
+                    Xem barcode (@checkedPackages.Count)
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="ReloadAsync"
+                           Disabled="@isLoading">
+                    Làm mới
+                </MudButton>
+            </div>
+        </div>
+
+        <MudTextField @bind-Value="searchPackageCode"
+                      Label="Tìm theo mã bưu kiện"
+                      Variant="Variant.Outlined"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true"
+                      Clearable="true"
+                      Class="mb-3" />
+
+        @if (isLoading)
+        {
+            <div class="d-flex justify-center pa-6">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (!FilteredRows.Any())
+        {
+            <MudAlert Severity="Severity.Info">Không có bưu kiện nào.</MudAlert>
+        }
+        else
+        {
+            <MudTable T="PackageRow"
+                      Items="@FilteredRows"
+                      Hover="true"
+                      Dense="true"
+                      Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh></MudTh>
+                    <MudTh></MudTh>
+                    <MudTh>Mã bưu kiện</MudTh>
+                    <MudTh>Tổng kiện</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd Style="width: 40px">
+                        <MudCheckBox T="bool"
+                                     Value="@checkedPackages.Contains(context.PackageCode)"
+                                     ValueChanged="@(v => OnPackageChecked(context.PackageCode, v))"
+                                     Color="Color.Primary"
+                                     Size="Size.Small" />
+                    </MudTd>
+                    <MudTd Style="width: 40px">
+                        <MudIconButton Icon="@(context.IsExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       OnClick="@(() => ToggleAsync(context))" />
+                    </MudTd>
+                    <MudTd DataLabel="Mã bưu kiện"><b>@context.PackageCode</b></MudTd>
+                    <MudTd DataLabel="Tổng kiện">@context.TotalItems</MudTd>
+                </RowTemplate>
+                <ChildRowContent>
+                    @if (context.IsExpanded)
+                    {
+                        <MudTr>
+                            <td colspan="4" class="pa-0">
+                                @if (context.IsLoading)
+                                {
+                                    <div class="d-flex justify-center pa-4">
+                                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <MudTable T="TripPackageDto"
+                                              Items="@context.Items"
+                                              Dense="true"
+                                              Hover="false"
+                                              Elevation="0"
+                                              Class="ml-8">
+                                        <HeaderContent>
+                                            <MudTh>Mã đơn</MudTh>
+                                            <MudTh>Mã kiện</MudTh>
+                                            <MudTh>Chuyến thư</MudTh>
+                                            <MudTh>Bưu cục</MudTh>
+                                            <MudTh>Trạng thái</MudTh>
+                                            <MudTh>Ngày tạo đơn</MudTh>
+                                            <MudTh>Cập nhật lúc</MudTh>
+                                        </HeaderContent>
+                                        <RowTemplate Context="pkg">
+                                            <MudTd DataLabel="Mã đơn">@pkg.OrderId</MudTd>
+                                            <MudTd DataLabel="Mã kiện">@pkg.OrderItemId</MudTd>
+                                            <MudTd DataLabel="Chuyến thư">@(pkg.PackageCode ?? "-")</MudTd>
+                                            <MudTd DataLabel="Bưu cục">@pkg.PostOfficeId</MudTd>
+                                            <MudTd DataLabel="Trạng thái">
+                                                <MudChip T="string"
+                                                         Color="@GetStatusColor(pkg.StatusId)"
+                                                         Size="Size.Small"
+                                                         Ripple="false">
+                                                    @GetStatusLabel(pkg.StatusId)
+                                                </MudChip>
+                                            </MudTd>
+                                            <MudTd DataLabel="Ngày tạo đơn">@pkg.OrderCreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</MudTd>
+                                            <MudTd DataLabel="Cập nhật lúc">@pkg.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</MudTd>
+                                        </RowTemplate>
+                                        <NoRecordsContent>
+                                            <MudText Class="pa-4">Không có kiện nào trong bưu kiện này.</MudText>
+                                        </NoRecordsContent>
+                                    </MudTable>
+                                }
+                            </td>
+                        </MudTr>
+                    }
+                </ChildRowContent>
+                <NoRecordsContent>
+                    <MudText Class="pa-4">Không có bưu kiện nào.</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<PackageRow> packageRows = [];
+    private string searchPackageCode = string.Empty;
+    private bool isLoading = true;
+    private readonly HashSet<string> checkedPackages = new(StringComparer.OrdinalIgnoreCase);
+
+    private IEnumerable<PackageRow> FilteredRows
+    {
+        get
+        {
+            string term = searchPackageCode.Trim();
+            if (string.IsNullOrEmpty(term))
+                return packageRows;
+            return packageRows.Where(r => r.PackageCode.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        checkedPackages.Clear();
+        try
+        {
+            List<PackageDto> packages = await OrderRepository.GetAllPackagesAsync();
+            packageRows = packages.Select(p => new PackageRow(p)).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải danh sách bưu kiện: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnPackageChecked(string packageCode, bool isChecked)
+    {
+        if (isChecked)
+            checkedPackages.Add(packageCode);
+        else
+            checkedPackages.Remove(packageCode);
+    }
+
+    private async Task OpenBarcodeDialogAsync()
+    {
+        List<BarcodeDialog.BarcodeEntry> entries = checkedPackages
+            .OrderBy(c => c)
+            .Select(c => new BarcodeDialog.BarcodeEntry("Bưu kiện", c))
+            .ToList();
+
+        DialogParameters<BarcodeDialog> parameters = new()
+        {
+            { d => d.Entries, entries }
+        };
+        DialogOptions options = new() { MaxWidth = MaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<BarcodeDialog>("Barcode bưu kiện", parameters, options);
+    }
+
+    private async Task ToggleAsync(PackageRow row)
+    {
+        if (row.IsExpanded)
+        {
+            row.IsExpanded = false;
+            return;
+        }
+
+        row.IsExpanded = true;
+
+        if (row.Items.Count > 0)
+            return;
+
+        row.IsLoading = true;
+        try
+        {
+            row.Items = await OrderRepository.GetItemsByPackageCodeAsync(row.PackageCode);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải kiện của bưu kiện {row.PackageCode}: {ex.Message}", Severity.Error);
+            row.IsExpanded = false;
+        }
+        finally
+        {
+            row.IsLoading = false;
+        }
+    }
+
+    private static string GetStatusLabel(string? statusId)
+    {
+        if (string.IsNullOrWhiteSpace(statusId)) return "-";
+        if (int.TryParse(statusId, out int value) && Enum.IsDefined(typeof(OrderStatus), value))
+            return ((OrderStatus)value).ToDescriptionString();
+        return statusId;
+    }
+
+    private static Color GetStatusColor(string? statusId)
+    {
+        if (string.IsNullOrWhiteSpace(statusId) || !int.TryParse(statusId, out int value) || !Enum.IsDefined(typeof(OrderStatus), value))
+            return Color.Default;
+
+        return (OrderStatus)value switch
+        {
+            OrderStatus.Delivered => Color.Success,
+            OrderStatus.Returned => Color.Success,
+            OrderStatus.Returning or OrderStatus.DeliveryRescheduled => Color.Warning,
+            OrderStatus.Cancelled or OrderStatus.Lost => Color.Error,
+            OrderStatus.InTransit or OrderStatus.Delivering or OrderStatus.InDeliveryManifest => Color.Info,
+            _ => Color.Default
+        };
+    }
+
+    private sealed class PackageRow(PackageDto pkg)
+    {
+        public string PackageCode { get; } = pkg.PackageCode;
+        public long TotalItems { get; } = pkg.TotalItems;
+        public bool IsExpanded { get; set; }
+        public bool IsLoading { get; set; }
+        public List<TripPackageDto> Items { get; set; } = [];
+    }
+}

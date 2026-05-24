@@ -47,6 +47,7 @@ public static class ApplicationConstants
         public const string ManifestOrders = "/manifest/orders";
         public const string ManifestList = "/manifest/list";
         public const string LenHangChuyenThu = "/len-hang/chuyen-thu";
+        public const string LenHangBuuKien = "/len-hang/buu-kien";
     }
 
     public static class EnvironmentNames
