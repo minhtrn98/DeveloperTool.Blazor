@@ -65,7 +65,7 @@ public static class ConfigurationExtensions
     {
         services.AddKeyedScoped(database, (sp, _) =>
         {
-            return new ApplicationDbQuery(sp.GetRequiredService<IConfiguration>(), database);
+            return new ApplicationDbQuery(sp.GetRequiredService<IConfiguration>(), sp.GetRequiredService<ILogger<ApplicationDbQuery>>(), database);
         });
         return services;
     }

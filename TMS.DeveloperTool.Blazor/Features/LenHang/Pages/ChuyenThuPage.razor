@@ -1,0 +1,270 @@
+@page "/len-hang/chuyen-thu"
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+@using TMS.DeveloperTool.Blazor.Infrastructure.Constants
+@using TMS.DeveloperTool.Blazor.Features.Manifest.Pages
+@using TMS.DeveloperTool.Blazor.Domain.Enums
+@using TMS.DeveloperTool.Blazor.Infrastructure.Extensions
+@inject OrderRepository OrderRepository
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<AppPageTitle MenuName="Chuyến thư" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4">
+        <div class="d-flex justify-space-between align-center mb-4">
+            <MudText Typo="Typo.h4">Danh sách chuyến thư</MudText>
+            <div class="d-flex gap-2">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Info"
+                           StartIcon="@Icons.Material.Filled.QrCode"
+                           OnClick="OpenBarcodeDialogAsync"
+                           Disabled="@(checkedTrips.Count == 0)">
+                    Xem barcode (@checkedTrips.Count)
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="ReloadAsync"
+                           Disabled="@isLoading">
+                    Làm mới
+                </MudButton>
+            </div>
+        </div>
+
+        <MudTextField @bind-Value="searchTripCode"
+                      Label="Tìm theo mã chuyến thư"
+                      Variant="Variant.Outlined"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true"
+                      Clearable="true"
+                      Class="mb-3" />
+
+        @if (isLoading)
+        {
+            <div class="d-flex justify-center pa-6">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (!FilteredRows.Any())
+        {
+            <MudAlert Severity="Severity.Info">Không có chuyến thư nào.</MudAlert>
+        }
+        else
+        {
+            <MudTable T="TripRow"
+                      Items="@FilteredRows"
+                      Hover="true"
+                      Dense="true"
+                      Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh></MudTh>
+                    <MudTh></MudTh>
+                    <MudTh>Mã chuyến thư</MudTh>
+                    <MudTh>Tổng kiện</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd Style="width: 40px">
+                        <MudCheckBox T="bool"
+                                     Value="@checkedTrips.Contains(context.TripCode)"
+                                     ValueChanged="@(v => OnTripChecked(context.TripCode, v))"
+                                     Color="Color.Primary"
+                                     Size="Size.Small" />
+                    </MudTd>
+                    <MudTd Style="width: 40px">
+                        <MudIconButton Icon="@(context.IsExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       OnClick="@(() => ToggleAsync(context))" />
+                    </MudTd>
+                    <MudTd DataLabel="Mã chuyến thư"><b>@context.TripCode</b></MudTd>
+                    <MudTd DataLabel="Tổng kiện">@context.TotalItems</MudTd>
+                </RowTemplate>
+                <ChildRowContent>
+                    @if (context.IsExpanded)
+                    {
+                        <MudTr>
+                            <td colspan="4" class="pa-0">
+                                @if (context.IsLoading)
+                                {
+                                    <div class="d-flex justify-center pa-4">
+                                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <MudTable T="TripPackageDto"
+                                              Items="@context.Items"
+                                              Dense="true"
+                                              Hover="false"
+                                              Elevation="0"
+                                              Class="ml-8">
+                                        <HeaderContent>
+                                            <MudTh>Mã đơn</MudTh>
+                                            <MudTh>Mã kiện</MudTh>
+                                            <MudTh>Mã bưu kiện</MudTh>
+                                            <MudTh>Bưu cục</MudTh>
+                                            <MudTh>Trạng thái</MudTh>
+                                            <MudTh>Ngày tạo đơn</MudTh>
+                                            <MudTh>Cập nhật lúc</MudTh>
+                                        </HeaderContent>
+                                        <RowTemplate Context="pkg">
+                                            <MudTd DataLabel="Mã đơn">@pkg.OrderId</MudTd>
+                                            <MudTd DataLabel="Mã kiện">@pkg.OrderItemId</MudTd>
+                                            <MudTd DataLabel="Mã bưu kiện">@(pkg.PackageCode ?? "-")</MudTd>
+                                            <MudTd DataLabel="Bưu cục">@pkg.PostOfficeId</MudTd>
+                                            <MudTd DataLabel="Trạng thái">
+                                                <MudChip T="string"
+                                                         Color="@GetStatusColor(pkg.StatusId)"
+                                                         Size="Size.Small"
+                                                         Ripple="false">
+                                                    @GetStatusLabel(pkg.StatusId)
+                                                </MudChip>
+                                            </MudTd>
+                                            <MudTd DataLabel="Ngày tạo đơn">@pkg.OrderCreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</MudTd>
+                                            <MudTd DataLabel="Cập nhật lúc">@pkg.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</MudTd>
+                                        </RowTemplate>
+                                        <NoRecordsContent>
+                                            <MudText Class="pa-4">Không có kiện nào trong chuyến thư này.</MudText>
+                                        </NoRecordsContent>
+                                    </MudTable>
+                                }
+                            </td>
+                        </MudTr>
+                    }
+                </ChildRowContent>
+                <NoRecordsContent>
+                    <MudText Class="pa-4">Không có chuyến thư nào.</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<TripRow> tripRows = [];
+    private string searchTripCode = string.Empty;
+    private bool isLoading = true;
+    private readonly HashSet<string> checkedTrips = new(StringComparer.OrdinalIgnoreCase);
+
+    private IEnumerable<TripRow> FilteredRows
+    {
+        get
+        {
+            string term = searchTripCode.Trim();
+            if (string.IsNullOrEmpty(term))
+                return tripRows;
+            return tripRows.Where(r => r.TripCode.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        checkedTrips.Clear();
+        try
+        {
+            List<TripDto> trips = await OrderRepository.GetAllTripsAsync();
+            tripRows = trips.Select(t => new TripRow(t)).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải danh sách chuyến thư: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnTripChecked(string tripCode, bool isChecked)
+    {
+        if (isChecked)
+            checkedTrips.Add(tripCode);
+        else
+            checkedTrips.Remove(tripCode);
+    }
+
+    private async Task OpenBarcodeDialogAsync()
+    {
+        List<BarcodeDialog.BarcodeEntry> entries = checkedTrips
+            .OrderBy(c => c)
+            .Select(c => new BarcodeDialog.BarcodeEntry("Chuyến thư", c))
+            .ToList();
+
+        DialogParameters<BarcodeDialog> parameters = new()
+        {
+            { d => d.Entries, entries }
+        };
+        DialogOptions options = new() { MaxWidth = MaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<BarcodeDialog>("Barcode chuyến thư", parameters, options);
+    }
+
+    private async Task ToggleAsync(TripRow row)
+    {
+        if (row.IsExpanded)
+        {
+            row.IsExpanded = false;
+            return;
+        }
+
+        row.IsExpanded = true;
+
+        if (row.Items.Count > 0)
+            return;
+
+        row.IsLoading = true;
+        try
+        {
+            row.Items = await OrderRepository.GetPackagesByTripCodeAsync(row.TripCode);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải kiện của chuyến thư {row.TripCode}: {ex.Message}", Severity.Error);
+            row.IsExpanded = false;
+        }
+        finally
+        {
+            row.IsLoading = false;
+        }
+    }
+
+    private static string GetStatusLabel(string? statusId)
+    {
+        if (string.IsNullOrWhiteSpace(statusId)) return "-";
+        if (int.TryParse(statusId, out int value) && Enum.IsDefined(typeof(OrderStatus), value))
+            return ((OrderStatus)value).ToDescriptionString();
+        return statusId;
+    }
+
+    private static Color GetStatusColor(string? statusId)
+    {
+        if (string.IsNullOrWhiteSpace(statusId) || !int.TryParse(statusId, out int value) || !Enum.IsDefined(typeof(OrderStatus), value))
+            return Color.Default;
+
+        return (OrderStatus)value switch
+        {
+            OrderStatus.Delivered => Color.Success,
+            OrderStatus.Returned => Color.Success,
+            OrderStatus.Returning or OrderStatus.DeliveryRescheduled => Color.Warning,
+            OrderStatus.Cancelled or OrderStatus.Lost => Color.Error,
+            OrderStatus.InTransit or OrderStatus.Delivering or OrderStatus.InDeliveryManifest => Color.Info,
+            _ => Color.Default
+        };
+    }
+
+    private sealed class TripRow(TripDto trip)
+    {
+        public string TripCode { get; } = trip.TripCode;
+        public long TotalItems { get; } = trip.TotalItems;
+        public bool IsExpanded { get; set; }
+        public bool IsLoading { get; set; }
+        public List<TripPackageDto> Items { get; set; } = [];
+    }
+}

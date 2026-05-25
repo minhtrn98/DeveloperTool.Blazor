@@ -1,10 +1,11 @@
 ﻿using Dapper;
 using Npgsql;
 using System.Data;
+using Microsoft.Extensions.Logging;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Data;
 
-public sealed class ApplicationDbQuery(IConfiguration configuration, string database)
+public sealed partial class ApplicationDbQuery(IConfiguration configuration, ILogger<ApplicationDbQuery> logger, string database)
 {
     private readonly string? _connectionString = configuration.GetConnectionString(database);
     private NpgsqlConnection? _connection;
@@ -21,6 +22,7 @@ public sealed class ApplicationDbQuery(IConfiguration configuration, string data
             parameters: parameters,
             cancellationToken: cancellationToken
         );
+        LogSqlQuery(sql);
         return await _connection.QuerySingleOrDefaultAsync<T>(commandDefinition);
     }
 
@@ -36,6 +38,7 @@ public sealed class ApplicationDbQuery(IConfiguration configuration, string data
             parameters: parameters,
             cancellationToken: cancellationToken
         );
+        LogSqlQuery(sql);
         return await _connection.QueryFirstOrDefaultAsync<T>(commandDefinition);
     }
 
@@ -52,7 +55,7 @@ public sealed class ApplicationDbQuery(IConfiguration configuration, string data
             parameters: parameters,
             cancellationToken: cancellationToken
         );
-
+        LogSqlQuery(sql);
         return await _connection.QueryAsync<T>(commandDefinition);
     }
 
@@ -69,7 +72,7 @@ public sealed class ApplicationDbQuery(IConfiguration configuration, string data
             parameters: parameters,
             cancellationToken: cancellationToken
         );
-
+        LogSqlQuery(sql);
         return await _connection.QueryAsync(commandDefinition);
     }
 
@@ -86,4 +89,7 @@ public sealed class ApplicationDbQuery(IConfiguration configuration, string data
             await _connection.DisposeAsync();
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "[DAPPER] Executing SQL query:\n{Sql}")]
+    private partial void LogSqlQuery(string sql);
 }
