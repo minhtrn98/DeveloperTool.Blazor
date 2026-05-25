@@ -11,4 +11,6 @@ public sealed record PmsOrderItemLookupDto
     public WarehouseStatus? WarehouseStatus { get; init; }
     public string? DestinationPostOfficeCode { get; init; }
     public string? DestinationPostOfficeName { get; init; }
+    public string? CurrentPostOfficeId { get; init; }
+    public string? CurrentPostOfficeName { get; init; }
 }

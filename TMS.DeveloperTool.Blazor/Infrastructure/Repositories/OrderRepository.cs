@@ -158,9 +158,9 @@ public sealed class OrderRepository([FromKeyedServices("OrderDb")] ApplicationDb
             select
                 o.order_id as "OrderId",
                 o.accepted_time as "AcceptedTime",
-                o.current_post_office_code as "CurrentPostOfficeCode",
+                o.current_post_office_id as "CurrentPostOfficeCode",
                 o.current_post_office_name as "CurrentPostOfficeName",
-                o.receiver_post_office_code as "ReceiverPostOfficeCode",
+                o.receiver_post_office_id as "ReceiverPostOfficeCode",
                 o.receiver_post_office_name as "ReceiverPostOfficeName",
                 o.receiver_address as "ReceiverAddress",
                 o.receiver_ward_id as "ReceiverWardId",
@@ -188,8 +188,10 @@ public sealed class OrderRepository([FromKeyedServices("OrderDb")] ApplicationDb
                 oi.weight as "Weight",
                 oi.cal_weight as "CalWeight",
                 oi.warehouse_status as "WarehouseStatus",
-                oi.destination_post_office_code as "DestinationPostOfficeCode",
-                oi.destination_post_office_name as "DestinationPostOfficeName"
+                '' as "DestinationPostOfficeCode",
+                '' as "DestinationPostOfficeName",
+                oi.current_post_office_id as "CurrentPostOfficeId",
+                oi.current_post_office_name as "CurrentPostOfficeName"
             from public.order_items oi
             where oi.order_id = @OrderId
             order by oi.order_item_id

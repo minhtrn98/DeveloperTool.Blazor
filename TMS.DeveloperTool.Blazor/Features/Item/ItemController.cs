@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using TMS.DeveloperTool.Blazor.Domain.Enums;
 using TMS.DeveloperTool.Blazor.Features.Item.Contracts;
-using TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
-using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
 namespace TMS.DeveloperTool.Blazor.Features.Item;
 
@@ -15,9 +13,6 @@ public class ItemController(OrderRepository orderRepository) : ControllerBase
         [FromBody] PmsScanLookupRequest request,
         CancellationToken cancellationToken)
     {
-        if (request.Type != PmsScannedCodeType.OrderItem)
-            return BadRequest($"Unsupported type: {request.Type}.");
-
         PmsOrderLookupDto? order = await orderRepository.GetOrderForPmsLookupAsync(request.Id, cancellationToken);
         if (order is null)
             return NotFound();
@@ -61,7 +56,9 @@ public class ItemController(OrderRepository orderRepository) : ControllerBase
                 ReceiverPostOfficeName = order.ReceiverPostOfficeName,
                 ReceiverCountryId = order.ReceiverCountryId,
                 ReceiverCountryName = order.ReceiverCountryName,
-                CodAmount = order.CodAmount
+                CodAmount = order.CodAmount,
+                CurrentPostOfficeId = oi.CurrentPostOfficeId,
+                CurrentPostOfficeName = oi.CurrentPostOfficeName
             }).ToList()
         };
     }

@@ -38,4 +38,6 @@ public class PmsScanItem
     public string? ReceiverCountryId { get; set; }
     public string? ReceiverCountryName { get; set; }
     public decimal? CodAmount { get; set; }
+    public string? CurrentPostOfficeId { get; set; }
+    public string? CurrentPostOfficeName { get; set; }
 }
