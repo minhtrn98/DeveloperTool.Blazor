@@ -110,6 +110,7 @@ public sealed class OrderRepository([FromKeyedServices("OrderDb")] ApplicationDb
                 o.receiver_name as "ReceiverName",
                 o.receiver_address as "ReceiverAddress",
                 o.receiver_post_office_name as "ReceiverPostOfficeName",
+                o.current_post_office_id as "CurrentPostOfficeCode",
                 o.current_post_office_name as "CurrentPostOfficeName",
                 o.current_status_id as "CurrentStatusId",
                 o.current_status_name as "CurrentStatusName",

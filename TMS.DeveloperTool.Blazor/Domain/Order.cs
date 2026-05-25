@@ -13,6 +13,7 @@ public sealed class Order
     public string? ReceiverName { get; init; }
     public string? ReceiverAddress { get; init; }
     public string? ReceiverPostOfficeName { get; init; }
+    public string? CurrentPostOfficeCode { get; init; }
     public string? CurrentPostOfficeName { get; init; }
     public string? CurrentStatusId { get; init; }
     public string? CurrentStatusName { get; init; }
