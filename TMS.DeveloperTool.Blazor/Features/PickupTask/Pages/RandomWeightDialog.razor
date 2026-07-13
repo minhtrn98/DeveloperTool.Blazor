@@ -44,11 +44,10 @@
                 return;
             }
 
-            foreach (PickupTaskRedistributeItemDto item in items)
-            {
-                decimal randomWeight = Math.Round(minKg + (decimal)Random.Shared.NextDouble() * (maxKg - minKg), 2);
-                await OrderRepository.UpdatePickupTaskRedistributeItemWeightAsync(item.OrderItemId, randomWeight);
-            }
+            List<(string OrderItemId, decimal Weight)> updates = [.. items.Select(item =>
+                (item.OrderItemId, Math.Round(minKg + (decimal)Random.Shared.NextDouble() * (maxKg - minKg), 2)))];
+
+            await OrderRepository.UpdatePickupTaskRedistributeItemWeightsAsync(updates);
 
             Snackbar.Add($"Random trọng lượng cho {items.Count} kiện thành công.", Severity.Success);
             MudDialog.Close(DialogResult.Ok(true));

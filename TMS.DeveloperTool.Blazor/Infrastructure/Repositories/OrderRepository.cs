@@ -1,4 +1,6 @@
-﻿using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
+﻿using System.Text;
+using Dapper;
+using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 
@@ -388,11 +390,103 @@ public sealed class OrderRepository([FromKeyedServices("OrderDb")] ApplicationDb
         return [.. items];
     }
 
-    public async Task UpdatePickupTaskRedistributeItemWeightAsync(string orderItemId, decimal weight, CancellationToken cancellationToken = default)
+    public async Task UpdatePickupTaskRedistributeItemWeightsAsync(
+        IReadOnlyList<(string OrderItemId, decimal Weight)> updates,
+        CancellationToken cancellationToken = default)
+    {
+        const int batchSize = 500;
+
+        for (int offset = 0; offset < updates.Count; offset += batchSize)
+        {
+            IReadOnlyList<(string OrderItemId, decimal Weight)> batch = [.. updates.Skip(offset).Take(batchSize)];
+
+            StringBuilder sql = new("""
+                UPDATE public.pickup_tasks_redistribute AS t
+                SET weight = v.weight
+                FROM (VALUES
+                """);
+
+            DynamicParameters parameters = new();
+            for (int i = 0; i < batch.Count; i++)
+            {
+                if (i > 0)
+                {
+                    sql.Append(',');
+                }
+
+                sql.Append($"(@itemId{i}, @weight{i}::numeric)");
+                parameters.Add($"itemId{i}", batch[i].OrderItemId);
+                parameters.Add($"weight{i}", batch[i].Weight);
+            }
+
+            sql.Append(") AS v(item_id, weight) WHERE t.order_item_id = v.item_id");
+
+            await dbQuery.ExecuteAsync(sql.ToString(), parameters, cancellationToken);
+        }
+    }
+
+    public async Task<int> GetPickupTaskRedistributeCountAsync(string tag, CancellationToken cancellationToken = default)
     {
         const string sql = """
-            update public.pickup_tasks_redistribute set weight = @random where order_item_id = @itemId
+            select count(*) from public.pickup_tasks_redistribute where pickup_task_id = @tag
             """;
-        await dbQuery.ExecuteAsync(sql, new { itemId = orderItemId, random = weight }, cancellationToken);
+        return await dbQuery.SingleOrDefaultAsync<int>(sql, new { tag }, cancellationToken);
+    }
+
+    public async Task<DateTime?> GetPickupTaskCreatedAtAsync(string tag, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            select created_at from public.pickup_tasks where pickup_task_id = @tag
+            """;
+        return await dbQuery.SingleOrDefaultAsync<DateTime?>(sql, new { tag }, cancellationToken);
+    }
+
+    public async Task InsertPickupTaskRedistributeItemsAsync(
+        IReadOnlyList<(string OrderId, string OrderItemId, string Tag, DateTime? TaskCreatedAt)> items,
+        CancellationToken cancellationToken = default)
+    {
+        const int batchSize = 500;
+
+        for (int offset = 0; offset < items.Count; offset += batchSize)
+        {
+            IReadOnlyList<(string OrderId, string OrderItemId, string Tag, DateTime? TaskCreatedAt)> batch =
+                [.. items.Skip(offset).Take(batchSize)];
+
+            StringBuilder sql = new("""
+                INSERT INTO public.pickup_tasks_redistribute
+                (order_id, order_item_id, order_created_at, pickup_task_id, task_created_at, weight, cal_weight, l, w, h, note)
+                VALUES
+                """);
+
+            DynamicParameters parameters = new();
+            for (int i = 0; i < batch.Count; i++)
+            {
+                if (i > 0)
+                {
+                    sql.Append(',');
+                }
+
+                sql.Append($"(@orderId{i}, @orderItemId{i}, now(), @tag{i}, @taskCreatedAt{i}, 1, 1, 1, 1, 1, '')");
+                parameters.Add($"orderId{i}", batch[i].OrderId);
+                parameters.Add($"orderItemId{i}", batch[i].OrderItemId);
+                parameters.Add($"tag{i}", batch[i].Tag);
+                parameters.Add($"taskCreatedAt{i}", batch[i].TaskCreatedAt);
+            }
+
+            await dbQuery.ExecuteAsync(sql.ToString(), parameters, cancellationToken);
+        }
+    }
+
+    public async Task DeletePickupTaskRedistributeItemsAsync(string tag, int count, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            DELETE FROM public.pickup_tasks_redistribute
+            WHERE order_item_id IN (
+                SELECT order_item_id FROM public.pickup_tasks_redistribute
+                WHERE pickup_task_id = @tag
+                LIMIT @count
+            )
+            """;
+        await dbQuery.ExecuteAsync(sql, new { tag, count }, cancellationToken);
     }
 }

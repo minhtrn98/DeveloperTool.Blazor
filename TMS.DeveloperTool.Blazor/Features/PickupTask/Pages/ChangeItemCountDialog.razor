@@ -1,0 +1,83 @@
+@using TMS.DeveloperTool.Blazor.Infrastructure.Repositories
+@inject OrderRepository OrderRepository
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Đổi số lượng item: @PickupTaskId</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudNumericField T="int" @bind-Value="desiredCount" Label="Số order/item mong muốn" Variant="Variant.Outlined" Min="0" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Color="Color.Default">Hủy</MudButton>
+        <MudButton OnClick="SubmitAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSubmitting">Xác nhận</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string PickupTaskId { get; set; } = string.Empty;
+
+    private int desiredCount;
+    private bool isSubmitting;
+
+    private async Task SubmitAsync()
+    {
+        if (desiredCount < 0)
+        {
+            Snackbar.Add("Số lượng mong muốn không hợp lệ.", Severity.Warning);
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            int currentCount = await OrderRepository.GetPickupTaskRedistributeCountAsync(PickupTaskId);
+
+            if (desiredCount > currentCount)
+            {
+                int toAdd = desiredCount - currentCount;
+                DateTime? taskCreatedAt = await OrderRepository.GetPickupTaskCreatedAtAsync(PickupTaskId);
+                string orderId = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+
+                List<(string OrderId, string OrderItemId, string Tag, DateTime? TaskCreatedAt)> newItems = [];
+                for (int i = 1; i <= toAdd; i++)
+                {
+                    string orderItemId = i == 1 ? orderId : $"{orderId}/{i}";
+                    newItems.Add((orderId, orderItemId, PickupTaskId, taskCreatedAt));
+                }
+
+                await OrderRepository.InsertPickupTaskRedistributeItemsAsync(newItems);
+
+                Snackbar.Add($"Đã thêm {toAdd} item.", Severity.Success);
+            }
+            else if (desiredCount < currentCount)
+            {
+                int toRemove = currentCount - desiredCount;
+                await OrderRepository.DeletePickupTaskRedistributeItemsAsync(PickupTaskId, toRemove);
+                Snackbar.Add($"Đã xóa {toRemove} item.", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Số lượng item hiện tại đã đúng như mong muốn.", Severity.Info);
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Đổi số lượng item thất bại: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}

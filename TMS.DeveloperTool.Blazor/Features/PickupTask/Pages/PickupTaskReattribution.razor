@@ -64,6 +64,9 @@
                             <MudIconButton Icon="@Icons.Material.Filled.Casino" Color="Color.Secondary" Size="Size.Small"
                                            Disabled="@IsBusy(context.PickupTaskId)"
                                            OnClick="@(() => ShowRandomWeightAsync(context))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.FormatListNumbered" Color="Color.Secondary" Size="Size.Small"
+                                           Disabled="@IsBusy(context.PickupTaskId)"
+                                           OnClick="@(() => ShowChangeItemCountAsync(context))" />
                         </MudButtonGroup>
                     </MudTd>
                 </RowTemplate>
@@ -176,6 +179,36 @@
             };
 
             IDialogReference dialog = await DialogService.ShowAsync<RandomWeightDialog>("Random trọng lượng", parameters, options);
+            await dialog.Result;
+        }
+        finally
+        {
+            processingTaskIds.Remove(item.PickupTaskId);
+        }
+    }
+
+    private async Task ShowChangeItemCountAsync(PickupTaskReattributionDto item)
+    {
+        if (!processingTaskIds.Add(item.PickupTaskId))
+        {
+            return;
+        }
+
+        try
+        {
+            DialogParameters parameters = new()
+            {
+                { nameof(ChangeItemCountDialog.PickupTaskId), item.PickupTaskId }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseOnEscapeKey = true
+            };
+
+            IDialogReference dialog = await DialogService.ShowAsync<ChangeItemCountDialog>("Đổi số lượng item", parameters, options);
             await dialog.Result;
         }
         finally
