@@ -61,6 +61,9 @@
                             <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small"
                                            Disabled="@IsBusy(context.PickupTaskId)"
                                            OnClick="@(() => ShowDetailAsync(context))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Casino" Color="Color.Secondary" Size="Size.Small"
+                                           Disabled="@IsBusy(context.PickupTaskId)"
+                                           OnClick="@(() => ShowRandomWeightAsync(context))" />
                         </MudButtonGroup>
                     </MudTd>
                 </RowTemplate>
@@ -144,6 +147,36 @@
         catch (Exception ex)
         {
             Snackbar.Add($"Có lỗi khi tải chi tiết điều tin: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            processingTaskIds.Remove(item.PickupTaskId);
+        }
+    }
+
+    private async Task ShowRandomWeightAsync(PickupTaskReattributionDto item)
+    {
+        if (!processingTaskIds.Add(item.PickupTaskId))
+        {
+            return;
+        }
+
+        try
+        {
+            DialogParameters parameters = new()
+            {
+                { nameof(RandomWeightDialog.PickupTaskId), item.PickupTaskId }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseOnEscapeKey = true
+            };
+
+            IDialogReference dialog = await DialogService.ShowAsync<RandomWeightDialog>("Random trọng lượng", parameters, options);
+            await dialog.Result;
         }
         finally
         {

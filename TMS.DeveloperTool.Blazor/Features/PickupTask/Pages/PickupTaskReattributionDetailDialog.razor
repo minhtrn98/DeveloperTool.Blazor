@@ -24,7 +24,7 @@
         }
         else
         {
-            <MudText Typo="Typo.body2" Class="mb-2">Tổng trọng lượng: @totalWeight.ToString("N2")</MudText>
+            <MudText Typo="Typo.body2" Class="mb-2">Tổng trọng lượng: @totalWeight.ToString("N2") kg</MudText>
             <MudTable Items="@details" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
                 <HeaderContent>
                     <MudTh>Mã điều tin</MudTh>
@@ -46,10 +46,10 @@
                         <MudNumericField T="decimal?" @bind-Value="context.CarryShareRatio" Variant="Variant.Outlined"
                                          Margin="Margin.Dense" Min="0" Max="100" HideSpinButtons="false" />
                     </MudTd>
-                    <MudTd DataLabel="ExpectedWeight">@GetExpectedWeight(context).ToString("N2")</MudTd>
-                    <MudTd DataLabel="ActualWeight">@GetActualWeight(context).ToString("N2")</MudTd>
+                    <MudTd DataLabel="ExpectedWeight">@GetExpectedWeight(context).ToString("N2") kg</MudTd>
+                    <MudTd DataLabel="ActualWeight">@GetActualWeight(context).ToString("N2") kg</MudTd>
                     <MudTd DataLabel="Deviation">
-                        <MudText Typo="Typo.body2" Color="@GetDeviationColor(context)">@GetWeightDeviation(context).ToString("N2")</MudText>
+                        <MudText Typo="Typo.body2" Color="@GetDeviationColor(context)">@GetWeightDeviation(context).ToString("N2") kg</MudText>
                     </MudTd>
                     <MudTd DataLabel="DeviationPercent">
                         <MudText Typo="Typo.body2" Color="@GetDeviationColor(context)">@FormatDeviationPercent(context)</MudText>
@@ -58,7 +58,7 @@
             </MudTable>
 
             <MudText Typo="Typo.body2" Class="mt-2" Color="@GetTotalDeviationColor()">
-                Tổng chênh lệch: <b>@TotalWeightDeviation.ToString("N2")</b> (@FormatTotalDeviationPercent())
+                Tổng chênh lệch: <b>@TotalWeightDeviation.ToString("N2") kg</b> (@FormatTotalDeviationPercent())
             </MudText>
         }
     </DialogContent>

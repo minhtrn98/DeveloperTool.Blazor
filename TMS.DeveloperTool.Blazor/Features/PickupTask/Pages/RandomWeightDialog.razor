@@ -1,0 +1,70 @@
+@using TMS.DeveloperTool.Blazor.Infrastructure.Repositories
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+@inject OrderRepository OrderRepository
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Random trọng lượng: @PickupTaskId</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudNumericField T="decimal" @bind-Value="minKg" Label="Min (Kg)" Variant="Variant.Outlined" Min="0" Class="mb-3" />
+        <MudNumericField T="decimal" @bind-Value="maxKg" Label="Max (Kg)" Variant="Variant.Outlined" Min="0" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Color="Color.Default">Hủy</MudButton>
+        <MudButton OnClick="SubmitAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSubmitting">Xác nhận</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string PickupTaskId { get; set; } = string.Empty;
+
+    private decimal minKg;
+    private decimal maxKg;
+    private bool isSubmitting;
+
+    private async Task SubmitAsync()
+    {
+        if (minKg <= 0 || maxKg <= 0 || minKg > maxKg)
+        {
+            Snackbar.Add("Vui lòng nhập khoảng Kg hợp lệ (Min <= Max, > 0).", Severity.Warning);
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            List<PickupTaskRedistributeItemDto> items = await OrderRepository.GetPickupTaskRedistributeItemsAsync(PickupTaskId);
+            if (items.Count == 0)
+            {
+                Snackbar.Add("Không có kiện hàng nào để random trọng lượng.", Severity.Warning);
+                return;
+            }
+
+            foreach (PickupTaskRedistributeItemDto item in items)
+            {
+                decimal randomWeight = Math.Round(minKg + (decimal)Random.Shared.NextDouble() * (maxKg - minKg), 2);
+                await OrderRepository.UpdatePickupTaskRedistributeItemWeightAsync(item.OrderItemId, randomWeight);
+            }
+
+            Snackbar.Add($"Random trọng lượng cho {items.Count} kiện thành công.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Random trọng lượng thất bại: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}

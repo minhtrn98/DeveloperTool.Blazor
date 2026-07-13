@@ -376,4 +376,23 @@ public sealed class OrderRepository([FromKeyedServices("OrderDb")] ApplicationDb
             """;
         return await dbQuery.SingleOrDefaultAsync<decimal>(sql, new { ptId = pickupTaskId }, cancellationToken);
     }
+
+    public async Task<List<PickupTaskRedistributeItemDto>> GetPickupTaskRedistributeItemsAsync(string tag, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            select pta.order_item_id::text as "OrderItemId", pta.weight as "Weight"
+            from public.pickup_tasks_redistribute pta
+            where pta.pickup_task_id = @ptId
+            """;
+        IEnumerable<PickupTaskRedistributeItemDto> items = await dbQuery.QueryAsync<PickupTaskRedistributeItemDto>(sql, new { ptId = tag }, cancellationToken);
+        return [.. items];
+    }
+
+    public async Task UpdatePickupTaskRedistributeItemWeightAsync(string orderItemId, decimal weight, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            update public.pickup_tasks_redistribute set weight = @random where order_item_id = @itemId
+            """;
+        await dbQuery.ExecuteAsync(sql, new { itemId = orderItemId, random = weight }, cancellationToken);
+    }
 }
