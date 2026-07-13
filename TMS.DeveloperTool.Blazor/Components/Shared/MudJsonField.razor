@@ -7,7 +7,7 @@
 
 <div class="@Class">
     <MudTextField T="string"
-                  Value="Value"
+                  Value="_innerValue"
                   ValueChanged="OnValueChanged"
                   Label="@Label"
                   Variant="@Variant"
@@ -35,6 +35,14 @@
 </div>
 
 @code {
+    private string _innerValue = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        _innerValue = Value ?? string.Empty;
+    }
+
     /// <summary>
     /// Gets or sets whether action buttons are disabled when the value is empty.
     /// </summary>
@@ -56,6 +64,7 @@
     private async Task OnValueChanged(string? value)
     {
         string newValue = value ?? string.Empty;
+        _innerValue = newValue;
         Value = newValue;
         await ValueChanged.InvokeAsync(newValue);
     }
@@ -76,6 +85,7 @@
         try
         {
             string formatted = BodyFormatter.NormalizeAndFormatJson(Value);
+            _innerValue = formatted;
             Value = formatted;
             await ValueChanged.InvokeAsync(formatted);
             Snackbar.Add("JSON formatted.", Severity.Success);
