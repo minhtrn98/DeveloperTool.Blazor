@@ -37,6 +37,7 @@ public static class ApplicationConstants
         public const string SimulateRoute = "/simulate-route";
         public const string PickupTasks = "/pickup-tasks";
         public const string PickupTasksCreateEvent = "/pickup-tasks/create-event";
+        public const string PickupTaskReattribution = "/pickup-tasks/reattribution";
         public const string TopMovingVehicles = "/top-moving-vehicles";
         public const string VehicleStatuses = "/vehicle-statuses";
         public const string RoutingConfig = "/routing-config";
@@ -68,6 +69,7 @@ public static class ApplicationConstants
         public const string SimulateRoute = "SimulateRoute";
         public const string PickupTasks = "PickupTasks";
         public const string CreatePickupTaskEvent = "CreatePickupTaskEvent";
+        public const string PickupTaskReattribution = "PickupTaskReattribution";
         public const string TopMovingVehicles = "TopMovingVehicles";
         public const string VehicleStatuses = "VehicleStatuses";
         public const string RoutingConfig = "RoutingConfig";

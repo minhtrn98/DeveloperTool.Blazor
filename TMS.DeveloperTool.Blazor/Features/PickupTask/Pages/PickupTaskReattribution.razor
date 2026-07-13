@@ -1,0 +1,179 @@
+@page "/pickup-tasks/reattribution"
+@using TMS.DeveloperTool.Blazor.Domain.Enums
+@using TMS.DeveloperTool.Blazor.Infrastructure.Extensions
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+@using TMS.DeveloperTool.Blazor.Features.PickupTask.Services
+@inject IDialogService DialogService
+@inject OrderRepository OrderRepository
+@inject ISnackbar Snackbar
+
+<AppPageTitle MenuName="Điều tin" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4">
+        <div class="d-flex justify-space-between mb-4">
+            <MudText Typo="Typo.h4">Chia tỷ trọng điều tin</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="ReloadAsync" Disabled="@isLoading">
+                Làm mới
+            </MudButton>
+        </div>
+
+        <MudGrid Class="mb-3">
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="searchTag" Label="Tìm theo tag" Variant="Variant.Outlined"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true" Clearable="true" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudAutocomplete T="EnumOption" @bind-Value="selectedStatus" SearchFunc="SearchStatuses"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<EnumOption>" Label="Trạng thái"
+                                 Variant="Variant.Outlined" FullWidth="true" Clearable="true" MaxItems="20" />
+            </MudItem>
+        </MudGrid>
+
+        @if (isLoading)
+        {
+            <div class="d-flex justify-content-center">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (!FilteredTasks.Any())
+        {
+            <MudAlert Severity="Severity.Info">Không có điều tin.</MudAlert>
+        }
+        else
+        {
+            <MudTable Items="@FilteredTasks" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>Mã điều tin</MudTh>
+                    <MudTh>Trạng thái</MudTh>
+                    <MudTh>Hành động</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="PickupTaskId">@context.PickupTaskId</MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Color="@GetStatusColor(context.Status)" Variant="Variant.Outlined" Size="Size.Small">
+                            @GetStatusDescription(context.Status)
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudButtonGroup>
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small"
+                                           Disabled="@IsBusy(context.PickupTaskId)"
+                                           OnClick="@(() => ShowDetailAsync(context))" />
+                        </MudButtonGroup>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<PickupTaskReattributionDto> tasks = [];
+    private readonly HashSet<string> processingTaskIds = [];
+    private readonly List<EnumOption> statusOptions =
+        [.. Enum.GetValues<PickupTaskStatusId>().Select(status => new EnumOption(((int)status).ToString(), status.ToDescriptionString()))];
+    private string searchTag = string.Empty;
+    private EnumOption? selectedStatus;
+    private bool isLoading = true;
+
+    private IEnumerable<PickupTaskReattributionDto> FilteredTasks
+    {
+        get
+        {
+            string trimmedTag = searchTag.Trim();
+            return tasks
+                .Where(task => string.IsNullOrEmpty(trimmedTag)
+                    || task.PickupTaskId.Contains(trimmedTag, StringComparison.OrdinalIgnoreCase))
+                .Where(task => selectedStatus is null
+                    || (int)task.Status == int.Parse(selectedStatus.Value));
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        try
+        {
+            tasks = await OrderRepository.GetPickupTaskReattributionsAsync();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private Task<IEnumerable<EnumOption>> SearchStatuses(string value, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(statusOptions, value));
+
+    private bool IsBusy(string pickupTaskId) => processingTaskIds.Contains(pickupTaskId);
+
+    private async Task ShowDetailAsync(PickupTaskReattributionDto item)
+    {
+        if (!processingTaskIds.Add(item.PickupTaskId))
+        {
+            return;
+        }
+
+        try
+        {
+            List<PickupTaskReattributionDetailDto> details = await OrderRepository.GetPickupTaskReattributionDetailAsync(item.PickupTaskId);
+
+            DialogParameters parameters = new()
+            {
+                { nameof(PickupTaskReattributionDetailDialog.Tag), item.PickupTaskId },
+                { nameof(PickupTaskReattributionDetailDialog.Details), details }
+            };
+
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.Large,
+                FullWidth = true,
+                CloseOnEscapeKey = true
+            };
+
+            IDialogReference dialog = await DialogService.ShowAsync<PickupTaskReattributionDetailDialog>("Chi tiết", parameters, options);
+            await dialog.Result;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Có lỗi khi tải chi tiết điều tin: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            processingTaskIds.Remove(item.PickupTaskId);
+        }
+    }
+
+    private static Color GetStatusColor(PickupTaskStatusId statusId)
+    {
+        return statusId switch
+        {
+            PickupTaskStatusId.WaitingForAssignment => Color.Warning,
+            PickupTaskStatusId.WaitingForAcceptance => Color.Warning,
+            PickupTaskStatusId.InTransit => Color.Info,
+            PickupTaskStatusId.Arrived => Color.Primary,
+            PickupTaskStatusId.PickingUp => Color.Info,
+            PickupTaskStatusId.CreatingOrder => Color.Primary,
+            PickupTaskStatusId.Completed => Color.Success,
+            PickupTaskStatusId.PickupFailed => Color.Error,
+            PickupTaskStatusId.Cancelled => Color.Dark,
+            PickupTaskStatusId.TransferredToPostOffice => Color.Secondary,
+            PickupTaskStatusId.WaitingForVehicleRental => Color.Warning,
+            PickupTaskStatusId.VehicleRentalInProgress => Color.Info,
+            PickupTaskStatusId.ReturnToPostOffice => Color.Secondary,
+            _ => Color.Default
+        };
+    }
+
+    private static string GetStatusDescription(PickupTaskStatusId statusId)
+    {
+        return statusId.ToDescriptionString();
+    }
+}

@@ -51,5 +51,9 @@ public enum PickupTaskStatusId
 
     [EnumMember(Value = "vehicle_rental_in_progress")]
     [Description("Đang thuê xe")]
-    VehicleRentalInProgress = 12
+    VehicleRentalInProgress = 12,
+
+    [EnumMember(Value = "return_to_post_office")]
+    [Description("Trả về bưu cục")]
+    ReturnToPostOffice = 13
 }

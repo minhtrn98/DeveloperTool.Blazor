@@ -320,4 +320,60 @@ public sealed class OrderRepository([FromKeyedServices("OrderDb")] ApplicationDb
 
         return [.. drafts];
     }
+
+    public async Task<List<PickupTaskReattributionDto>> GetPickupTaskReattributionsAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            select pickup_task_id::text as "PickupTaskId", status::int as "Status"
+            FROM public.pickup_tasks
+            WHERE tag = pickup_task_id
+            order by pickup_task_id
+            """;
+        IEnumerable<PickupTaskReattributionDto> tasks = await dbQuery.QueryAsync<PickupTaskReattributionDto>(sql, null, cancellationToken);
+        return [.. tasks];
+    }
+
+    public async Task<List<PickupTaskReattributionDetailDto>> GetPickupTaskReattributionDetailAsync(string tag, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            select
+                pt.tag::text as "Tag",
+                pt.pickup_task_id::text as "PickupTaskId",
+                pt.status::int as "Status",
+                pt.is_reattributed as "IsReattributed",
+                pt.carry_share_ratio as "CarryShareRatio"
+            FROM public.pickup_tasks pt where pt.tag = @ptId
+            ORDER BY pt.tag desc, pt.pickup_task_id asc
+            """;
+        IEnumerable<PickupTaskReattributionDetailDto> details = await dbQuery.QueryAsync<PickupTaskReattributionDetailDto>(sql, new { ptId = tag }, cancellationToken);
+        return [.. details];
+    }
+
+    public async Task UpdateCarryShareRatioAsync(string pickupTaskId, decimal carryShareRatio, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            update public.pickup_tasks set carry_share_ratio = @carryShareRatio where pickup_task_id = @ptId
+            """;
+        await dbQuery.ExecuteAsync(sql, new { ptId = pickupTaskId, carryShareRatio }, cancellationToken);
+    }
+
+    public async Task<decimal> GetPickupTaskRedistributeTotalWeightAsync(string tag, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            select coalesce(sum(coalesce(pta.weight, 0)), 0)
+            from public.pickup_tasks_redistribute pta
+            where pta.pickup_task_id = @Tag
+            """;
+        return await dbQuery.SingleOrDefaultAsync<decimal>(sql, new { Tag = tag }, cancellationToken);
+    }
+
+    public async Task<decimal> GetPickupTaskActualPickedWeightAsync(string pickupTaskId, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            select coalesce(sum(coalesce(pta.weight, 0)), 0)
+            from public.pickup_task_actual_picked_order_items pta
+            where pta.confirmed_pickup_task_id = @ptId
+            """;
+        return await dbQuery.SingleOrDefaultAsync<decimal>(sql, new { ptId = pickupTaskId }, cancellationToken);
+    }
 }

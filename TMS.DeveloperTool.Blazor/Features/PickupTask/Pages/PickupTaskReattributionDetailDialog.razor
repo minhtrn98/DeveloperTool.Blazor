@@ -1,0 +1,222 @@
+@using TMS.DeveloperTool.Blazor.Domain.Enums
+@using TMS.DeveloperTool.Blazor.Infrastructure.Extensions
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+@using TMS.DeveloperTool.Blazor.Features.PickupTask.Services
+@using TMS.DeveloperTool.Blazor.Infrastructure.Repositories
+@inject JobTriggerService JobTriggerService
+@inject OrderRepository OrderRepository
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Chi tiết: @Tag</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (isLoadingWeights)
+        {
+            <div class="d-flex justify-content-center">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (!details.Any())
+        {
+            <MudAlert Severity="Severity.Info">Không có dữ liệu.</MudAlert>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Class="mb-2">Tổng trọng lượng: @totalWeight.ToString("N2")</MudText>
+            <MudTable Items="@details" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Mã điều tin</MudTh>
+                    <MudTh>Trạng thái</MudTh>
+                    <MudTh>Đã chia</MudTh>
+                    <MudTh>Tỷ lệ (%)</MudTh>
+                    <MudTh>Trọng lượng dự kiến</MudTh>
+                    <MudTh>Trọng lượng thực</MudTh>
+                    <MudTh>Chênh lệch</MudTh>
+                    <MudTh>% lệch</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="PickupTaskId">@context.PickupTaskId</MudTd>
+                    <MudTd DataLabel="Status">@GetStatusDescription(context.Status)</MudTd>
+                    <MudTd DataLabel="IsReattributed">
+                        <MudCheckBox T="bool" Value="context.IsReattributed" ReadOnly="true" Disabled="true" />
+                    </MudTd>
+                    <MudTd DataLabel="CarryShareRatio">
+                        <MudNumericField T="decimal?" @bind-Value="context.CarryShareRatio" Variant="Variant.Outlined"
+                                         Margin="Margin.Dense" Min="0" Max="100" HideSpinButtons="false" />
+                    </MudTd>
+                    <MudTd DataLabel="ExpectedWeight">@GetExpectedWeight(context).ToString("N2")</MudTd>
+                    <MudTd DataLabel="ActualWeight">@GetActualWeight(context).ToString("N2")</MudTd>
+                    <MudTd DataLabel="Deviation">
+                        <MudText Typo="Typo.body2" Color="@GetDeviationColor(context)">@GetWeightDeviation(context).ToString("N2")</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="DeviationPercent">
+                        <MudText Typo="Typo.body2" Color="@GetDeviationColor(context)">@FormatDeviationPercent(context)</MudText>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <MudText Typo="Typo.body2" Class="mt-2" Color="@GetTotalDeviationColor()">
+                Tổng chênh lệch: <b>@TotalWeightDeviation.ToString("N2")</b> (@FormatTotalDeviationPercent())
+            </MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="ReloadAsync" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                   Disabled="@isLoadingWeights">Làm mới</MudButton>
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Color="Color.Default">Hủy</MudButton>
+        <MudButton OnClick="TriggerRedistributeAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="@isTriggering">Rải đơn</MudButton>
+        <MudButton OnClick="SaveAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSaving">Lưu</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string Tag { get; set; } = string.Empty;
+    [Parameter] public List<PickupTaskReattributionDetailDto> Details { get; set; } = [];
+
+    private List<PickupTaskReattributionDetailDto> details = [];
+    private readonly Dictionary<string, decimal> actualWeights = [];
+    private decimal totalWeight;
+    private bool isSaving;
+    private bool isTriggering;
+    private bool isLoadingWeights = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        details = [.. Details.Select(d => d with { })];
+        await LoadWeightsAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        List<PickupTaskReattributionDetailDto> refreshed = await OrderRepository.GetPickupTaskReattributionDetailAsync(Tag);
+        details = [.. refreshed];
+        await LoadWeightsAsync();
+    }
+
+    private async Task LoadWeightsAsync()
+    {
+        isLoadingWeights = true;
+        try
+        {
+            totalWeight = await OrderRepository.GetPickupTaskRedistributeTotalWeightAsync(Tag);
+
+            actualWeights.Clear();
+            foreach (PickupTaskReattributionDetailDto detail in details)
+            {
+                actualWeights[detail.PickupTaskId] = await OrderRepository.GetPickupTaskActualPickedWeightAsync(detail.PickupTaskId);
+            }
+        }
+        finally
+        {
+            isLoadingWeights = false;
+        }
+    }
+
+    private decimal GetExpectedWeight(PickupTaskReattributionDetailDto detail)
+    {
+        return totalWeight * (detail.CarryShareRatio ?? 0) / 100;
+    }
+
+    private decimal GetActualWeight(PickupTaskReattributionDetailDto detail)
+    {
+        return actualWeights.GetValueOrDefault(detail.PickupTaskId);
+    }
+
+    private decimal GetWeightDeviation(PickupTaskReattributionDetailDto detail)
+    {
+        return GetActualWeight(detail) - GetExpectedWeight(detail);
+    }
+
+    private decimal? GetDeviationPercent(PickupTaskReattributionDetailDto detail)
+    {
+        decimal expected = GetExpectedWeight(detail);
+        return expected == 0 ? null : GetWeightDeviation(detail) / expected * 100;
+    }
+
+    private string FormatDeviationPercent(PickupTaskReattributionDetailDto detail)
+    {
+        return GetDeviationPercent(detail) is decimal percent ? $"{percent:N2}%" : "N/A";
+    }
+
+    private Color GetDeviationColor(PickupTaskReattributionDetailDto detail)
+    {
+        return GetWeightDeviation(detail) switch
+        {
+            0 => Color.Success,
+            < 0 => Color.Error,
+            _ => Color.Warning
+        };
+    }
+
+    private decimal TotalWeightDeviation => details.Sum(d => Math.Abs(GetWeightDeviation(d)));
+
+    private decimal TotalDeviationPercent => details.Sum(d => Math.Abs(GetDeviationPercent(d) ?? 0));
+
+    private string FormatTotalDeviationPercent()
+    {
+        return $"{TotalDeviationPercent:N2}%";
+    }
+
+    private Color GetTotalDeviationColor()
+    {
+        return TotalWeightDeviation == 0 ? Color.Success : Color.Warning;
+    }
+
+    private static string GetStatusDescription(PickupTaskStatusId status)
+    {
+        return status.ToDescriptionString();
+    }
+
+    private async Task TriggerRedistributeAsync()
+    {
+        isTriggering = true;
+        try
+        {
+            await JobTriggerService.TriggerCarryItemReattributionJobAsync(Tag);
+            Snackbar.Add($"Rải đơn cho {Tag} thành công.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Rải đơn thất bại: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isTriggering = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        isSaving = true;
+        try
+        {
+            foreach (PickupTaskReattributionDetailDto detail in details)
+            {
+                if (detail.CarryShareRatio is decimal ratio)
+                {
+                    await OrderRepository.UpdateCarryShareRatioAsync(detail.PickupTaskId, ratio);
+                }
+            }
+
+            Snackbar.Add("Cập nhật tỷ lệ mang hộ thành công.", Severity.Success);
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Cập nhật tỷ lệ mang hộ thất bại: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}

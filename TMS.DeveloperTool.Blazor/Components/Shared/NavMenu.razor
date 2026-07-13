@@ -34,7 +34,8 @@
     }
 
     @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTasks) ||
-        ShouldShow(ApplicationConstants.MenuKeys.CreatePickupTaskEvent))
+        ShouldShow(ApplicationConstants.MenuKeys.CreatePickupTaskEvent) ||
+        ShouldShow(ApplicationConstants.MenuKeys.PickupTaskReattribution))
     {
         <MudNavGroup Title="Điều tin" Expanded="false">
             @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTasks))
@@ -44,6 +45,11 @@
             @if (ShouldShow(ApplicationConstants.MenuKeys.CreatePickupTaskEvent))
             {
                 <MudNavLink Href="@ApplicationConstants.Routes.PickupTasksCreateEvent" Match="NavLinkMatch.All">Tạo điều tin
+                </MudNavLink>
+            }
+            @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTaskReattribution))
+            {
+                <MudNavLink Href="@ApplicationConstants.Routes.PickupTaskReattribution" Match="NavLinkMatch.All">Chia tỷ trọng
                 </MudNavLink>
             }
         </MudNavGroup>
@@ -99,6 +105,7 @@
         ApplicationConstants.MenuKeys.SimulateRoute,
         ApplicationConstants.MenuKeys.PickupTasks,
         ApplicationConstants.MenuKeys.CreatePickupTaskEvent,
+        ApplicationConstants.MenuKeys.PickupTaskReattribution,
         ApplicationConstants.MenuKeys.TopMovingVehicles,
         ApplicationConstants.MenuKeys.VehicleStatuses,
         ApplicationConstants.MenuKeys.RoutingConfig,

@@ -61,6 +61,19 @@ public sealed partial class ApplicationDbQuery(IConfiguration configuration, ILo
         return await connection.QueryAsync(commandDefinition);
     }
 
+    public async Task<int> ExecuteAsync(string sql, object? parameters, CancellationToken cancellationToken)
+    {
+        await using NpgsqlConnection connection = new(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        CommandDefinition commandDefinition = new(
+            commandText: sql,
+            parameters: parameters,
+            cancellationToken: cancellationToken
+        );
+        LogSqlQuery(sql);
+        return await connection.ExecuteAsync(commandDefinition);
+    }
+
     public async IAsyncEnumerable<T> QueryUnbufferedAsync<T>(string sql, object? parameters = null)
     {
         await using NpgsqlConnection connection = new(_connectionString);
