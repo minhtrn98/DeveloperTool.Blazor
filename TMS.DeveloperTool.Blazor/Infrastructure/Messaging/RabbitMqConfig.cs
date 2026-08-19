@@ -22,6 +22,7 @@ public sealed class ExchangeConfig
 
     public QueueConfig GetVehicleQueue() => Queues["vehicles"];
     public QueueConfig GetPickupTasksQueue() => Queues["pickuptasks"];
+    public QueueConfig GetOrdersQueue() => Queues["orders"];
 }
 
 public sealed class QueueConfig

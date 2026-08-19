@@ -9,56 +9,31 @@ public sealed class EventService(RabbitMqConfig config, ILogger<EventService> lo
 {
     private IConnection? _connection;
 
-    public async Task PublishTrackingEvent(VehicleTrackingEvent trackingEvent, CancellationToken cancellationToken = default)
+    public Task PublishTrackingEvent(VehicleTrackingEvent trackingEvent, CancellationToken cancellationToken = default)
     {
-        if (_connection == null || !_connection.IsOpen)
-        {
-            await CreateConnectionAsync();
-        }
-
-        if (_connection == null)
-        {
-            logger.LogError("Failed to create a RabbitMQ connection. Message not sent.");
-            return;
-        }
-
-        ExchangeConfig vehiclesExchange = config.GetVehicleEventsExchange();
-        QueueConfig vehicleQueue = vehiclesExchange.GetVehicleQueue();
-
-        string queueName = vehicleQueue.QueueName;
-        using IChannel channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
-        await channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null, cancellationToken: cancellationToken);
-
         string message = JsonConvert.SerializeObject(trackingEvent, new JsonSerializerSettings
         {
             TypeNameHandling = TypeNameHandling.None,
             Formatting = Formatting.None
         });
 
-        byte[] body = Encoding.UTF8.GetBytes(message);
-
-        BasicProperties properties = new()
-        {
-            Persistent = true,
-            Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds()),
-            ContentType = "application/json",
-            Headers = new Dictionary<string, object?>()
-            {
-            }
-        };
-
-        await channel.BasicPublishAsync(
-            exchange: vehiclesExchange.Name,
-            routingKey: vehicleQueue.RoutingKey,
-            mandatory: true,
-            basicProperties: properties,
-            body: body,
-            cancellationToken: cancellationToken);
-
-        logger.LogInformation("Message published to queue '{QueueName}': {Message}", queueName, message);
+        ExchangeConfig vehiclesExchange = config.GetVehicleEventsExchange();
+        return PublishAsync(vehiclesExchange, vehiclesExchange.GetVehicleQueue(), message, cancellationToken);
     }
 
-    public async Task PublishPickupTaskEvent(string message, CancellationToken cancellationToken = default)
+    public Task PublishPickupTaskEvent(string message, CancellationToken cancellationToken = default)
+    {
+        ExchangeConfig pmsEventsExchange = config.GetPmsEventsExchange();
+        return PublishAsync(pmsEventsExchange, pmsEventsExchange.GetPickupTasksQueue(), message, cancellationToken);
+    }
+
+    public Task PublishOrderEvent(string message, CancellationToken cancellationToken = default)
+    {
+        ExchangeConfig pmsEventsExchange = config.GetPmsEventsExchange();
+        return PublishAsync(pmsEventsExchange, pmsEventsExchange.GetOrdersQueue(), message, cancellationToken);
+    }
+
+    private async Task PublishAsync(ExchangeConfig exchange, QueueConfig queue, string message, CancellationToken cancellationToken)
     {
         if (_connection == null || !_connection.IsOpen)
         {
@@ -71,10 +46,7 @@ public sealed class EventService(RabbitMqConfig config, ILogger<EventService> lo
             return;
         }
 
-        ExchangeConfig pmsEventsExchange = config.GetPmsEventsExchange();
-        QueueConfig pickupTaskQueue = pmsEventsExchange.GetPickupTasksQueue();
-
-        string queueName = pickupTaskQueue.QueueName;
+        string queueName = queue.QueueName;
         using IChannel channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
         await channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null, cancellationToken: cancellationToken);
 
@@ -91,8 +63,8 @@ public sealed class EventService(RabbitMqConfig config, ILogger<EventService> lo
         };
 
         await channel.BasicPublishAsync(
-            exchange: pmsEventsExchange.Name,
-            routingKey: pickupTaskQueue.RoutingKey,
+            exchange: exchange.Name,
+            routingKey: queue.RoutingKey,
             mandatory: true,
             basicProperties: properties,
             body: body,

@@ -9,6 +9,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<RouteCheckPoint> RouteCheckPoints { get; set; }
     public DbSet<RouteCheckPointTemplate> RouteCheckPointTemplates { get; set; }
     public DbSet<RequestHistory> RequestHistories { get; set; }
+    public DbSet<OrderStep1TraceLog> OrderStep1TraceLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -29,6 +30,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<RequestHistory>()
             .ToTable("request_histories");
+
+        modelBuilder.Entity<OrderStep1TraceLog>()
+            .ToTable("order_step1_trace_logs");
 
         // Configure column names to match PostgreSQL schema
         modelBuilder.Entity<RouteCheckPointTemplate>(entity =>
@@ -78,6 +82,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => new { e.Name, e.Method, e.Service, e.Endpoint, e.JsonBody })
                 .IsUnique();
+        });
+
+        modelBuilder.Entity<OrderStep1TraceLog>(entity =>
+        {
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.LogId).HasColumnName("log_id");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.TraceId).HasColumnName("trace_id");
+            entity.Property(e => e.SpanId).HasColumnName("span_id");
+            entity.Property(e => e.LogTimestamp).HasColumnName("log_timestamp");
+            entity.Property(e => e.MessageDetail).HasColumnName("message_detail");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(e => e.LogId).IsUnique();
         });
     }
 }

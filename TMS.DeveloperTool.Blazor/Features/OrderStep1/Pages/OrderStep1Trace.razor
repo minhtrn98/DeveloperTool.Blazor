@@ -1,0 +1,352 @@
+@page "/order-step1-trace"
+@implements IDisposable
+@using TMS.DeveloperTool.Blazor.Features.OrderStep1.Models
+@using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services
+@inject LogQueryService LogQueryService
+@inject OrderStep1TraceLogStorageService StorageService
+@inject EventService EventService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<AppPageTitle MenuName="Order Step 1" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Order Step 1 - Trace log</MudText>
+
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="orderIdsInput" @bind-Value:after="SaveOrderIdsToLocalStorageAsync"
+                              Label="Danh sách Order Id" Variant="Variant.Outlined"
+                              Lines="4" FullWidth="true" Disabled="@isTracing"
+                              HelperText="Mỗi Order Id 1 dòng hoặc cách nhau bởi dấu phẩy" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudBearerTokenField @bind-Value="bearerToken" @bind-Value:after="SaveBearerTokenToLocalStorageAsync"
+                                     Label="Bearer Token (Log API)" Variant="Variant.Outlined"
+                                     FullWidth="true" Lines="4" Disabled="@isTracing" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudDatePicker @bind-Date="startDate" Label="Ngày bắt đầu" Variant="Variant.Outlined"
+                               DateFormat="dd/MM/yyyy" Disabled="@isTracing" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTimePicker @bind-Time="startTimeOfDay" Label="Giờ bắt đầu" Variant="Variant.Outlined"
+                               Disabled="@isTracing" />
+            </MudItem>
+        </MudGrid>
+
+        <div class="d-flex align-center ga-3 mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow"
+                       OnClick="StartTraceAsync" Disabled="@isTracing">
+                Start trace
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.Stop"
+                       OnClick="StopTrace" Disabled="@(!isTracing)">
+                Stop trace
+            </MudButton>
+            <MudButton Variant="@(autoSendToQueue ? Variant.Filled : Variant.Outlined)"
+                       Color="@(autoSendToQueue ? Color.Success : Color.Default)"
+                       StartIcon="@(autoSendToQueue ? Icons.Material.Filled.Sync : Icons.Material.Filled.SyncDisabled)"
+                       OnClick="ToggleAutoSendToQueue">
+                Auto bắn Order Queue: @(autoSendToQueue ? "ON" : "OFF")
+            </MudButton>
+
+            @if (isTracing)
+            {
+                <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small"
+                         Icon="@Icons.Material.Filled.FiberManualRecord">
+                    Đang trace...
+                </MudChip>
+            }
+
+            <MudText Typo="Typo.body2" Class="ml-auto">@rows.Count bản ghi</MudText>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(lastError))
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-3" Dense="true">@lastError</MudAlert>
+        }
+    </MudPaper>
+
+    <MudPaper Elevation="2" Class="pa-4">
+        @if (rows.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">Chưa có dữ liệu trace.</MudAlert>
+        }
+        else
+        {
+            <MudTable Items="@rows" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Height="60vh">
+                <HeaderContent>
+                    <MudTh>STT</MudTh>
+                    <MudTh>Order Id</MudTh>
+                    <MudTh>Thời gian</MudTh>
+                    <MudTh>Trace Id</MudTh>
+                    <MudTh>Span Id</MudTh>
+                    <MudTh>Message Detail</MudTh>
+                    <MudTh>Order Queue</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="STT">@(rows.IndexOf(context) + 1)</MudTd>
+                    <MudTd DataLabel="Order Id">@context.OrderId</MudTd>
+                    <MudTd DataLabel="Thời gian">@context.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
+                    <MudTd DataLabel="Trace Id">@context.TraceId</MudTd>
+                    <MudTd DataLabel="Span Id">@context.SpanId</MudTd>
+                    <MudTd DataLabel="Message Detail">
+                        <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Color="Color.Secondary" Size="Size.Small"
+                                       OnClick="@(() => CopyMessageDetailAsync(context.MessageDetail))" />
+                    </MudTd>
+                    <MudTd DataLabel="Order Queue">
+                        <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary" Size="Size.Small"
+                                       Disabled="@sendingLogIds.Contains(context.LogId)"
+                                       OnClick="@(() => SendToOrderQueueAsync(context))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(10);
+    private const string OrderIdsStorageKey = "orderStep1Trace.orderIds";
+    private const string BearerTokenStorageKey = "orderStep1Trace.bearerToken";
+
+    private string orderIdsInput = string.Empty;
+    private string bearerToken = string.Empty;
+    private DateTime? startDate = DateTime.Today;
+    private TimeSpan? startTimeOfDay = DateTime.Now.TimeOfDay;
+    private bool isTracing;
+    private bool autoSendToQueue;
+    private string? lastError;
+
+    private readonly List<OrderStep1TraceLogEntry> rows = [];
+    private readonly HashSet<string> seenLogIds = new(StringComparer.Ordinal);
+    private readonly HashSet<string> sendingLogIds = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, DateTimeOffset> nextQueryStartByOrderId = new(StringComparer.OrdinalIgnoreCase);
+
+    private CancellationTokenSource? traceCts;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        string? savedOrderIds = await JS.InvokeAsync<string?>("localStorage.getItem", OrderIdsStorageKey);
+        string? savedBearerToken = await JS.InvokeAsync<string?>("localStorage.getItem", BearerTokenStorageKey);
+
+        bool changed = false;
+        if (!string.IsNullOrEmpty(savedOrderIds))
+        {
+            orderIdsInput = savedOrderIds;
+            changed = true;
+        }
+
+        if (!string.IsNullOrEmpty(savedBearerToken))
+        {
+            bearerToken = savedBearerToken;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveOrderIdsToLocalStorageAsync()
+    {
+        await JS.InvokeVoidAsync("localStorage.setItem", OrderIdsStorageKey, orderIdsInput);
+    }
+
+    private async Task SaveBearerTokenToLocalStorageAsync()
+    {
+        await JS.InvokeVoidAsync("localStorage.setItem", BearerTokenStorageKey, bearerToken);
+    }
+
+    private async Task StartTraceAsync()
+    {
+        List<string> orderIds = ParseOrderIds();
+        if (orderIds.Count == 0)
+        {
+            Snackbar.Add("Vui lòng nhập ít nhất 1 Order Id.", Severity.Warning);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(bearerToken))
+        {
+            Snackbar.Add("Vui lòng nhập Bearer Token.", Severity.Warning);
+            return;
+        }
+
+        if (startDate is null || startTimeOfDay is null)
+        {
+            Snackbar.Add("Vui lòng chọn thời gian bắt đầu.", Severity.Warning);
+            return;
+        }
+
+        DateTime combined = startDate.Value.Date + startTimeOfDay.Value;
+        DateTimeOffset traceStart = new(combined, TimeZoneInfo.Local.GetUtcOffset(combined));
+        if (traceStart >= DateTimeOffset.Now)
+        {
+            Snackbar.Add("Thời gian bắt đầu phải trước thời điểm hiện tại.", Severity.Warning);
+            return;
+        }
+
+        rows.Clear();
+        seenLogIds.Clear();
+        nextQueryStartByOrderId.Clear();
+        lastError = null;
+        foreach (string orderId in orderIds)
+        {
+            nextQueryStartByOrderId[orderId] = traceStart;
+        }
+
+        traceCts = new CancellationTokenSource();
+        isTracing = true;
+        _ = RunTraceLoopAsync(orderIds, traceCts.Token);
+    }
+
+    private void StopTrace()
+    {
+        traceCts?.Cancel();
+        isTracing = false;
+    }
+
+    private void ToggleAutoSendToQueue()
+    {
+        autoSendToQueue = !autoSendToQueue;
+    }
+
+    private async Task RunTraceLoopAsync(List<string> orderIds, CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                foreach (string orderId in orderIds)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await PollOrderAsync(orderId, cancellationToken);
+                }
+
+                await Task.Delay(PollInterval, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // trace stopped by user
+        }
+        finally
+        {
+            isTracing = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task PollOrderAsync(string orderId, CancellationToken cancellationToken)
+    {
+        DateTimeOffset queryStart = nextQueryStartByOrderId[orderId];
+        DateTimeOffset now = DateTimeOffset.Now;
+        if (queryStart >= now)
+        {
+            return;
+        }
+
+        foreach ((DateTimeOffset chunkStart, DateTimeOffset chunkEnd) in TimeRangeChunker.Split(queryStart, now))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            List<OrderStep1TraceLogEntry> entries;
+            try
+            {
+                entries = await LogQueryService.QueryAsync(orderId, chunkStart, chunkEnd, bearerToken, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                lastError = ex.Message;
+                await InvokeAsync(StateHasChanged);
+                return;
+            }
+
+            foreach (OrderStep1TraceLogEntry entry in entries.OrderBy(e => e.Timestamp))
+            {
+                if (!seenLogIds.Add(entry.LogId))
+                {
+                    continue;
+                }
+
+                await StorageService.SaveIfNewAsync(entry, cancellationToken);
+                rows.Insert(0, entry);
+
+                if (autoSendToQueue)
+                {
+                    await AutoSendToQueueAsync(entry, cancellationToken);
+                }
+
+                await InvokeAsync(StateHasChanged);
+            }
+
+            nextQueryStartByOrderId[orderId] = chunkEnd;
+        }
+    }
+
+    private List<string> ParseOrderIds()
+    {
+        return orderIdsInput
+            .Split([',', '\n', '\r', ' ', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private async Task AutoSendToQueueAsync(OrderStep1TraceLogEntry entry, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await EventService.PublishOrderEvent(entry.MessageDetail, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            lastError = $"Auto bắn queue thất bại (order {entry.OrderId}): {ex.Message}";
+        }
+    }
+
+    private async Task SendToOrderQueueAsync(OrderStep1TraceLogEntry entry)
+    {
+        sendingLogIds.Add(entry.LogId);
+        try
+        {
+            await EventService.PublishOrderEvent(entry.MessageDetail);
+            Snackbar.Add($"Đã bắn message của order {entry.OrderId} vào orders_queue.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Bắn vào orders_queue thất bại: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            sendingLogIds.Remove(entry.LogId);
+        }
+    }
+
+    private async Task CopyMessageDetailAsync(string messageDetail)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", messageDetail);
+            Snackbar.Add("Đã copy Message Detail.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể copy: {ex.Message}", Severity.Error);
+        }
+    }
+
+    public void Dispose()
+    {
+        traceCts?.Cancel();
+        traceCts?.Dispose();
+    }
+}

@@ -41,9 +41,22 @@ CREATE TABLE request_histories (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE order_step1_trace_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    order_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    message_detail TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX idx_route_checkpoints_template_id ON route_checkpoints (template_id);
 CREATE INDEX idx_request_histories_created_at ON request_histories (created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_request_histories_signature ON public.request_histories (name, method, service, endpoint, json_body);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_order_step1_trace_logs_log_id ON public.order_step1_trace_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_order_step1_trace_logs_order_id ON public.order_step1_trace_logs (order_id, log_timestamp DESC);
 
 -- init data for vehicles table
 INSERT INTO

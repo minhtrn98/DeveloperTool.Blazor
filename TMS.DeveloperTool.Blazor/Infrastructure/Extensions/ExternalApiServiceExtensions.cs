@@ -3,6 +3,7 @@ using TMS.DeveloperTool.Blazor.Features.ApiRequest.Services;
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
 using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services.Strategies;
 using TMS.DeveloperTool.Blazor.Features.Manifest.Services;
+using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services;
 using TMS.DeveloperTool.Blazor.Features.Pairing.Services;
 using TMS.DeveloperTool.Blazor.Features.PickupTask.Services;
 using TMS.DeveloperTool.Blazor.Features.Routing.Services;
@@ -101,6 +102,8 @@ public static class ExternalApiServiceExtensions
         services.AddScoped<ApiRequestSwaggerService>();
         services.AddScoped<ManifestOrderService>();
         services.AddScoped<DeliveryManifestService>();
+        services.AddScoped<LogQueryService>();
+        services.AddScoped<OrderStep1TraceLogStorageService>();
 
         services.AddSingleton<EventService>();
         services.AddSingleton<JwtTokenService>();

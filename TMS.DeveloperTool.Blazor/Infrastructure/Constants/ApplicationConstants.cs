@@ -49,6 +49,7 @@ public static class ApplicationConstants
         public const string ManifestList = "/manifest/list";
         public const string LenHangChuyenThu = "/len-hang/chuyen-thu";
         public const string LenHangBuuKien = "/len-hang/buu-kien";
+        public const string OrderStep1Trace = "/order-step1-trace";
     }
 
     public static class EnvironmentNames
@@ -76,6 +77,7 @@ public static class ApplicationConstants
         public const string ApiRequest = "ApiRequest";
         public const string Manifests = "Manifests";
         public const string LenHang = "LenHang";
+        public const string OrderStep1Trace = "OrderStep1Trace";
     }
 
     /// <summary>

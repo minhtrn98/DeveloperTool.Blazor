@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
         services.AddSettingsAndValidate<ApiUrlsOptions>(config);
         services.AddSettingsAndValidate<MenuVisibilityOptions>(config);
         services.AddSettingsAndValidate<QuanLyXeOptions>(config);
+        services.AddSettingsAndValidate<LogApiOptions>(config);
         return services;
     }
 
