@@ -6,11 +6,6 @@
 @inject MenuVisibilityOptions MenuVisibilityOptions
 
 <MudNavMenu>
-    @if (ShouldShow(ApplicationConstants.MenuKeys.ApiRequest))
-    {
-        <MudNavLink Href="@ApplicationConstants.Routes.ApiRequest" Match="NavLinkMatch.All">API Request</MudNavLink>
-    }
-
     @if (ShouldShow(ApplicationConstants.MenuKeys.OrderStep1Trace) ||
         ShouldShow(ApplicationConstants.MenuKeys.OrderStep1Timeline))
     {
@@ -31,7 +26,6 @@
     @code {
     private readonly string[] _allMenuKeys =
     [
-        ApplicationConstants.MenuKeys.ApiRequest,
         ApplicationConstants.MenuKeys.OrderStep1Trace,
         ApplicationConstants.MenuKeys.OrderStep1Timeline
     ];
@@ -41,14 +35,14 @@
     protected override void OnInitialized()
     {
         bool isLocal = WebHostEnvironment.IsEnvironment(ApplicationConstants.EnvironmentNames.Local);
-        bool isLocalRequest = IsLocalRequest();
-
-        string[] allowedMenuList = (isLocal, isLocalRequest) switch
+        if (!isLocal)
         {
-            (true, false) => MenuVisibilityOptions.LocalNonLocalIpVisibleMenus,
-            _ => _allMenuKeys
-        };
+            _allowedMenusForCurrentRequest = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            return;
+        }
 
+        bool isLocalRequest = IsLocalRequest();
+        string[] allowedMenuList = isLocalRequest ? _allMenuKeys : MenuVisibilityOptions.LocalNonLocalIpVisibleMenus;
         _allowedMenusForCurrentRequest = new HashSet<string>(allowedMenuList, StringComparer.OrdinalIgnoreCase);
     }
 
