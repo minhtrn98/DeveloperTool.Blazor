@@ -1,0 +1,144 @@
+@page "/manifest/dashboard"
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+@inject ManifestRepository ManifestRepository
+@inject ISnackbar Snackbar
+
+<AppPageTitle MenuName="Sổ phát" />
+
+<MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-2 mb-4">
+        <div class="d-flex align-center ga-3 flex-wrap mb-3">
+            <MudDatePicker @bind-Date="selectedDate" Label="Ngày" Variant="Variant.Outlined" DateFormat="dd/MM/yyyy" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="LoadAsync" Disabled="@isLoading">
+                Làm mới
+            </MudButton>
+        </div>
+
+        <div class="d-flex align-center ga-3 flex-wrap">
+            <MudTextField @bind-Value="filterCode" Immediate="true" Label="Mã sổ phát" Variant="Variant.Outlined"
+                          Clearable="true" Class="flex-grow-1" />
+            <MudTextField @bind-Value="filterDriverCode" Immediate="true" Label="Mã tài xế" Variant="Variant.Outlined"
+                          Clearable="true" Class="flex-grow-1" />
+            <MudTextField @bind-Value="filterVehicleLicensePlate" Immediate="true" Label="Biển số xe" Variant="Variant.Outlined"
+                          Clearable="true" Class="flex-grow-1" />
+            <MudTextField @bind-Value="filterPlanCode" Immediate="true" Label="Mã kế hoạch" Variant="Variant.Outlined"
+                          Clearable="true" Class="flex-grow-1" />
+        </div>
+    </MudPaper>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </div>
+    }
+    else if (manifests.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">Không có sổ phát nào trong ngày đã chọn.</MudAlert>
+    }
+    else if (FilteredManifests.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">Không có sổ phát nào khớp bộ lọc.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="2" Class="pa-2">
+            <div style="overflow-x: auto;">
+                <MudTable Items="@FilteredManifests" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Height="70vh">
+                    <HeaderContent>
+                        <MudTh>Mã sổ phát</MudTh>
+                        <MudTh>Trạng thái</MudTh>
+                        <MudTh>Kế hoạch</MudTh>
+                        <MudTh>Ghép xe</MudTh>
+                        <MudTh>Tài xế</MudTh>
+                        <MudTh>Biển số</MudTh>
+                        <MudTh>Tổng kiện</MudTh>
+                        <MudTh>Đang phát</MudTh>
+                        <MudTh>Trên xe</MudTh>
+                        <MudTh>Đã phát</MudTh>
+                        <MudTh>Hẹn phát lại</MudTh>
+                        <MudTh>Chờ xử lý</MudTh>
+                        <MudTh>Chuyển hoàn</MudTh>
+                        <MudTh>Chuyển tiếp</MudTh>
+                        <MudTh>Thất lạc</MudTh>
+                        <MudTh>Tịch thu</MudTh>
+                        <MudTh>Tiêu hủy</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Mã sổ phát">@context.Code</MudTd>
+                        <MudTd DataLabel="Trạng thái">@FormatStatus(context)</MudTd>
+                        <MudTd DataLabel="Kế hoạch">@context.PlanCode</MudTd>
+                        <MudTd DataLabel="Ghép xe">@context.PairingCode</MudTd>
+                        <MudTd DataLabel="Tài xế">@context.DriverCode</MudTd>
+                        <MudTd DataLabel="Biển số">@context.VehicleLicensePlate</MudTd>
+                        <MudTd DataLabel="Tổng kiện">@FormatCount(context.Stats?.Total ?? 0)</MudTd>
+                        <MudTd DataLabel="Đang phát">@FormatCount(context.Stats?.Delivering ?? 0)</MudTd>
+                        <MudTd DataLabel="Trên xe">@FormatCount(context.Stats?.OnVehicle ?? 0)</MudTd>
+                        <MudTd DataLabel="Đã phát">@FormatCount(context.Stats?.Delivered ?? 0)</MudTd>
+                        <MudTd DataLabel="Hẹn phát lại">@FormatCount(context.Stats?.DeliveryRescheduled ?? 0)</MudTd>
+                        <MudTd DataLabel="Chờ xử lý">@FormatCount(context.Stats?.PendingProcessing ?? 0)</MudTd>
+                        <MudTd DataLabel="Chuyển hoàn">@FormatCount(context.Stats?.Returning ?? 0)</MudTd>
+                        <MudTd DataLabel="Chuyển tiếp">@FormatCount(context.Stats?.Forwarded ?? 0)</MudTd>
+                        <MudTd DataLabel="Thất lạc">@FormatCount(context.Stats?.Lost ?? 0)</MudTd>
+                        <MudTd DataLabel="Tịch thu">@FormatCount(context.Stats?.Confiscated ?? 0)</MudTd>
+                        <MudTd DataLabel="Tiêu hủy">@FormatCount(context.Stats?.Destroyed ?? 0)</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </div>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    private DateTime? selectedDate = DateTime.Today;
+    private List<DeliveryManifestSessionDto> manifests = [];
+    private bool isLoading;
+
+    private string filterCode = string.Empty;
+    private string filterDriverCode = string.Empty;
+    private string filterVehicleLicensePlate = string.Empty;
+    private string filterPlanCode = string.Empty;
+
+    private List<DeliveryManifestSessionDto> FilteredManifests => manifests
+        .Where(m => Matches(m.Code, filterCode))
+        .Where(m => Matches(m.DriverCode, filterDriverCode))
+        .Where(m => Matches(m.VehicleLicensePlate, filterVehicleLicensePlate))
+        .Where(m => Matches(m.PlanCode, filterPlanCode))
+        .ToList();
+
+    private static bool Matches(string? value, string filter)
+    {
+        return string.IsNullOrWhiteSpace(filter) ||
+               (!string.IsNullOrEmpty(value) && value.Contains(filter, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string FormatCount(long value) => value == 0 ? "—" : value.ToString();
+
+    private static string FormatStatus(DeliveryManifestSessionDto manifest)
+        => $"{manifest.Status.ToDescriptionString()} ({manifest.TotalCompleted}/{manifest.TotalItems})";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (selectedDate is null)
+        {
+            Snackbar.Add("Vui lòng chọn ngày.", Severity.Warning);
+            return;
+        }
+
+        isLoading = true;
+        try
+        {
+            manifests = await ManifestRepository.GetDeliveryManifestSessionsAsync(selectedDate.Value, CancellationToken.None);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

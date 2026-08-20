@@ -47,6 +47,7 @@ public static class ApplicationConstants
         public const string ApiRequest = "/api-request";
         public const string ManifestOrders = "/manifest/orders";
         public const string ManifestList = "/manifest/list";
+        public const string ManifestDashboard = "/manifest/dashboard";
         public const string LenHangChuyenThu = "/len-hang/chuyen-thu";
         public const string LenHangBuuKien = "/len-hang/buu-kien";
         public const string OrderStep1Trace = "/order-step1-trace";
@@ -77,6 +78,7 @@ public static class ApplicationConstants
         public const string RoutingConfig = "RoutingConfig";
         public const string ApiRequest = "ApiRequest";
         public const string Manifests = "Manifests";
+        public const string ManifestDashboard = "ManifestDashboard";
         public const string LenHang = "LenHang";
         public const string OrderStep1Trace = "OrderStep1Trace";
         public const string OrderStep1Timeline = "OrderStep1Timeline";
