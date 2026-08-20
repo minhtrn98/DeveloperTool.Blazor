@@ -6,83 +6,6 @@
 @inject MenuVisibilityOptions MenuVisibilityOptions
 
 <MudNavMenu>
-    @if (ShouldShow(ApplicationConstants.MenuKeys.Home))
-    {
-        <MudNavLink Href="@ApplicationConstants.Routes.Home" Match="NavLinkMatch.All">Trang chủ</MudNavLink>
-    }
-
-    @if (ShouldShow(ApplicationConstants.MenuKeys.Pairing) ||
-        ShouldShow(ApplicationConstants.MenuKeys.ConfirmSwap) ||
-        ShouldShow(ApplicationConstants.MenuKeys.SimulateRoute))
-    {
-        <MudNavGroup Title="Ghép xe" Expanded="false">
-            @if (ShouldShow(ApplicationConstants.MenuKeys.Pairing))
-            {
-                <MudNavLink Href="@ApplicationConstants.Routes.Pairing" Match="NavLinkMatch.All">Ghép xe</MudNavLink>
-            }
-            @if (ShouldShow(ApplicationConstants.MenuKeys.ConfirmSwap))
-            {
-                <MudNavLink Href="@ApplicationConstants.Routes.PairingConfirmSwap" Match="NavLinkMatch.All">Yêu cầu đổi tài
-                </MudNavLink>
-            }
-            @if (ShouldShow(ApplicationConstants.MenuKeys.SimulateRoute))
-            {
-                <MudNavLink Href="@ApplicationConstants.Routes.SimulateRoute" Match="NavLinkMatch.All">Mô phỏng lộ trình
-                </MudNavLink>
-            }
-        </MudNavGroup>
-    }
-
-    @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTasks) ||
-        ShouldShow(ApplicationConstants.MenuKeys.CreatePickupTaskEvent) ||
-        ShouldShow(ApplicationConstants.MenuKeys.PickupTaskReattribution))
-    {
-        <MudNavGroup Title="Điều tin" Expanded="false">
-            @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTasks))
-            {
-                <MudNavLink Href="@ApplicationConstants.Routes.PickupTasks" Match="NavLinkMatch.All">Danh sách</MudNavLink>
-            }
-            @if (ShouldShow(ApplicationConstants.MenuKeys.CreatePickupTaskEvent))
-            {
-                <MudNavLink Href="@ApplicationConstants.Routes.PickupTasksCreateEvent" Match="NavLinkMatch.All">Tạo điều tin
-                </MudNavLink>
-            }
-            @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTaskReattribution))
-            {
-                <MudNavLink Href="@ApplicationConstants.Routes.PickupTaskReattribution" Match="NavLinkMatch.All">Chia tỷ trọng
-                </MudNavLink>
-            }
-        </MudNavGroup>
-    }
-
-    @if (ShouldShow(ApplicationConstants.MenuKeys.Manifests))
-    {
-        <MudNavGroup Title="Sổ phát" Expanded="false">
-            <MudNavLink Href="@ApplicationConstants.Routes.ManifestList" Match="NavLinkMatch.All">Danh sách sổ phát</MudNavLink>
-            <MudNavLink Href="@ApplicationConstants.Routes.ManifestOrders" Match="NavLinkMatch.All">Đơn hàng</MudNavLink>
-        </MudNavGroup>
-    }
-
-    @if (ShouldShow(ApplicationConstants.MenuKeys.LenHang))
-    {
-        <MudNavGroup Title="Lên hàng" Expanded="false">
-            <MudNavLink Href="@ApplicationConstants.Routes.LenHangChuyenThu" Match="NavLinkMatch.All">Chuyến thư</MudNavLink>
-            <MudNavLink Href="@ApplicationConstants.Routes.LenHangBuuKien" Match="NavLinkMatch.All">Bưu kiện</MudNavLink>
-        </MudNavGroup>
-    }
-
-    @if (ShouldShow(ApplicationConstants.MenuKeys.TopMovingVehicles))
-    {
-        <MudNavLink Href="@ApplicationConstants.Routes.TopMovingVehicles" Match="NavLinkMatch.All">Top xe di chuyển
-        </MudNavLink>
-    }
-
-    @if (ShouldShow(ApplicationConstants.MenuKeys.VehicleStatuses))
-    {
-        <MudNavLink Href="@ApplicationConstants.Routes.VehicleStatuses" Match="NavLinkMatch.All">Theo dõi trạng thái xe
-        </MudNavLink>
-    }
-
     @if (ShouldShow(ApplicationConstants.MenuKeys.ApiRequest))
     {
         <MudNavLink Href="@ApplicationConstants.Routes.ApiRequest" Match="NavLinkMatch.All">API Request</MudNavLink>
@@ -103,31 +26,12 @@
             }
         </MudNavGroup>
     }
-
-    @if (ShouldShow(ApplicationConstants.MenuKeys.RoutingConfig))
-    {
-        <MudNavGroup Title="Cấu hình" Expanded="false">
-            <MudNavLink Href="@ApplicationConstants.Routes.RoutingConfig" Match="NavLinkMatch.All">Lộ trình mẫu</MudNavLink>
-        </MudNavGroup>
-    }
 </MudNavMenu>
 
     @code {
     private readonly string[] _allMenuKeys =
     [
-        ApplicationConstants.MenuKeys.Home,
-        ApplicationConstants.MenuKeys.Pairing,
-        ApplicationConstants.MenuKeys.ConfirmSwap,
-        ApplicationConstants.MenuKeys.SimulateRoute,
-        ApplicationConstants.MenuKeys.PickupTasks,
-        ApplicationConstants.MenuKeys.CreatePickupTaskEvent,
-        ApplicationConstants.MenuKeys.PickupTaskReattribution,
-        ApplicationConstants.MenuKeys.TopMovingVehicles,
-        ApplicationConstants.MenuKeys.VehicleStatuses,
-        ApplicationConstants.MenuKeys.RoutingConfig,
         ApplicationConstants.MenuKeys.ApiRequest,
-        ApplicationConstants.MenuKeys.Manifests,
-        ApplicationConstants.MenuKeys.LenHang,
         ApplicationConstants.MenuKeys.OrderStep1Trace,
         ApplicationConstants.MenuKeys.OrderStep1Timeline
     ];
