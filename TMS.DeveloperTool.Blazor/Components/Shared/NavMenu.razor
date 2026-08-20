@@ -88,9 +88,20 @@
         <MudNavLink Href="@ApplicationConstants.Routes.ApiRequest" Match="NavLinkMatch.All">API Request</MudNavLink>
     }
 
-    @if (ShouldShow(ApplicationConstants.MenuKeys.OrderStep1Trace))
+    @if (ShouldShow(ApplicationConstants.MenuKeys.OrderStep1Trace) ||
+        ShouldShow(ApplicationConstants.MenuKeys.OrderStep1Timeline))
     {
-        <MudNavLink Href="@ApplicationConstants.Routes.OrderStep1Trace" Match="NavLinkMatch.All">Order Step 1</MudNavLink>
+        <MudNavGroup Title="Order Step 1" Expanded="false">
+            @if (ShouldShow(ApplicationConstants.MenuKeys.OrderStep1Trace))
+            {
+                <MudNavLink Href="@ApplicationConstants.Routes.OrderStep1Trace" Match="NavLinkMatch.All">Trace log</MudNavLink>
+            }
+            @if (ShouldShow(ApplicationConstants.MenuKeys.OrderStep1Timeline))
+            {
+                <MudNavLink Href="@ApplicationConstants.Routes.OrderStep1Timeline" Match="NavLinkMatch.All">Timeline trạng thái
+                </MudNavLink>
+            }
+        </MudNavGroup>
     }
 
     @if (ShouldShow(ApplicationConstants.MenuKeys.RoutingConfig))
@@ -117,7 +128,8 @@
         ApplicationConstants.MenuKeys.ApiRequest,
         ApplicationConstants.MenuKeys.Manifests,
         ApplicationConstants.MenuKeys.LenHang,
-        ApplicationConstants.MenuKeys.OrderStep1Trace
+        ApplicationConstants.MenuKeys.OrderStep1Trace,
+        ApplicationConstants.MenuKeys.OrderStep1Timeline
     ];
 
     private HashSet<string> _allowedMenusForCurrentRequest = new (StringComparer.OrdinalIgnoreCase);

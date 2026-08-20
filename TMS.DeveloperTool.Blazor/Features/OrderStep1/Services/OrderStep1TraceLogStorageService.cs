@@ -15,4 +15,23 @@ public sealed class OrderStep1TraceLogStorageService(ApplicationDbContext dbCont
 
         return rowsAffected > 0;
     }
+
+    public async Task<List<string>> GetDistinctOrderIdsAsync(CancellationToken cancellationToken)
+    {
+        return await dbContext.OrderStep1TraceLogs
+            .AsNoTracking()
+            .Select(x => x.OrderId)
+            .Distinct()
+            .OrderBy(x => x)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<OrderStep1TraceLog>> GetByOrderIdAsync(string orderId, CancellationToken cancellationToken)
+    {
+        return await dbContext.OrderStep1TraceLogs
+            .AsNoTracking()
+            .Where(x => x.OrderId == orderId)
+            .OrderBy(x => x.LogTimestamp)
+            .ToListAsync(cancellationToken);
+    }
 }

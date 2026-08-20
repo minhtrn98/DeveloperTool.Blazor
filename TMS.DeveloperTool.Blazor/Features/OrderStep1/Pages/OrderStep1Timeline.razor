@@ -1,0 +1,76 @@
+@page "/order-step1-timeline"
+@using TMS.DeveloperTool.Blazor.Features.OrderStep1.Models
+@using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services
+@inject OrderStep1TraceLogStorageService StorageService
+
+<AppPageTitle MenuName="Order Step 1 - Timeline" />
+
+<MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Order Step 1 - Timeline trạng thái</MudText>
+
+        <MudAutocomplete T="OrderIdOption" Value="selectedOrder" ValueChanged="OnOrderChangedAsync"
+                          SearchFunc="SearchOrderIds" Label="Order Id" Variant="Variant.Outlined"
+                          Clearable="true" MaxItems="20"
+                          ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<OrderIdOption>" />
+    </MudPaper>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </div>
+    }
+    else if (selectedOrder is null)
+    {
+        <MudAlert Severity="Severity.Info">Chọn 1 Order Id để xem timeline.</MudAlert>
+    }
+    else if (timeline is null || timeline.ItemStatusRows.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">Không có thay đổi trạng thái nào được ghi nhận cho order này.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h5" Class="mb-2">Order Items</MudText>
+            <OrderTimelineTable Timestamps="timeline.ItemStatusTimestamps" Rows="timeline.ItemStatusRows" HeaderLabel="Item" />
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    private List<OrderIdOption> orderOptions = [];
+    private OrderIdOption? selectedOrder;
+    private OrderTimeline? timeline;
+    private bool isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        List<string> orderIds = await StorageService.GetDistinctOrderIdsAsync(CancellationToken.None);
+        orderOptions = orderIds.Select(id => new OrderIdOption(id)).ToList();
+    }
+
+    private Task<IEnumerable<OrderIdOption>> SearchOrderIds(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(orderOptions, searchTerm));
+
+    private async Task OnOrderChangedAsync(OrderIdOption? option)
+    {
+        selectedOrder = option;
+        timeline = null;
+        if (option is null)
+        {
+            return;
+        }
+
+        isLoading = true;
+        try
+        {
+            List<OrderStep1TraceLog> logs = await StorageService.GetByOrderIdAsync(option.OrderId, CancellationToken.None);
+            timeline = OrderTimelineBuilder.Build(logs);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
