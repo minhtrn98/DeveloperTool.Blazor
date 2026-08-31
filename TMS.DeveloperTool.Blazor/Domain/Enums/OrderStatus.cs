@@ -102,4 +102,10 @@ public enum OrderStatus
 
     [Description("Lạc tuyến một phần")]
     PartiallyMisrouted = 48,
+
+    [Description("Chờ lên hàng")]
+    Planned = 100,
+
+    [Description("Đang trên xe")]
+    Loaded = 101,
 }

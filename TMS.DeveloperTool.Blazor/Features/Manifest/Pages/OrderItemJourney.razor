@@ -1,0 +1,137 @@
+@page "/manifest/order-item-journey"
+
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+@inject ManifestRepository ManifestRepository
+@inject ISnackbar Snackbar
+
+<AppPageTitle MenuName="Hành trình vận đơn" />
+
+<MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Hành trình vận đơn</MudText>
+
+        <div class="d-flex align-center ga-3 flex-wrap">
+            <MudTextField @bind-Value="orderItemId" Label="Mã kiện hàng (Order Item Id)" Placeholder="Ví dụ: TOK2602846"
+                          Variant="Variant.Outlined" Clearable="true" Class="flex-grow-1"
+                          Immediate="true" OnKeyDown="OnKeyDown" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Search"
+                       OnClick="SearchAsync" Disabled="@(isLoading || string.IsNullOrWhiteSpace(orderItemId))">
+                Tra cứu
+            </MudButton>
+        </div>
+    </MudPaper>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </div>
+    }
+    else if (!hasSearched)
+    {
+        <MudAlert Severity="Severity.Info">Nhập mã kiện hàng để xem hành trình.</MudAlert>
+    }
+    else if (rows.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">Không tìm thấy hành trình cho kiện hàng này.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Elevation="2" Class="pa-2">
+            <div style="overflow-x: auto;">
+                <MudTable Items="@rows" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Height="70vh">
+                    <HeaderContent>
+                        <MudTh>Thời gian</MudTh>
+                        <MudTh>Nghiệp vụ</MudTh>
+                        <MudTh>Hành động</MudTh>
+                        <MudTh>Sổ phát</MudTh>
+                        <MudTh>Kế hoạch</MudTh>
+                        <MudTh>Lộ trình</MudTh>
+                        <MudTh>Tài xế</MudTh>
+                        <MudTh>Biển số</MudTh>
+                        <MudTh>Bàn giao</MudTh>
+                        <MudTh>Điểm dừng</MudTh>
+                        <MudTh>Tọa độ</MudTh>
+                        <MudTh>Lý do thất lạc</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Thời gian">@FormatDate(context.ActionAt)</MudTd>
+                        <MudTd DataLabel="Nghiệp vụ">@context.Operation</MudTd>
+                        <MudTd DataLabel="Hành động">@context.Action</MudTd>
+                        <MudTd DataLabel="Sổ phát">@context.ManifestCode</MudTd>
+                        <MudTd DataLabel="Kế hoạch">@DisplayText(context.PlanCode)</MudTd>
+                        <MudTd DataLabel="Lộ trình">@DisplayText(context.AssignmentCode)</MudTd>
+                        <MudTd DataLabel="Tài xế">@DisplayText(context.DriverCode)</MudTd>
+                        <MudTd DataLabel="Biển số">@DisplayText(context.VehicleLicensePlate)</MudTd>
+                        <MudTd DataLabel="Bàn giao">@DisplayText(context.HandoverId)</MudTd>
+                        <MudTd DataLabel="Điểm dừng">@FormatStop(context.StopCode, context.StopName)</MudTd>
+                        <MudTd DataLabel="Tọa độ">@FormatLatLng(context.Lat, context.Lng)</MudTd>
+                        <MudTd DataLabel="Lý do thất lạc">@DisplayText(context.MisplacedReasonName)</MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText Class="pa-4">Không tìm thấy hành trình cho kiện hàng này.</MudText>
+                    </NoRecordsContent>
+                </MudTable>
+            </div>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    private string orderItemId = string.Empty;
+    private List<OrderItemJourneyDto> rows = [];
+    private bool isLoading;
+    private bool hasSearched;
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchAsync();
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        string trimmed = orderItemId.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            Snackbar.Add("Vui lòng nhập mã kiện hàng.", Severity.Warning);
+            return;
+        }
+
+        isLoading = true;
+        try
+        {
+            rows = await ManifestRepository.GetOrderItemJourneyAsync(trimmed, CancellationToken.None);
+            hasSearched = true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải dữ liệu: {ex.Message}", Severity.Error);
+            rows = [];
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static string FormatDate(DateTimeOffset? value)
+        => value is null ? "—" : value.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
+
+    private static string FormatStop(string? code, string? name)
+    {
+        bool hasCode = !string.IsNullOrWhiteSpace(code);
+        bool hasName = !string.IsNullOrWhiteSpace(name);
+        if (!hasCode && !hasName) return "—";
+        if (!hasCode) return name!;
+        if (!hasName) return code!;
+        return $"{code} - {name}";
+    }
+
+    private static string FormatLatLng(double? lat, double? lng)
+        => lat is null || lng is null ? "—" : $"{lat:F6}, {lng:F6}";
+
+    private static string DisplayText(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
+}

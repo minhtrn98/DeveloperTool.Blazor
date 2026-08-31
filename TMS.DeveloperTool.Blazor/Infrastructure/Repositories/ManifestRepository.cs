@@ -87,4 +87,67 @@ public sealed class ManifestRepository([FromKeyedServices("OrderDb")] Applicatio
 
         return result;
     }
+
+    public async Task<List<OrderItemJourneyDto>> GetOrderItemJourneyAsync(string orderItemId, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            select
+                dm.code as "ManifestCode",
+                ds.driver_code as "DriverCode",
+                'Đi phát' as "Operation",
+                'Lên hàng' as "Action",
+                ds.created_at as "ActionAt",
+                ds.vehicle_license_plate as "VehicleLicensePlate",
+                ds.assignment_code as "AssignmentCode",
+                ds.plan_code as "PlanCode",
+                ds.loading_handover_id::text as "HandoverId",
+                ds.pickup_gps_lat as "Lat",
+                ds.pickup_gps_lng as "Lng",
+                ds.pickup_stop_code as "StopCode",
+                ds.pickup_stop_name as "StopName",
+                ds.pickup_misplaced_reason as "MisplacedReason",
+                ds.pickup_misplaced_reason_name as "MisplacedReasonName"
+            from public.delivery_items di
+            join public.delivery_manifests dm on di.delivery_manifest_id = dm.id and di.manifest_created_at = dm.created_at
+            join public.delivery_sessions ds on ds.id = di.session_id and ds.created_at = di.session_created_at
+            where di.order_item_id = @OrderItemId
+
+            union all
+
+            select
+                dm.code as "ManifestCode",
+                ds.driver_code as "DriverCode",
+                'Đi phát' as "Operation",
+                case
+                    when dt.completed_at is null and dt.delivered_at is null then 'Đang phát'
+                    when dt.delivered_at is not null then 'Phát thành công'
+                    else 'Trả hàng'
+                end as "Action",
+                coalesce(dt.delivered_at, dt.completed_at) as "ActionAt",
+                ds.vehicle_license_plate as "VehicleLicensePlate",
+                ds.assignment_code as "AssignmentCode",
+                ds.plan_code as "PlanCode",
+                dt.unloading_handover_id::text as "HandoverId",
+                null::double precision as "Lat",
+                null::double precision as "Lng",
+                dt.actual_dropoff_stop_code as "StopCode",
+                case
+                    when dt.delivered_at is not null and dt.misplaced_dropoff_reason is null then dt.receiver_address
+                    when dt.completed_at is null then null
+                    else dt.actual_dropoff_stop_name
+                end as "StopName",
+                dt.misplaced_dropoff_reason as "MisplacedReason",
+                dt.misplaced_dropoff_reason_name as "MisplacedReasonName"
+            from public.delivery_items di
+            join public.delivery_manifests dm on di.delivery_manifest_id = dm.id and di.manifest_created_at = dm.created_at
+            join public.delivery_tasks dt on dt.id = di.delivery_task_id and dt.created_at = di.task_created_at
+            join public.delivery_sessions ds on ds.id = di.session_id and ds.created_at = di.session_created_at
+            where di.order_item_id = @OrderItemId
+
+            order by "ActionAt"
+            """;
+
+        IEnumerable<OrderItemJourneyDto> rows = await dbQuery.QueryAsync<OrderItemJourneyDto>(sql, new { OrderItemId = orderItemId }, cancellationToken);
+        return [.. rows];
+    }
 }

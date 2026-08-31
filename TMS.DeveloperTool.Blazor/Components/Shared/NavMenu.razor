@@ -26,6 +26,11 @@
     {
         <MudNavLink Href="@ApplicationConstants.Routes.ManifestDashboard" Match="NavLinkMatch.All">Sổ phát</MudNavLink>
     }
+
+    @if (ShouldShow(ApplicationConstants.MenuKeys.OrderItemJourney))
+    {
+        <MudNavLink Href="@ApplicationConstants.Routes.OrderItemJourney" Match="NavLinkMatch.All">Hành trình vận đơn</MudNavLink>
+    }
 </MudNavMenu>
 
     @code {
@@ -33,7 +38,8 @@
     [
         ApplicationConstants.MenuKeys.OrderStep1Trace,
         ApplicationConstants.MenuKeys.OrderStep1Timeline,
-        ApplicationConstants.MenuKeys.ManifestDashboard
+        ApplicationConstants.MenuKeys.ManifestDashboard,
+        ApplicationConstants.MenuKeys.OrderItemJourney
     ];
 
     private HashSet<string> _allowedMenusForCurrentRequest = new (StringComparer.OrdinalIgnoreCase);
