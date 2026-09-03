@@ -1,0 +1,89 @@
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+@inject ManifestRepository ManifestRepository
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Kiện hàng bàn giao <b>@HandoverCode</b></MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (isLoading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-3" />
+        }
+        else
+        {
+            <MudTable T="HandoverItemDto" Items="items" Hover="true" Dense="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Mã đơn hàng</MudTh>
+                    <MudTh>Mã kiện hàng</MudTh>
+                    <MudTh>Loại đơn</MudTh>
+                    <MudTh>KL (kg)</MudTh>
+                    <MudTh>Dịch vụ</MudTh>
+                    <MudTh>Chuyến thư</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Mã đơn hàng">@context.OrderId</MudTd>
+                    <MudTd DataLabel="Mã kiện hàng">
+                        <MudLink Href="@GetOrderItemJourneyUrl(context.OrderItemId)" Target="_blank">@context.OrderItemId</MudLink>
+                    </MudTd>
+                    <MudTd DataLabel="Loại đơn">@GetOrderTypeLabel(context.OrderType)</MudTd>
+                    <MudTd DataLabel="KL (kg)">@(context.Weight.HasValue ? context.Weight.Value.ToString("F3") : "—")</MudTd>
+                    <MudTd DataLabel="Dịch vụ">@DisplayText(context.ExtraService)</MudTd>
+                    <MudTd DataLabel="Chuyến thư">@DisplayText(context.RootMailTripExternalId)</MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Class="pa-4">Không tìm thấy kiện hàng nào.</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudText Typo="Typo.body2" Class="flex-grow-1 ml-2" Color="Color.Secondary">
+            @items.Count kiện · @TotalWeight.ToString("F3") kg
+        </MudText>
+        <MudButton OnClick="@(() => MudDialog.Cancel())" Variant="Variant.Outlined" Color="Color.Default">Đóng</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public string HandoverId { get; set; } = string.Empty;
+    [Parameter] public string HandoverCode { get; set; } = string.Empty;
+    [Parameter] public string Operation { get; set; } = string.Empty;
+    [Parameter] public string Action { get; set; } = string.Empty;
+
+    private bool isLoading;
+    private List<HandoverItemDto> items = [];
+
+    private decimal TotalWeight => items.Sum(i => i.Weight ?? 0);
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        try
+        {
+            items = await ManifestRepository.GetHandoverItemsAsync(HandoverId, Operation, Action, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải kiện hàng bàn giao: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static string DisplayText(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
+
+    private static string GetOrderItemJourneyUrl(string orderItemId)
+        => $"/manifest/order-item-journey?orderItemId={Uri.EscapeDataString(orderItemId)}";
+
+    private static string GetOrderTypeLabel(short? orderType) => orderType switch
+    {
+        1 => "CPN",
+        2 => "COD",
+        _ => "—",
+    };
+}

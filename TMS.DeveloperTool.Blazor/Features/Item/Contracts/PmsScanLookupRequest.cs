@@ -1,5 +1,3 @@
-using TMS.DeveloperTool.Blazor.Domain.Enums;
-
 namespace TMS.DeveloperTool.Blazor.Features.Item.Contracts;
 
 public class PmsScanLookupRequest

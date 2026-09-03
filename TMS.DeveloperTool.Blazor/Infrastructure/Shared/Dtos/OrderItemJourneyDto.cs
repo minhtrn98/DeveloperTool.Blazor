@@ -2,7 +2,10 @@ namespace TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
 
 public sealed record OrderItemJourneyDto
 {
-    public required string ManifestCode { get; init; }
+    public required string? ManifestCode { get; init; }
+    public required string? ExternalId { get; init; }
+    public required string? PickupTaskId { get; init; }
+    public required string? ConfirmedPickupTaskId { get; init; }
     public string? DriverCode { get; init; }
     public required string Operation { get; init; }
     public required string Action { get; init; }
@@ -11,6 +14,7 @@ public sealed record OrderItemJourneyDto
     public string? AssignmentCode { get; init; }
     public string? PlanCode { get; init; }
     public string? HandoverId { get; init; }
+    public string? HandoverCode { get; init; }
     public double? Lat { get; init; }
     public double? Lng { get; init; }
     public string? StopCode { get; init; }

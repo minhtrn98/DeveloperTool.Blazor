@@ -1,0 +1,69 @@
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+@inject ManifestRepository ManifestRepository
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Bằng chứng bàn giao <b>@HandoverCode</b></MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (isLoading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-3" />
+        }
+        else if (evidences.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">Không tìm thấy bằng chứng nào.</MudAlert>
+        }
+        else
+        {
+            <MudGrid>
+                @foreach (HandoverEvidenceDto evidence in evidences)
+                {
+                    <MudItem xs="6" sm="4" md="3">
+                        <MudLink Href="@GetProxyUrl(evidence)" Target="_blank">
+                            <MudImage Src="@GetProxyUrl(evidence)" Alt="@evidence.FileName" ObjectFit="ObjectFit.Cover"
+                                      Height="150" Width="150" Class="rounded-lg" Elevation="1" Style="width:100%" />
+                        </MudLink>
+                        <MudText Typo="Typo.caption" Class="d-block text-truncate mt-1">@evidence.FileName</MudText>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudText Typo="Typo.body2" Class="flex-grow-1 ml-2" Color="Color.Secondary">
+            @evidences.Count bằng chứng
+        </MudText>
+        <MudButton OnClick="@(() => MudDialog.Cancel())" Variant="Variant.Outlined" Color="Color.Default">Đóng</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public string HandoverId { get; set; } = string.Empty;
+    [Parameter] public string HandoverCode { get; set; } = string.Empty;
+
+    private bool isLoading;
+    private List<HandoverEvidenceDto> evidences = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        try
+        {
+            evidences = await ManifestRepository.GetHandoverEvidencesAsync(HandoverId, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải bằng chứng bàn giao: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static string GetProxyUrl(HandoverEvidenceDto evidence)
+        => $"/api/handover-evidence/proxy?path={Uri.EscapeDataString(evidence.FileUrl)}";
+}

@@ -1,8 +1,12 @@
 @page "/manifest/order-item-journey"
 
+@using TMS.DeveloperTool.Blazor.Infrastructure.Configuration
 @using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
 @inject ManifestRepository ManifestRepository
+@inject FeUrlsOptions FeUrlsOptions
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager NavigationManager
 
 <AppPageTitle MenuName="Hành trình vận đơn" />
 
@@ -15,11 +19,26 @@
                           Variant="Variant.Outlined" Clearable="true" Class="flex-grow-1"
                           Immediate="true" OnKeyDown="OnKeyDown" />
             <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Search"
-                       OnClick="SearchAsync" Disabled="@(isLoading || string.IsNullOrWhiteSpace(orderItemId))">
+                       OnClick="@(() => SearchAsync())" Disabled="@(isLoading || string.IsNullOrWhiteSpace(orderItemId))">
                 Tra cứu
             </MudButton>
         </div>
     </MudPaper>
+
+    @if (orderSummary is not null)
+    {
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <div class="d-flex flex-column ga-1">
+                <MudText Typo="Typo.body2"><b>Mã đơn:</b> <FeSearchLink SearchTerm="@orderSummary.OrderId" Path="du-bao-hang-hoa/theo-hanh-trinh-van-don" ExtraQuery="@BuildOrderTrackingExtraQuery(orderSummary.CreatedAt)" /></MudText>
+                <MudText Typo="Typo.body2"><b>Trạng thái:</b> @DisplayText(orderSummary.CurrentStatusName)</MudText>
+                <MudText Typo="Typo.body2"><b>Dịch vụ:</b> @DisplayText(orderSummary.ServiceType)</MudText>
+                <MudText Typo="Typo.body2"><b>Dịch vụ gia tăng:</b> @DisplayText(orderSummary.ExtraService)</MudText>
+                <MudText Typo="Typo.body2"><b>Trọng lượng:</b> @(orderSummary.Weight.HasValue ? $"{orderSummary.Weight.Value:F3} kg" : "—")</MudText>
+                <MudText Typo="Typo.body2"><b>Điều tin:</b> <FeSearchLink SearchTerm="@orderSummary.PickupTaskId" Path="dieu-phoi/dieu-tin" ExtraQuery="@BuildDispatchExtraQuery(orderSummary.CreatedAt)" SearchParamName="dispatchSearchTerm" /></MudText>
+                <MudText Typo="Typo.body2"><b>Ngày tạo:</b> @FormatDate(orderSummary.CreatedAt)</MudText>
+            </div>
+        </MudPaper>
+    }
 
     @if (isLoading)
     {
@@ -39,33 +58,53 @@
     {
         <MudPaper Elevation="2" Class="pa-2">
             <div style="overflow-x: auto;">
-                <MudTable Items="@rows" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Height="70vh">
+                <MudTable Items="@rows" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" FixedHeader="true">
                     <HeaderContent>
                         <MudTh>Thời gian</MudTh>
                         <MudTh>Nghiệp vụ</MudTh>
                         <MudTh>Hành động</MudTh>
-                        <MudTh>Sổ phát</MudTh>
+                        <MudTh>Chuyến thư / Sổ phát</MudTh>
+                        <MudTh>Điều tin</MudTh>
+                        <MudTh>Điều tin lấy</MudTh>
                         <MudTh>Kế hoạch</MudTh>
                         <MudTh>Lộ trình</MudTh>
                         <MudTh>Tài xế</MudTh>
                         <MudTh>Biển số</MudTh>
                         <MudTh>Bàn giao</MudTh>
                         <MudTh>Điểm dừng</MudTh>
-                        <MudTh>Tọa độ</MudTh>
-                        <MudTh>Lý do thất lạc</MudTh>
+                        <MudTh>Lý do sai vị trí</MudTh>
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd DataLabel="Thời gian">@FormatDate(context.ActionAt)</MudTd>
                         <MudTd DataLabel="Nghiệp vụ">@context.Operation</MudTd>
                         <MudTd DataLabel="Hành động">@context.Action</MudTd>
-                        <MudTd DataLabel="Sổ phát">@context.ManifestCode</MudTd>
-                        <MudTd DataLabel="Kế hoạch">@DisplayText(context.PlanCode)</MudTd>
-                        <MudTd DataLabel="Lộ trình">@DisplayText(context.AssignmentCode)</MudTd>
-                        <MudTd DataLabel="Tài xế">@DisplayText(context.DriverCode)</MudTd>
-                        <MudTd DataLabel="Biển số">@DisplayText(context.VehicleLicensePlate)</MudTd>
-                        <MudTd DataLabel="Bàn giao">@DisplayText(context.HandoverId)</MudTd>
+                        <MudTd DataLabel="Chuyến thư / Sổ phát">@DisplayText(context.ManifestCode ?? context.ExternalId)</MudTd>
+                        <MudTd DataLabel="Điều tin">@DisplayText(context.PickupTaskId)</MudTd>
+                        <MudTd DataLabel="Điều tin lấy">@DisplayText(context.ConfirmedPickupTaskId)</MudTd>
+                        <MudTd DataLabel="Kế hoạch"><FeSearchLink SearchTerm="@context.PlanCode" Path="ke-hoach-hoat-dong/ke-hoach-van-chuyen" /></MudTd>
+                        <MudTd DataLabel="Lộ trình"><FeSearchLink SearchTerm="@context.AssignmentCode" Path="quan-ly-lo-trinh/lo-trinh-xe-tai" ExtraQuery="page=1" /></MudTd>
+                        <MudTd DataLabel="Tài xế"><FeSearchLink SearchTerm="@context.DriverCode" Path="quan-ly-nhan-vien/nhan-vien" /></MudTd>
+                        <MudTd DataLabel="Biển số"><FeSearchLink SearchTerm="@context.VehicleLicensePlate" Path="quan-ly-phuong-tien/danh-sach" ExtraQuery="page=1" /></MudTd>
+                        <MudTd DataLabel="Bàn giao">
+                            @if (context.Operation == "Đi nhận" && !string.IsNullOrWhiteSpace(context.HandoverCode)
+                                    && !string.IsNullOrWhiteSpace(context.ConfirmedPickupTaskId) && !string.IsNullOrWhiteSpace(FeUrlsOptions.BaseUrl))
+                            {
+                                <MudLink Href="@GetPickupHandoverUrl(context.ConfirmedPickupTaskId, context.HandoverCode)" Target="_blank">@context.HandoverCode</MudLink>
+                            }
+                            else
+                            {
+                                @DisplayText(context.HandoverCode)
+                            }
+                            @if (!string.IsNullOrWhiteSpace(context.HandoverId))
+                            {
+                                <div class="d-flex" style="gap: 10px">
+                                    <MudLink Typo="Typo.caption" Style="cursor:pointer" OnClick="@(() => OpenHandoverItemsAsync(context))">Kiện liên quan</MudLink>
+                                    <MudLink Typo="Typo.caption" Style="cursor:pointer" OnClick="@(() => OpenHandoverEvidencesAsync(context))">Bằng chứng</MudLink>
+                                    <MudLink Typo="Typo.caption" Style="cursor:pointer" OnClick="@(() => OpenHandoverParticipantsAsync(context))">NV lên/xuống hàng</MudLink>
+                                </div>
+                            }
+                        </MudTd>
                         <MudTd DataLabel="Điểm dừng">@FormatStop(context.StopCode, context.StopName)</MudTd>
-                        <MudTd DataLabel="Tọa độ">@FormatLatLng(context.Lat, context.Lng)</MudTd>
                         <MudTd DataLabel="Lý do thất lạc">@DisplayText(context.MisplacedReasonName)</MudTd>
                     </RowTemplate>
                     <NoRecordsContent>
@@ -78,10 +117,24 @@
 </MudContainer>
 
 @code {
+    [SupplyParameterFromQuery(Name = "orderItemId")]
+    [Parameter]
+    public string? QueryOrderItemId { get; set; }
+
     private string orderItemId = string.Empty;
     private List<OrderItemJourneyDto> rows = [];
+    private OrderSummaryDto? orderSummary;
     private bool isLoading;
     private bool hasSearched;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!hasSearched && !string.IsNullOrWhiteSpace(QueryOrderItemId))
+        {
+            orderItemId = QueryOrderItemId;
+            await SearchAsync(updateUrl: false);
+        }
+    }
 
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
@@ -91,7 +144,7 @@
         }
     }
 
-    private async Task SearchAsync()
+    private async Task SearchAsync(bool updateUrl = true)
     {
         string trimmed = orderItemId.Trim();
         if (string.IsNullOrWhiteSpace(trimmed))
@@ -104,17 +157,89 @@
         try
         {
             rows = await ManifestRepository.GetOrderItemJourneyAsync(trimmed, CancellationToken.None);
+            orderSummary = await ManifestRepository.GetOrderSummaryByOrderItemIdAsync(trimmed, CancellationToken.None);
             hasSearched = true;
+
+            if (updateUrl)
+            {
+                NavigationManager.NavigateTo($"/manifest/order-item-journey?orderItemId={Uri.EscapeDataString(trimmed)}", replace: true);
+            }
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Không thể tải dữ liệu: {ex.Message}", Severity.Error);
             rows = [];
+            orderSummary = null;
         }
         finally
         {
             isLoading = false;
         }
+    }
+
+    private async Task OpenHandoverItemsAsync(OrderItemJourneyDto row)
+    {
+        if (string.IsNullOrWhiteSpace(row.HandoverId)) return;
+
+        DialogParameters<HandoverItemsDialog> parameters = new()
+        {
+            { d => d.HandoverId, row.HandoverId },
+            { d => d.HandoverCode, row.HandoverCode ?? string.Empty },
+            { d => d.Operation, row.Operation },
+            { d => d.Action, row.Action },
+        };
+        DialogOptions options = new() { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<HandoverItemsDialog>(row.HandoverCode ?? "Kiện hàng bàn giao", parameters, options);
+    }
+
+    private async Task OpenHandoverEvidencesAsync(OrderItemJourneyDto row)
+    {
+        if (string.IsNullOrWhiteSpace(row.HandoverId)) return;
+
+        DialogParameters<HandoverEvidencesDialog> parameters = new()
+        {
+            { d => d.HandoverId, row.HandoverId },
+            { d => d.HandoverCode, row.HandoverCode ?? string.Empty },
+        };
+        DialogOptions options = new() { MaxWidth = MaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<HandoverEvidencesDialog>(row.HandoverCode ?? "Bằng chứng bàn giao", parameters, options);
+    }
+
+    private async Task OpenHandoverParticipantsAsync(OrderItemJourneyDto row)
+    {
+        if (string.IsNullOrWhiteSpace(row.HandoverId)) return;
+
+        DialogParameters<HandoverParticipantsDialog> parameters = new()
+        {
+            { d => d.HandoverId, row.HandoverId },
+            { d => d.HandoverCode, row.HandoverCode ?? string.Empty },
+        };
+        DialogOptions options = new() { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<HandoverParticipantsDialog>(row.HandoverCode ?? "Nhân viên bàn giao", parameters, options);
+    }
+
+    private string GetPickupHandoverUrl(string confirmedPickupTaskId, string handoverCode)
+        => $"{FeUrlsOptions.BaseUrl.TrimEnd('/')}/dieu-phoi/dieu-tin/theo-tin/{Uri.EscapeDataString(confirmedPickupTaskId)}/ban-giao/{Uri.EscapeDataString(handoverCode)}";
+
+    private static (string From, string To) GetCreatedDateRangeUtc(DateTime createdAt)
+    {
+        DateTime fromVn = createdAt.ToLocalTime().Date;
+        DateTime toVn = fromVn.AddDays(1).AddTicks(-1);
+        string from = Uri.EscapeDataString(fromVn.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
+        string to = Uri.EscapeDataString(toVn.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
+        return (from, to);
+    }
+
+    private static string BuildOrderTrackingExtraQuery(DateTime createdAt)
+    {
+        (string from, string to) = GetCreatedDateRangeUtc(createdAt);
+        return $"statusIds=&fromAcceptedTime={from}&toAcceptedTime={to}";
+    }
+
+    private static string BuildDispatchExtraQuery(DateTime createdAt)
+    {
+        (string from, string to) = GetCreatedDateRangeUtc(createdAt);
+        return $"page=1&tab=by-dispatch&f_fromCreatedDate={from}&f_toCreatedDate={to}";
     }
 
     private static string FormatDate(DateTimeOffset? value)
@@ -129,9 +254,6 @@
         if (!hasName) return code!;
         return $"{code} - {name}";
     }
-
-    private static string FormatLatLng(double? lat, double? lng)
-        => lat is null || lng is null ? "—" : $"{lat:F6}, {lng:F6}";
 
     private static string DisplayText(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
 }

@@ -1,6 +1,4 @@
-using System.Net.Http.Json;
 using System.Text.Json;
-using TMS.DeveloperTool.Blazor.Infrastructure.Configuration;
 
 namespace TMS.DeveloperTool.Blazor.Features.PickupTask.Services;
 

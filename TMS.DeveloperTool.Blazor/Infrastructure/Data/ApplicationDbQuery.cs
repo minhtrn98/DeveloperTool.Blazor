@@ -1,7 +1,5 @@
 ﻿using Dapper;
 using Npgsql;
-using System.Data;
-using Microsoft.Extensions.Logging;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Data;
 

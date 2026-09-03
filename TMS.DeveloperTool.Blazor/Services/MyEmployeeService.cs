@@ -150,6 +150,16 @@ public sealed class MyEmployeeService(
         return await dbContext.Employees.AsNoTracking().ToListAsync(cancellationToken);
     }
 
+    public async Task<string?> GetLatestBearerTokenAsync(CancellationToken cancellationToken = default)
+    {
+        var me = Guid.Parse("00000003-4954-4432-3530-323500000000");
+        return await dbContext.Employees
+            .Where(e => e.EmployeeId == me)
+            .OrderByDescending(e => e.TokenExpiredAt)
+            .Select(e => e.BearerToken)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<EmployeePermissionInfo> GetEmployeePermissionInfo(Guid employeeId, Dictionary<Guid, RoleDto[]> empRoles, Dictionary<Guid, string[]> empDepts, Dictionary<Guid, string[]> rolePermissions, CancellationToken cancellationToken = default)
     {
         RoleDto[] empRolesForEmployee = empRoles.GetValueOrDefault(employeeId, []);

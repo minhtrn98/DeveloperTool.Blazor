@@ -1,0 +1,65 @@
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+@inject ManifestRepository ManifestRepository
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Nhân viên lên/xuống hàng <b>@HandoverCode</b></MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (isLoading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-3" />
+        }
+        else
+        {
+            <MudTable T="HandoverParticipantDto" Items="participants" Hover="true" Dense="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Mã nhân viên</MudTh>
+                    <MudTh>Tên nhân viên</MudTh>
+                    <MudTh>Tỷ lệ tham gia</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Mã nhân viên"><FeSearchLink SearchTerm="@context.EmployeeCode" Path="quan-ly-nhan-vien/nhan-vien" /></MudTd>
+                    <MudTd DataLabel="Tên nhân viên">@context.EmployeeName</MudTd>
+                    <MudTd DataLabel="Tỷ lệ tham gia">@(context.ParticipationRate.HasValue ? $"{context.ParticipationRate.Value:F2}%" : "—")</MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Class="pa-4">Không tìm thấy nhân viên nào.</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudText Typo="Typo.body2" Class="flex-grow-1 ml-2" Color="Color.Secondary">
+            @participants.Count nhân viên
+        </MudText>
+        <MudButton OnClick="@(() => MudDialog.Cancel())" Variant="Variant.Outlined" Color="Color.Default">Đóng</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public string HandoverId { get; set; } = string.Empty;
+    [Parameter] public string HandoverCode { get; set; } = string.Empty;
+
+    private bool isLoading;
+    private List<HandoverParticipantDto> participants = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        try
+        {
+            participants = await ManifestRepository.GetHandoverParticipantsAsync(HandoverId, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải nhân viên bàn giao: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

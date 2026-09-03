@@ -1,0 +1,40 @@
+@using TMS.DeveloperTool.Blazor.Infrastructure.Configuration
+@inject FeUrlsOptions FeUrlsOptions
+
+@if (string.IsNullOrWhiteSpace(SearchTerm))
+{
+    @("—")
+}
+else if (string.IsNullOrWhiteSpace(FeUrlsOptions.BaseUrl))
+{
+    @SearchTerm
+}
+else
+{
+    <MudLink Href="@GetUrl()" Target="_blank">@SearchTerm</MudLink>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public string? SearchTerm { get; set; }
+
+    /// <summary>Route path on the FE app, e.g. "quan-ly-nhan-vien/nhan-vien".</summary>
+    [Parameter, EditorRequired]
+    public string Path { get; set; } = string.Empty;
+
+    /// <summary>Extra query string appended before the search param, e.g. "page=1".</summary>
+    [Parameter]
+    public string? ExtraQuery { get; set; }
+
+    /// <summary>Name of the search query parameter, e.g. "searchTerm" or "dispatchSearchTerm".</summary>
+    [Parameter]
+    public string SearchParamName { get; set; } = "searchTerm";
+
+    private string GetUrl()
+    {
+        string query = string.IsNullOrEmpty(ExtraQuery)
+            ? $"{SearchParamName}={Uri.EscapeDataString(SearchTerm!)}"
+            : $"{ExtraQuery}&{SearchParamName}={Uri.EscapeDataString(SearchTerm!)}";
+        return $"{FeUrlsOptions.BaseUrl.TrimEnd('/')}/{Path.TrimStart('/')}?{query}";
+    }
+}
