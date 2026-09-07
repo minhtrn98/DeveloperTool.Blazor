@@ -229,7 +229,7 @@ public sealed class ManifestRepository([FromKeyedServices("OrderDb")] Applicatio
             from public.pickup_task_actual_picked_order_items pi
             join public.pickup_task_assigned_info ps on ps.pickup_task_id = pi.confirmed_pickup_task_id and ps.task_created_at = pi.confirmed_task_created_at and ps.is_active
             join public.pickup_tasks pt on pt.pickup_task_id = pi.confirmed_pickup_task_id and pt.created_at = pi.confirmed_task_created_at
-            left join public.handovers h on h.id = pi.loaded_handover_id
+            join public.handovers h on h.id = pi.loaded_handover_id
             where pi.picked_order_item_id = @OrderItemId
 
             union all
@@ -256,7 +256,7 @@ public sealed class ManifestRepository([FromKeyedServices("OrderDb")] Applicatio
                 pi.misplaced_dropoff_reason_name as "MisplacedReasonName"
             from public.pickup_task_actual_picked_order_items pi
             join public.pickup_task_assigned_info ps on ps.pickup_task_id = pi.confirmed_pickup_task_id and ps.task_created_at = pi.confirmed_task_created_at and ps.is_active
-            left join public.handovers h on h.id = pi.unloaded_handover_id
+            join public.handovers h on h.id = pi.unloaded_handover_id
             where pi.picked_order_item_id = @OrderItemId
 
             order by "ActionAt"
