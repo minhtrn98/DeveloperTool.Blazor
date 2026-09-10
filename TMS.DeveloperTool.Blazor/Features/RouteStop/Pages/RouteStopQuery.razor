@@ -44,6 +44,7 @@
                 <MudTh>Action</MudTh>
                 <MudTh>Driver</MudTh>
                 <MudTh>License Plate</MudTh>
+                <MudTh>Assignment Code</MudTh>
                 <MudTh>Item Count</MudTh>
                 <MudTh>Weight</MudTh>
                 <MudTh>Action Object Id</MudTh>
@@ -63,6 +64,7 @@
                     @context.Driver
                 </MudTd>
                 <MudTd DataLabel="License Plate">@fields.VehicleLicensePlate</MudTd>
+                <MudTd DataLabel="Assignment Code">@GetAssignmentCode(context.AssignmentId)</MudTd>
                 <MudTd DataLabel="Item Count">@fields.ItemCount</MudTd>
                 <MudTd DataLabel="Weight">@fields.Weight</MudTd>
                 <MudTd DataLabel="Action Object Id">@fields.ActionObjectId</MudTd>
@@ -90,6 +92,7 @@
 @code {
     private List<VehicleLookupDto> vehicleOptions = [];
     private List<AssignmentLookupDto> assignmentOptions = [];
+    private Dictionary<Guid, string> assignmentCodeById = [];
     private VehicleLookupDto? selectedVehicle;
     private AssignmentLookupDto? selectedAssignment;
     private List<RouteStopTraceLog> currentRows = [];
@@ -110,7 +113,15 @@
         if (assignmentIds.Count > 0)
         {
             assignmentOptions = await FleetRepository.GetAssignmentsByIdsAsync(assignmentIds);
+            assignmentCodeById = assignmentOptions.ToDictionary(a => a.Id, a => a.Code);
         }
+    }
+
+    private string GetAssignmentCode(string assignmentId)
+    {
+        return Guid.TryParse(assignmentId, out Guid id) && assignmentCodeById.TryGetValue(id, out string? code)
+            ? code
+            : string.Empty;
     }
 
     private Task<IEnumerable<VehicleLookupDto>> SearchVehicles(string searchTerm, CancellationToken cancellationToken)
