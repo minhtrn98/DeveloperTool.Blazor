@@ -4,7 +4,7 @@ using TMS.DeveloperTool.Blazor.Infrastructure.Security;
 namespace TMS.DeveloperTool.Blazor.Services;
 
 public sealed class MyEmployeeService(
-    ApplicationDbContext dbContext,
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
     OrderRepository orderRepository,
     DriverRepository driverRepository,
     JwtTokenService jwtTokenService)
@@ -18,6 +18,8 @@ public sealed class MyEmployeeService(
         {
             return 0;
         }
+
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         int insertedCount = 0;
 
@@ -68,6 +70,8 @@ public sealed class MyEmployeeService(
 
     public async Task<int> GenerateTokensForAllEmployeesAsync(CancellationToken cancellationToken = default)
     {
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         List<Employee> employees = await dbContext.Employees.ToListAsync(cancellationToken);
         List<Guid> employeeIds = [.. employees.Select(e => e.EmployeeId)];
 
@@ -119,6 +123,8 @@ public sealed class MyEmployeeService(
 
     public async Task<bool> AddEmployeeAsync(string code, CancellationToken cancellationToken = default)
     {
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         bool alreadyExists = await dbContext.Employees.AnyAsync(d => d.Code == code, cancellationToken);
         if (alreadyExists)
         {
@@ -147,11 +153,15 @@ public sealed class MyEmployeeService(
 
     public async Task<IEnumerable<Employee>> GetAllEmployeesAsync(CancellationToken cancellationToken = default)
     {
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         return await dbContext.Employees.AsNoTracking().ToListAsync(cancellationToken);
     }
 
     public async Task<string?> GetLatestBearerTokenAsync(CancellationToken cancellationToken = default)
     {
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         var me = Guid.Parse("00000003-4954-4432-3530-323500000000");
         return await dbContext.Employees
             .Where(e => e.EmployeeId == me)

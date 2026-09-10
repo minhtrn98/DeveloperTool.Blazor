@@ -1,0 +1,188 @@
+@page "/route-stop-query"
+@using TMS.DeveloperTool.Blazor.Features.RouteStop.Services
+@inject RouteStopTraceLogStorageService StorageService
+@inject FleetRepository FleetRepository
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<AppPageTitle MenuName="Route Stop" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Route Stop - Tra cứu log</MudText>
+
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudAutocomplete T="VehicleLookupDto" Value="selectedVehicle" ValueChanged="OnVehicleSelectedAsync"
+                                 SearchFunc="SearchVehicles" Label="Biển số xe (ActualPlate)" Variant="Variant.Outlined"
+                                 Clearable="true" MaxItems="20"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<VehicleLookupDto>" />
+                @if (selectedVehicle is not null)
+                {
+                    <MudText Typo="Typo.caption" Class="mt-1">Vehicle Id: @selectedVehicle.Id</MudText>
+                }
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudAutocomplete T="AssignmentLookupDto" Value="selectedAssignment" ValueChanged="OnAssignmentSelectedAsync"
+                                 SearchFunc="SearchAssignments" Label="Mã Assignment (Code)" Variant="Variant.Outlined"
+                                 Clearable="true" MaxItems="20"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<AssignmentLookupDto>" />
+                @if (selectedAssignment is not null)
+                {
+                    <MudText Typo="Typo.caption" Class="mt-1">Assignment Id: @selectedAssignment.Id</MudText>
+                }
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudPaper Elevation="2" Class="pa-4">
+        <MudTable @ref="tableRef" T="RouteStopTraceLog" ServerData="LoadServerData" Loading="@isLoading"
+                  Hover="true" Dense="true" Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>STT</MudTh>
+                <MudTh>Thời gian</MudTh>
+                <MudTh>Action</MudTh>
+                <MudTh>Driver</MudTh>
+                <MudTh>License Plate</MudTh>
+                <MudTh>Item Count</MudTh>
+                <MudTh>Weight</MudTh>
+                <MudTh>Action Object Id</MudTh>
+                <MudTh>Full Pending</MudTh>
+                <MudTh>Mark Completed</MudTh>
+                <MudTh>Trace Id</MudTh>
+                <MudTh>Message Detail</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                @{ RouteStopMessageFields fields = RouteStopMessageFieldsParser.Parse(context.MessageDetail); }
+                <MudTd DataLabel="STT">@GetRowIndex(context)</MudTd>
+                <MudTd DataLabel="Thời gian">@context.LogTimestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
+                <MudTd DataLabel="Action">@context.Action</MudTd>
+                <MudTd DataLabel="Driver">
+                    @fields.DriverName
+                    <br />
+                    @context.Driver
+                </MudTd>
+                <MudTd DataLabel="License Plate">@fields.VehicleLicensePlate</MudTd>
+                <MudTd DataLabel="Item Count">@fields.ItemCount</MudTd>
+                <MudTd DataLabel="Weight">@fields.Weight</MudTd>
+                <MudTd DataLabel="Action Object Id">@fields.ActionObjectId</MudTd>
+                <MudTd DataLabel="Full Pending">@fields.IsFullPending</MudTd>
+                <MudTd DataLabel="Mark Completed">@fields.MarkStopCompleted</MudTd>
+                <MudTd DataLabel="Trace Id">@context.TraceId</MudTd>
+                <MudTd DataLabel="Message Detail">
+                    <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Color="Color.Secondary" Size="Size.Small"
+                                   OnClick="@(() => CopyMessageDetailAsync(context.MessageDetail))" />
+                </MudTd>
+            </RowTemplate>
+            <LoadingContent>
+                <MudText Class="pa-4">Đang tải dữ liệu...</MudText>
+            </LoadingContent>
+            <NoRecordsContent>
+                <MudText Class="pa-4">Không có dữ liệu.</MudText>
+            </NoRecordsContent>
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[] { 10, 20, 50 }" />
+            </PagerContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<VehicleLookupDto> vehicleOptions = [];
+    private List<AssignmentLookupDto> assignmentOptions = [];
+    private VehicleLookupDto? selectedVehicle;
+    private AssignmentLookupDto? selectedAssignment;
+    private List<RouteStopTraceLog> currentRows = [];
+    private MudTable<RouteStopTraceLog>? tableRef;
+    private bool isLoading;
+    private int currentPageIndex = 1;
+    private int currentPageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        List<Guid> vehicleIds = await StorageService.GetDistinctVehicleIdsAsync(CancellationToken.None);
+        if (vehicleIds.Count > 0)
+        {
+            vehicleOptions = await FleetRepository.GetVehiclesByIdsAsync(vehicleIds);
+        }
+
+        List<Guid> assignmentIds = await StorageService.GetDistinctAssignmentIdsAsync(CancellationToken.None);
+        if (assignmentIds.Count > 0)
+        {
+            assignmentOptions = await FleetRepository.GetAssignmentsByIdsAsync(assignmentIds);
+        }
+    }
+
+    private Task<IEnumerable<VehicleLookupDto>> SearchVehicles(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(vehicleOptions, searchTerm));
+
+    private Task<IEnumerable<AssignmentLookupDto>> SearchAssignments(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(assignmentOptions, searchTerm));
+
+    private async Task OnVehicleSelectedAsync(VehicleLookupDto? value)
+    {
+        selectedVehicle = value;
+        await ReloadAsync();
+    }
+
+    private async Task OnAssignmentSelectedAsync(AssignmentLookupDto? value)
+    {
+        selectedAssignment = value;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (tableRef is null)
+        {
+            return;
+        }
+
+        tableRef.NavigateTo(0);
+        await tableRef.ReloadServerData();
+    }
+
+    private async Task<TableData<RouteStopTraceLog>> LoadServerData(TableState state, CancellationToken cancellationToken)
+    {
+        isLoading = true;
+        try
+        {
+            currentPageIndex = state.Page + 1;
+            currentPageSize = state.PageSize;
+
+            (List<RouteStopTraceLog> items, int totalCount) = await StorageService.QueryAsync(
+                selectedVehicle?.Id.ToString(),
+                selectedAssignment?.Id.ToString(),
+                currentPageIndex,
+                currentPageSize,
+                cancellationToken);
+
+            currentRows = items;
+
+            return new TableData<RouteStopTraceLog> { TotalItems = totalCount, Items = items };
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private int GetRowIndex(RouteStopTraceLog item)
+    {
+        int indexInPage = currentRows.IndexOf(item);
+        return ((currentPageIndex - 1) * currentPageSize) + indexInPage + 1;
+    }
+
+    private async Task CopyMessageDetailAsync(string messageDetail)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", messageDetail);
+            Snackbar.Add("Đã copy Message Detail.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể copy: {ex.Message}", Severity.Error);
+        }
+    }
+}

@@ -22,6 +22,21 @@
         </MudNavGroup>
     }
 
+    @if (ShouldShow(ApplicationConstants.MenuKeys.RouteStopTrace) ||
+        ShouldShow(ApplicationConstants.MenuKeys.RouteStopQuery))
+    {
+        <MudNavGroup Title="Route Stop" Expanded="false">
+            @if (ShouldShow(ApplicationConstants.MenuKeys.RouteStopTrace))
+            {
+                <MudNavLink Href="@ApplicationConstants.Routes.RouteStopTrace" Match="NavLinkMatch.All">Trace log</MudNavLink>
+            }
+            @if (ShouldShow(ApplicationConstants.MenuKeys.RouteStopQuery))
+            {
+                <MudNavLink Href="@ApplicationConstants.Routes.RouteStopQuery" Match="NavLinkMatch.All">Tra cứu log</MudNavLink>
+            }
+        </MudNavGroup>
+    }
+
     @if (ShouldShow(ApplicationConstants.MenuKeys.ManifestDashboard))
     {
         <MudNavLink Href="@ApplicationConstants.Routes.ManifestDashboard" Match="NavLinkMatch.All">Sổ phát</MudNavLink>
@@ -38,6 +53,8 @@
     [
         ApplicationConstants.MenuKeys.OrderStep1Trace,
         ApplicationConstants.MenuKeys.OrderStep1Timeline,
+        ApplicationConstants.MenuKeys.RouteStopTrace,
+        ApplicationConstants.MenuKeys.RouteStopQuery,
         ApplicationConstants.MenuKeys.ManifestDashboard,
         ApplicationConstants.MenuKeys.OrderItemJourney
     ];

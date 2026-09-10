@@ -53,6 +53,8 @@ public static class ApplicationConstants
         public const string LenHangBuuKien = "/len-hang/buu-kien";
         public const string OrderStep1Trace = "/order-step1-trace";
         public const string OrderStep1Timeline = "/order-step1-timeline";
+        public const string RouteStopTrace = "/route-stop-trace";
+        public const string RouteStopQuery = "/route-stop-query";
     }
 
     public static class EnvironmentNames
@@ -84,6 +86,8 @@ public static class ApplicationConstants
         public const string LenHang = "LenHang";
         public const string OrderStep1Trace = "OrderStep1Trace";
         public const string OrderStep1Timeline = "OrderStep1Timeline";
+        public const string RouteStopTrace = "RouteStopTrace";
+        public const string RouteStopQuery = "RouteStopQuery";
     }
 
     /// <summary>

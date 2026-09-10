@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace TMS.DeveloperTool.Blazor.Features.ApiRequest.Services;
 
-public sealed class ApiRequestHistoryService(ApplicationDbContext dbContext)
+public sealed class ApiRequestHistoryService(IDbContextFactory<ApplicationDbContext> dbContextFactory)
 {
     public async Task SaveRequestAsync(
         string name,
@@ -12,6 +12,8 @@ public sealed class ApiRequestHistoryService(ApplicationDbContext dbContext)
         string jsonBody,
         CancellationToken cancellationToken)
     {
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         DateTimeOffset now = DateTimeOffset.UtcNow;
 
         await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
@@ -24,6 +26,8 @@ public sealed class ApiRequestHistoryService(ApplicationDbContext dbContext)
 
     public async Task<List<RequestHistory>> GetLatestAsync(int take, CancellationToken cancellationToken)
     {
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         return await dbContext.RequestHistories
             .AsNoTracking()
             .OrderByDescending(x => x.CreatedAt)
@@ -33,6 +37,8 @@ public sealed class ApiRequestHistoryService(ApplicationDbContext dbContext)
 
     public async Task DeleteByIdAsync(long id, CancellationToken cancellationToken)
     {
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         RequestHistory? history = await dbContext.RequestHistories
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
@@ -47,6 +53,8 @@ public sealed class ApiRequestHistoryService(ApplicationDbContext dbContext)
 
     public async Task DeleteAllAsync(CancellationToken cancellationToken)
     {
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         await dbContext.RequestHistories.ExecuteDeleteAsync(cancellationToken);
     }
 }

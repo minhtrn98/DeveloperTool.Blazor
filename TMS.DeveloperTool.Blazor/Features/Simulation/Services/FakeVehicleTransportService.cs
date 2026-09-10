@@ -3,10 +3,12 @@ using TMS.DeveloperTool.Blazor.Features.Simulation.Models;
 
 namespace TMS.DeveloperTool.Blazor.Features.Simulation.Services;
 
-public sealed class FakeVehicleTransportService(ApplicationDbContext dbContext, ILogger<FakeVehicleTransportService> logger, EventService eventService, FleetRepository fleetRepository)
+public sealed class FakeVehicleTransportService(IDbContextFactory<ApplicationDbContext> dbContextFactory, ILogger<FakeVehicleTransportService> logger, EventService eventService, FleetRepository fleetRepository)
 {
     public async Task StartAsync(string licensePlate, Guid templateId, CancellationToken cancellationToken = default)
     {
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         string actualPlate = licensePlate.Replace("-", "").Replace(".", "");
 
         Vehicle? vehicle = await dbContext.Vehicles

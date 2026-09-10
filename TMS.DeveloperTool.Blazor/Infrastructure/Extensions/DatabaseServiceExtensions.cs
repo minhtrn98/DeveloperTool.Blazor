@@ -28,8 +28,15 @@ public static class DatabaseServiceExtensions
             return ConnectionMultiplexer.Connect(configuration);
         });
 
-        // Application DbContext
-        services.AddDbContext<ApplicationDbContext>((provider, options) =>
+        // Application DbContext — registered via factory (not AddDbContext) so every
+        // consumer creates its own short-lived context instance per operation instead of
+        // sharing one scoped instance for the whole Blazor Server circuit. A single scoped
+        // DbContext is not thread-safe/reentrant-safe, and Blazor's rendering pipeline can
+        // easily run two async DB operations concurrently on the same circuit (e.g. a
+        // page's OnInitializedAsync racing with a child MudTable's own initial ServerData
+        // call), which throws "A second operation was started on this context instance
+        // before a previous operation completed."
+        services.AddDbContextFactory<ApplicationDbContext>((provider, options) =>
         {
             ConnectionStringsOptions connectionStrings = provider.GetRequiredService<ConnectionStringsOptions>();
             options.UseNpgsql(connectionStrings.DeveloperDb, npgsqlOptions =>

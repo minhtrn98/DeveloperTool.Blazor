@@ -1,11 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace TMS.DeveloperTool.Blazor.Features.Routing.Services;
 
-public sealed class RouteCheckPointTemplateService(ApplicationDbContext context)
+public sealed class RouteCheckPointTemplateService(IDbContextFactory<ApplicationDbContext> dbContextFactory)
 {
     public async Task<List<RouteCheckPointTemplate>> GetAllAsync()
     {
+        await using ApplicationDbContext context = await dbContextFactory.CreateDbContextAsync();
+
         return await context.RouteCheckPointTemplates
             .AsNoTracking()
             .Include(t => t.RouteCheckPoints.OrderBy(cp => cp.Order))
@@ -14,6 +16,8 @@ public sealed class RouteCheckPointTemplateService(ApplicationDbContext context)
 
     public async Task<RouteCheckPointTemplate?> GetByIdAsync(Guid id)
     {
+        await using ApplicationDbContext context = await dbContextFactory.CreateDbContextAsync();
+
         return await context.RouteCheckPointTemplates
             .AsNoTracking()
             .Include(t => t.RouteCheckPoints.OrderBy(cp => cp.Order))
@@ -22,6 +26,8 @@ public sealed class RouteCheckPointTemplateService(ApplicationDbContext context)
 
     public async Task<RouteCheckPointTemplate> CreateAsync(RouteCheckPointTemplate template)
     {
+        await using ApplicationDbContext context = await dbContextFactory.CreateDbContextAsync();
+
         template.Id = Guid.CreateVersion7();
         foreach (RouteCheckPoint checkPoint in template.RouteCheckPoints)
         {
@@ -36,6 +42,8 @@ public sealed class RouteCheckPointTemplateService(ApplicationDbContext context)
 
     public async Task<RouteCheckPointTemplate> UpdateAsync(RouteCheckPointTemplate template)
     {
+        await using ApplicationDbContext context = await dbContextFactory.CreateDbContextAsync();
+
         RouteCheckPointTemplate? existingTemplate = await context.RouteCheckPointTemplates
             .Include(t => t.RouteCheckPoints)
             .FirstOrDefaultAsync(t => t.Id == template.Id);
@@ -73,6 +81,8 @@ public sealed class RouteCheckPointTemplateService(ApplicationDbContext context)
 
     public async Task DeleteAsync(Guid id)
     {
+        await using ApplicationDbContext context = await dbContextFactory.CreateDbContextAsync();
+
         RouteCheckPointTemplate? template = await context.RouteCheckPointTemplates
             .Include(t => t.RouteCheckPoints)
             .FirstOrDefaultAsync(t => t.Id == id);

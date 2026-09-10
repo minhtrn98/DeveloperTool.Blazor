@@ -7,7 +7,7 @@
 @inject RouteCheckPointTemplateService RouteCheckPointTemplateService
 @inject FakeVehicleTransportService FakeVehicleTransportService
 @inject NavigationManager NavigationManager
-@inject ApplicationDbContext DbContext
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <AppPageTitle MenuName="Mô phỏng lộ trình" />
 
@@ -97,7 +97,8 @@
         isLoading = true;
         try
         {
-            Vehicles = await DbContext.Vehicles
+            await using ApplicationDbContext dbContext = await DbContextFactory.CreateDbContextAsync();
+            Vehicles = await dbContext.Vehicles
                 .AsNoTracking()
                 .Select(v => v.LicensePlate)
                 .ToHashSetAsync(StringComparer.OrdinalIgnoreCase);

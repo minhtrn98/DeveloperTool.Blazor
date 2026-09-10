@@ -52,11 +52,31 @@ CREATE TABLE order_step1_trace_logs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE route_stop_trace_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    action TEXT NOT NULL,
+    driver TEXT NOT NULL,
+    office TEXT NOT NULL,
+    event_id TEXT NOT NULL,
+    vehicle_id TEXT NOT NULL,
+    assignment_id TEXT NOT NULL,
+    message_detail TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX idx_route_checkpoints_template_id ON route_checkpoints (template_id);
 CREATE INDEX idx_request_histories_created_at ON request_histories (created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_request_histories_signature ON public.request_histories (name, method, service, endpoint, json_body);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_order_step1_trace_logs_log_id ON public.order_step1_trace_logs (log_id);
 CREATE INDEX IF NOT EXISTS idx_order_step1_trace_logs_order_id ON public.order_step1_trace_logs (order_id, log_timestamp DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_route_stop_trace_logs_log_id ON public.route_stop_trace_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_route_stop_trace_logs_vehicle_id ON public.route_stop_trace_logs (vehicle_id, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_route_stop_trace_logs_assignment_id ON public.route_stop_trace_logs (assignment_id, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_route_stop_trace_logs_log_timestamp ON public.route_stop_trace_logs (log_timestamp DESC);
 
 -- init data for vehicles table
 INSERT INTO

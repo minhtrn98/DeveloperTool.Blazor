@@ -3,10 +3,12 @@ using TMS.DeveloperTool.Blazor.Features.OrderStep1.Models;
 
 namespace TMS.DeveloperTool.Blazor.Features.OrderStep1.Services;
 
-public sealed class OrderStep1TraceLogStorageService(ApplicationDbContext dbContext)
+public sealed class OrderStep1TraceLogStorageService(IDbContextFactory<ApplicationDbContext> dbContextFactory)
 {
     public async Task<bool> SaveIfNewAsync(OrderStep1TraceLogEntry entry, CancellationToken cancellationToken)
     {
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
             INSERT INTO order_step1_trace_logs (log_id, order_id, trace_id, span_id, log_timestamp, message_detail, created_at)
             VALUES ({entry.LogId}, {entry.OrderId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.MessageDetail}, {DateTimeOffset.UtcNow})
@@ -18,6 +20,8 @@ public sealed class OrderStep1TraceLogStorageService(ApplicationDbContext dbCont
 
     public async Task<List<string>> GetDistinctOrderIdsAsync(CancellationToken cancellationToken)
     {
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         return await dbContext.OrderStep1TraceLogs
             .AsNoTracking()
             .Select(x => x.OrderId)
@@ -28,6 +32,8 @@ public sealed class OrderStep1TraceLogStorageService(ApplicationDbContext dbCont
 
     public async Task<List<OrderStep1TraceLog>> GetByOrderIdAsync(string orderId, CancellationToken cancellationToken)
     {
+        await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         return await dbContext.OrderStep1TraceLogs
             .AsNoTracking()
             .Where(x => x.OrderId == orderId)
