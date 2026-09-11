@@ -68,6 +68,15 @@ CREATE TABLE route_stop_trace_logs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE log_api_tokens (
+    id SMALLINT PRIMARY KEY,
+    access_token TEXT NOT NULL DEFAULT '',
+    access_token_expired_at TIMESTAMPTZ NULL,
+    refresh_token TEXT NOT NULL DEFAULT '',
+    refresh_token_expired_at TIMESTAMPTZ NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX idx_route_checkpoints_template_id ON route_checkpoints (template_id);
 CREATE INDEX idx_request_histories_created_at ON request_histories (created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_request_histories_signature ON public.request_histories (name, method, service, endpoint, json_body);

@@ -15,11 +15,6 @@
         <MudText Typo="Typo.h4" Class="mb-4">Route Stop - Trace log</MudText>
 
         <MudGrid>
-            <MudItem xs="12" md="6">
-                <MudBearerTokenField @bind-Value="bearerToken" @bind-Value:after="SaveBearerTokenToLocalStorageAsync"
-                                     Label="Bearer Token (Log API)" Variant="Variant.Outlined"
-                                     FullWidth="true" Lines="4" Disabled="@isTracing" />
-            </MudItem>
             <MudItem xs="12" md="3">
                 <MudDatePicker @bind-Date="startDate" Label="Ngày bắt đầu" Variant="Variant.Outlined"
                                DateFormat="dd/MM/yyyy" Disabled="@isTracing" />
@@ -108,9 +103,7 @@
 
 @code {
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(10);
-    private const string BearerTokenStorageKey = "routeStopTrace.bearerToken";
 
-    private string bearerToken = string.Empty;
     private DateTime? startDate = DateTime.Today;
     private TimeSpan? startTimeOfDay = DateTime.Now.TimeOfDay;
     private bool isTracing;
@@ -122,34 +115,8 @@
 
     private CancellationTokenSource? traceCts;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender)
-        {
-            return;
-        }
-
-        string? savedBearerToken = await JS.InvokeAsync<string?>("localStorage.getItem", BearerTokenStorageKey);
-        if (!string.IsNullOrEmpty(savedBearerToken))
-        {
-            bearerToken = savedBearerToken;
-            StateHasChanged();
-        }
-    }
-
-    private async Task SaveBearerTokenToLocalStorageAsync()
-    {
-        await JS.InvokeVoidAsync("localStorage.setItem", BearerTokenStorageKey, bearerToken);
-    }
-
     private async Task StartTraceAsync()
     {
-        if (string.IsNullOrWhiteSpace(bearerToken))
-        {
-            Snackbar.Add("Vui lòng nhập Bearer Token.", Severity.Warning);
-            return;
-        }
-
         if (startDate is null || startTimeOfDay is null)
         {
             Snackbar.Add("Vui lòng chọn thời gian bắt đầu.", Severity.Warning);
@@ -216,7 +183,7 @@
             List<RouteStopTraceLogEntry> entries;
             try
             {
-                entries = await LogQueryService.QueryAsync(chunkStart, chunkEnd, bearerToken, cancellationToken);
+                entries = await LogQueryService.QueryAsync(chunkStart, chunkEnd, cancellationToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

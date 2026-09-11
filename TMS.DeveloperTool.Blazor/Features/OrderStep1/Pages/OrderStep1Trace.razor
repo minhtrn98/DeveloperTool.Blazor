@@ -21,11 +21,6 @@
                               Lines="4" FullWidth="true" Disabled="@isTracing"
                               HelperText="Mỗi Order Id 1 dòng hoặc cách nhau bởi dấu phẩy" />
             </MudItem>
-            <MudItem xs="12" md="6">
-                <MudBearerTokenField @bind-Value="bearerToken" @bind-Value:after="SaveBearerTokenToLocalStorageAsync"
-                                     Label="Bearer Token (Log API)" Variant="Variant.Outlined"
-                                     FullWidth="true" Lines="4" Disabled="@isTracing" />
-            </MudItem>
             <MudItem xs="12" md="3">
                 <MudDatePicker @bind-Date="startDate" Label="Ngày bắt đầu" Variant="Variant.Outlined"
                                DateFormat="dd/MM/yyyy" Disabled="@isTracing" />
@@ -110,10 +105,8 @@
 @code {
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(10);
     private const string OrderIdsStorageKey = "orderStep1Trace.orderIds";
-    private const string BearerTokenStorageKey = "orderStep1Trace.bearerToken";
 
     private string orderIdsInput = string.Empty;
-    private string bearerToken = string.Empty;
     private DateTime? startDate = DateTime.Today;
     private TimeSpan? startTimeOfDay = DateTime.Now.TimeOfDay;
     private bool isTracing;
@@ -135,23 +128,10 @@
         }
 
         string? savedOrderIds = await JS.InvokeAsync<string?>("localStorage.getItem", OrderIdsStorageKey);
-        string? savedBearerToken = await JS.InvokeAsync<string?>("localStorage.getItem", BearerTokenStorageKey);
 
-        bool changed = false;
         if (!string.IsNullOrEmpty(savedOrderIds))
         {
             orderIdsInput = savedOrderIds;
-            changed = true;
-        }
-
-        if (!string.IsNullOrEmpty(savedBearerToken))
-        {
-            bearerToken = savedBearerToken;
-            changed = true;
-        }
-
-        if (changed)
-        {
             StateHasChanged();
         }
     }
@@ -161,23 +141,12 @@
         await JS.InvokeVoidAsync("localStorage.setItem", OrderIdsStorageKey, orderIdsInput);
     }
 
-    private async Task SaveBearerTokenToLocalStorageAsync()
-    {
-        await JS.InvokeVoidAsync("localStorage.setItem", BearerTokenStorageKey, bearerToken);
-    }
-
     private async Task StartTraceAsync()
     {
         List<string> orderIds = ParseOrderIds();
         if (orderIds.Count == 0)
         {
             Snackbar.Add("Vui lòng nhập ít nhất 1 Order Id.", Severity.Warning);
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(bearerToken))
-        {
-            Snackbar.Add("Vui lòng nhập Bearer Token.", Severity.Warning);
             return;
         }
 
@@ -262,7 +231,7 @@
             List<OrderStep1TraceLogEntry> entries;
             try
             {
-                entries = await LogQueryService.QueryAsync(orderId, chunkStart, chunkEnd, bearerToken, cancellationToken);
+                entries = await LogQueryService.QueryAsync(orderId, chunkStart, chunkEnd, cancellationToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

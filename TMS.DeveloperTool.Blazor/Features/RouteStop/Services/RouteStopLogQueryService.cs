@@ -2,10 +2,11 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using TMS.DeveloperTool.Blazor.Features.OrderStep1.Contracts;
 using TMS.DeveloperTool.Blazor.Features.RouteStop.Models;
+using TMS.DeveloperTool.Blazor.Infrastructure.Http;
 
 namespace TMS.DeveloperTool.Blazor.Features.RouteStop.Services;
 
-public sealed class RouteStopLogQueryService(IHttpClientFactory httpClientFactory, LogApiOptions logApiOptions)
+public sealed class RouteStopLogQueryService(IHttpClientFactory httpClientFactory, LogApiOptions logApiOptions, LogApiTokenProvider tokenProvider)
 {
     private const string QueryRangePath = "/api/v5/query_range";
     private const int PageSize = 100;
@@ -16,11 +17,11 @@ public sealed class RouteStopLogQueryService(IHttpClientFactory httpClientFactor
     public async Task<List<RouteStopTraceLogEntry>> QueryAsync(
         DateTimeOffset start,
         DateTimeOffset end,
-        string bearerToken,
         CancellationToken cancellationToken)
     {
         List<RouteStopTraceLogEntry> entries = [];
         int offset = 0;
+        string bearerToken = await tokenProvider.GetAccessTokenAsync(cancellationToken);
 
         while (true)
         {

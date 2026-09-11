@@ -11,6 +11,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<RequestHistory> RequestHistories { get; set; }
     public DbSet<OrderStep1TraceLog> OrderStep1TraceLogs { get; set; }
     public DbSet<RouteStopTraceLog> RouteStopTraceLogs { get; set; }
+    public DbSet<LogApiToken> LogApiTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +38,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<RouteStopTraceLog>()
             .ToTable("route_stop_trace_logs");
+
+        modelBuilder.Entity<LogApiToken>()
+            .ToTable("log_api_tokens");
 
         // Configure column names to match PostgreSQL schema
         modelBuilder.Entity<RouteCheckPointTemplate>(entity =>
@@ -117,6 +121,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.MessageDetail).HasColumnName("message_detail");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.LogId).IsUnique();
+        });
+
+        modelBuilder.Entity<LogApiToken>(entity =>
+        {
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.AccessToken).HasColumnName("access_token");
+            entity.Property(e => e.AccessTokenExpiredAt).HasColumnName("access_token_expired_at");
+            entity.Property(e => e.RefreshToken).HasColumnName("refresh_token");
+            entity.Property(e => e.RefreshTokenExpiredAt).HasColumnName("refresh_token_expired_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         });
     }
 }
