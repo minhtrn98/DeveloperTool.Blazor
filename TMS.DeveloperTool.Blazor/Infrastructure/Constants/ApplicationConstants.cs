@@ -55,6 +55,8 @@ public static class ApplicationConstants
         public const string OrderStep1Timeline = "/order-step1-timeline";
         public const string RouteStopTrace = "/route-stop-trace";
         public const string RouteStopQuery = "/route-stop-query";
+        public const string PickupTaskTrace = "/pickup-task-trace";
+        public const string PickupTaskTraceQuery = "/pickup-task-trace-query";
     }
 
     public static class EnvironmentNames
@@ -88,6 +90,8 @@ public static class ApplicationConstants
         public const string OrderStep1Timeline = "OrderStep1Timeline";
         public const string RouteStopTrace = "RouteStopTrace";
         public const string RouteStopQuery = "RouteStopQuery";
+        public const string PickupTaskTrace = "PickupTaskTrace";
+        public const string PickupTaskTraceQuery = "PickupTaskTraceQuery";
     }
 
     /// <summary>

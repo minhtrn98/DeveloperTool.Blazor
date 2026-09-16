@@ -68,6 +68,22 @@ CREATE TABLE route_stop_trace_logs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE pickup_task_trace_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    pickup_task_id TEXT NOT NULL,
+    delivery_line_id TEXT NOT NULL DEFAULT '',
+    event_id TEXT NOT NULL,
+    message_detail TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Run this if pickup_task_trace_logs already exists without the delivery_line_id column:
+-- ALTER TABLE pickup_task_trace_logs ADD COLUMN IF NOT EXISTS delivery_line_id TEXT NOT NULL DEFAULT '';
+
 CREATE TABLE log_api_tokens (
     id SMALLINT PRIMARY KEY,
     access_token TEXT NOT NULL DEFAULT '',
@@ -86,6 +102,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_route_stop_trace_logs_log_id ON public.rout
 CREATE INDEX IF NOT EXISTS idx_route_stop_trace_logs_vehicle_id ON public.route_stop_trace_logs (vehicle_id, log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_route_stop_trace_logs_assignment_id ON public.route_stop_trace_logs (assignment_id, log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_route_stop_trace_logs_log_timestamp ON public.route_stop_trace_logs (log_timestamp DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_pickup_task_trace_logs_log_id ON public.pickup_task_trace_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_pickup_task_trace_logs_pickup_task_id ON public.pickup_task_trace_logs (pickup_task_id, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pickup_task_trace_logs_delivery_line_id ON public.pickup_task_trace_logs (delivery_line_id, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pickup_task_trace_logs_log_timestamp ON public.pickup_task_trace_logs (log_timestamp DESC);
 
 -- init data for vehicles table
 INSERT INTO

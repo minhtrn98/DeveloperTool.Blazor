@@ -6,6 +6,7 @@ using TMS.DeveloperTool.Blazor.Features.Manifest.Services;
 using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services;
 using TMS.DeveloperTool.Blazor.Features.Pairing.Services;
 using TMS.DeveloperTool.Blazor.Features.PickupTask.Services;
+using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Services;
 using TMS.DeveloperTool.Blazor.Features.RouteStop.Services;
 using TMS.DeveloperTool.Blazor.Features.Routing.Services;
 using TMS.DeveloperTool.Blazor.Features.Simulation.Services;
@@ -107,6 +108,8 @@ public static class ExternalApiServiceExtensions
         services.AddScoped<OrderStep1TraceLogStorageService>();
         services.AddScoped<RouteStopLogQueryService>();
         services.AddScoped<RouteStopTraceLogStorageService>();
+        services.AddScoped<PickupTaskTraceLogQueryService>();
+        services.AddScoped<PickupTaskTraceLogStorageService>();
 
         services.AddSingleton<EventService>();
         services.AddSingleton<JwtTokenService>();

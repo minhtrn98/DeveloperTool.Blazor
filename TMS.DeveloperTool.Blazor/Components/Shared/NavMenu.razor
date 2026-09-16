@@ -37,6 +37,21 @@
         </MudNavGroup>
     }
 
+    @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTaskTrace) ||
+        ShouldShow(ApplicationConstants.MenuKeys.PickupTaskTraceQuery))
+    {
+        <MudNavGroup Title="Điều tin" Expanded="false">
+            @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTaskTrace))
+            {
+                <MudNavLink Href="@ApplicationConstants.Routes.PickupTaskTrace" Match="NavLinkMatch.All">Trace log</MudNavLink>
+            }
+            @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTaskTraceQuery))
+            {
+                <MudNavLink Href="@ApplicationConstants.Routes.PickupTaskTraceQuery" Match="NavLinkMatch.All">Tra cứu log</MudNavLink>
+            }
+        </MudNavGroup>
+    }
+
     @if (ShouldShow(ApplicationConstants.MenuKeys.ManifestDashboard))
     {
         <MudNavLink Href="@ApplicationConstants.Routes.ManifestDashboard" Match="NavLinkMatch.All">Sổ phát</MudNavLink>
@@ -55,6 +70,8 @@
         ApplicationConstants.MenuKeys.OrderStep1Timeline,
         ApplicationConstants.MenuKeys.RouteStopTrace,
         ApplicationConstants.MenuKeys.RouteStopQuery,
+        ApplicationConstants.MenuKeys.PickupTaskTrace,
+        ApplicationConstants.MenuKeys.PickupTaskTraceQuery,
         ApplicationConstants.MenuKeys.ManifestDashboard,
         ApplicationConstants.MenuKeys.OrderItemJourney
     ];

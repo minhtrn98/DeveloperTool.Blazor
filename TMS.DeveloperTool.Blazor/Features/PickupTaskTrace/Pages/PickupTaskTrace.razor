@@ -1,0 +1,225 @@
+@page "/pickup-task-trace"
+@implements IDisposable
+@using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services
+@using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Models
+@using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Services
+@inject PickupTaskTraceLogQueryService LogQueryService
+@inject PickupTaskTraceLogStorageService StorageService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<AppPageTitle MenuName="Điều tin" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Điều tin - Trace log</MudText>
+
+        <MudGrid>
+            <MudItem xs="12" md="3">
+                <MudDatePicker @bind-Date="startDate" Label="Ngày bắt đầu" Variant="Variant.Outlined"
+                               DateFormat="dd/MM/yyyy" Disabled="@isTracing" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTimePicker @bind-Time="startTimeOfDay" Label="Giờ bắt đầu" Variant="Variant.Outlined"
+                               Disabled="@isTracing" />
+            </MudItem>
+        </MudGrid>
+
+        <div class="d-flex align-center ga-3 mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow"
+                       OnClick="StartTraceAsync" Disabled="@isTracing">
+                Start trace
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.Stop"
+                       OnClick="StopTrace" Disabled="@(!isTracing)">
+                Stop trace
+            </MudButton>
+
+            @if (isTracing)
+            {
+                <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small"
+                         Icon="@Icons.Material.Filled.FiberManualRecord">
+                    Đang trace...
+                </MudChip>
+            }
+
+            <MudText Typo="Typo.body2" Class="ml-auto">@rows.Count bản ghi</MudText>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(lastError))
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-3" Dense="true">@lastError</MudAlert>
+        }
+    </MudPaper>
+
+    <MudPaper Elevation="2" Class="pa-4">
+        @if (rows.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">Chưa có dữ liệu trace.</MudAlert>
+        }
+        else
+        {
+            <MudTable Items="@rows" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Height="60vh">
+                <HeaderContent>
+                    <MudTh>STT</MudTh>
+                    <MudTh>Thời gian</MudTh>
+                    <MudTh>Mã điều tin</MudTh>
+                    <MudTh>Dispatch Type</MudTh>
+                    <MudTh>Dispatch Method</MudTh>
+                    <MudTh>Pms Status Id</MudTh>
+                    <MudTh>Total Items</MudTh>
+                    <MudTh>Total Weight</MudTh>
+                    <MudTh>Delivery Line Id</MudTh>
+                    <MudTh>Pick Effort Type</MudTh>
+                    <MudTh>Trace Id</MudTh>
+                    <MudTh>Message Detail</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    @{ PickupTaskMessageFields fields = PickupTaskMessageFieldsParser.Parse(context.MessageDetail); }
+                    <MudTd DataLabel="STT">@(rows.IndexOf(context) + 1)</MudTd>
+                    <MudTd DataLabel="Thời gian">@context.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
+                    <MudTd DataLabel="Mã điều tin">@context.PickupTaskId</MudTd>
+                    <MudTd DataLabel="Dispatch Type">@fields.DispatchType</MudTd>
+                    <MudTd DataLabel="Dispatch Method">@fields.DispatchMethod</MudTd>
+                    <MudTd DataLabel="Pms Status Id">@fields.PmsStatusId</MudTd>
+                    <MudTd DataLabel="Total Items">@fields.TotalItems</MudTd>
+                    <MudTd DataLabel="Total Weight">@fields.TotalWeight</MudTd>
+                    <MudTd DataLabel="Delivery Line Id">@fields.DeliveryLineId</MudTd>
+                    <MudTd DataLabel="Pick Effort Type">@fields.PickEffortType</MudTd>
+                    <MudTd DataLabel="Trace Id">@context.TraceId</MudTd>
+                    <MudTd DataLabel="Message Detail">
+                        <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Color="Color.Secondary" Size="Size.Small"
+                                       OnClick="@(() => CopyMessageDetailAsync(context.MessageDetail))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(10);
+
+    private DateTime? startDate = DateTime.Today;
+    private TimeSpan? startTimeOfDay = DateTime.Now.TimeOfDay;
+    private bool isTracing;
+    private string? lastError;
+
+    private readonly List<PickupTaskTraceLogEntry> rows = [];
+    private readonly HashSet<string> seenLogIds = new(StringComparer.Ordinal);
+    private DateTimeOffset nextQueryStart;
+
+    private CancellationTokenSource? traceCts;
+
+    private async Task StartTraceAsync()
+    {
+        if (startDate is null || startTimeOfDay is null)
+        {
+            Snackbar.Add("Vui lòng chọn thời gian bắt đầu.", Severity.Warning);
+            return;
+        }
+
+        DateTime combined = startDate.Value.Date + startTimeOfDay.Value;
+        DateTimeOffset traceStart = new(combined, TimeZoneInfo.Local.GetUtcOffset(combined));
+        if (traceStart >= DateTimeOffset.Now)
+        {
+            Snackbar.Add("Thời gian bắt đầu phải trước thời điểm hiện tại.", Severity.Warning);
+            return;
+        }
+
+        rows.Clear();
+        seenLogIds.Clear();
+        lastError = null;
+        nextQueryStart = traceStart;
+
+        traceCts = new CancellationTokenSource();
+        isTracing = true;
+        _ = RunTraceLoopAsync(traceCts.Token);
+    }
+
+    private void StopTrace()
+    {
+        traceCts?.Cancel();
+        isTracing = false;
+    }
+
+    private async Task RunTraceLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await PollAsync(cancellationToken);
+                await Task.Delay(PollInterval, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // trace stopped by user
+        }
+        finally
+        {
+            isTracing = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task PollAsync(CancellationToken cancellationToken)
+    {
+        DateTimeOffset now = DateTimeOffset.Now;
+        if (nextQueryStart >= now)
+        {
+            return;
+        }
+
+        foreach ((DateTimeOffset chunkStart, DateTimeOffset chunkEnd) in TimeRangeChunker.Split(nextQueryStart, now))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            List<PickupTaskTraceLogEntry> entries;
+            try
+            {
+                entries = await LogQueryService.QueryAsync(chunkStart, chunkEnd, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                lastError = ex.Message;
+                await InvokeAsync(StateHasChanged);
+                return;
+            }
+
+            foreach (PickupTaskTraceLogEntry entry in entries.OrderBy(e => e.Timestamp))
+            {
+                if (!seenLogIds.Add(entry.LogId))
+                {
+                    continue;
+                }
+
+                await StorageService.SaveIfNewAsync(entry, cancellationToken);
+                rows.Insert(0, entry);
+                await InvokeAsync(StateHasChanged);
+            }
+
+            nextQueryStart = chunkEnd;
+        }
+    }
+
+    private async Task CopyMessageDetailAsync(string messageDetail)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", messageDetail);
+            Snackbar.Add("Đã copy Message Detail.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể copy: {ex.Message}", Severity.Error);
+        }
+    }
+
+    public void Dispose()
+    {
+        traceCts?.Cancel();
+        traceCts?.Dispose();
+    }
+}

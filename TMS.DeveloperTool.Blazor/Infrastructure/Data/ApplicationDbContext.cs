@@ -11,6 +11,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<RequestHistory> RequestHistories { get; set; }
     public DbSet<OrderStep1TraceLog> OrderStep1TraceLogs { get; set; }
     public DbSet<RouteStopTraceLog> RouteStopTraceLogs { get; set; }
+    public DbSet<PickupTaskTraceLog> PickupTaskTraceLogs { get; set; }
     public DbSet<LogApiToken> LogApiTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -38,6 +39,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<RouteStopTraceLog>()
             .ToTable("route_stop_trace_logs");
+
+        modelBuilder.Entity<PickupTaskTraceLog>()
+            .ToTable("pickup_task_trace_logs");
 
         modelBuilder.Entity<LogApiToken>()
             .ToTable("log_api_tokens");
@@ -118,6 +122,21 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.EventId).HasColumnName("event_id");
             entity.Property(e => e.VehicleId).HasColumnName("vehicle_id");
             entity.Property(e => e.AssignmentId).HasColumnName("assignment_id");
+            entity.Property(e => e.MessageDetail).HasColumnName("message_detail");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(e => e.LogId).IsUnique();
+        });
+
+        modelBuilder.Entity<PickupTaskTraceLog>(entity =>
+        {
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.LogId).HasColumnName("log_id");
+            entity.Property(e => e.TraceId).HasColumnName("trace_id");
+            entity.Property(e => e.SpanId).HasColumnName("span_id");
+            entity.Property(e => e.LogTimestamp).HasColumnName("log_timestamp");
+            entity.Property(e => e.PickupTaskId).HasColumnName("pickup_task_id");
+            entity.Property(e => e.DeliveryLineId).HasColumnName("delivery_line_id");
+            entity.Property(e => e.EventId).HasColumnName("event_id");
             entity.Property(e => e.MessageDetail).HasColumnName("message_detail");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.LogId).IsUnique();

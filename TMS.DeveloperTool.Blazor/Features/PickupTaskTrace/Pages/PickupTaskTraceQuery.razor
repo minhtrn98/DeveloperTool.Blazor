@@ -1,0 +1,170 @@
+@page "/pickup-task-trace-query"
+@using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Models
+@using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Services
+@inject PickupTaskTraceLogStorageService StorageService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<AppPageTitle MenuName="Điều tin" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Điều tin - Tra cứu log</MudText>
+
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudAutocomplete T="PickupTaskIdOption" Value="selectedPickupTask" ValueChanged="OnPickupTaskSelectedAsync"
+                                 SearchFunc="SearchPickupTaskIds" Label="Mã điều tin" Variant="Variant.Outlined"
+                                 Clearable="true" MaxItems="20"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<PickupTaskIdOption>" />
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudAutocomplete T="DeliveryLineIdOption" Value="selectedDeliveryLine" ValueChanged="OnDeliveryLineSelectedAsync"
+                                 SearchFunc="SearchDeliveryLineIds" Label="Delivery Line Id" Variant="Variant.Outlined"
+                                 Clearable="true" MaxItems="20"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<DeliveryLineIdOption>" />
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudPaper Elevation="2" Class="pa-4">
+        <MudTable @ref="tableRef" T="PickupTaskTraceLog" ServerData="LoadServerData" Loading="@isLoading"
+                  Hover="true" Dense="true" Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>STT</MudTh>
+                <MudTh>Thời gian</MudTh>
+                <MudTh>Mã điều tin</MudTh>
+                <MudTh>Dispatch Type</MudTh>
+                <MudTh>Dispatch Method</MudTh>
+                <MudTh>Pms Status Id</MudTh>
+                <MudTh>Total Items</MudTh>
+                <MudTh>Total Weight</MudTh>
+                <MudTh>Delivery Line Id</MudTh>
+                <MudTh>Pick Effort Type</MudTh>
+                <MudTh>Trace Id</MudTh>
+                <MudTh>Message Detail</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                @{ PickupTaskMessageFields fields = PickupTaskMessageFieldsParser.Parse(context.MessageDetail); }
+                <MudTd DataLabel="STT">@GetRowIndex(context)</MudTd>
+                <MudTd DataLabel="Thời gian">@context.LogTimestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
+                <MudTd DataLabel="Mã điều tin">@context.PickupTaskId</MudTd>
+                <MudTd DataLabel="Dispatch Type">@fields.DispatchType</MudTd>
+                <MudTd DataLabel="Dispatch Method">@fields.DispatchMethod</MudTd>
+                <MudTd DataLabel="Pms Status Id">@fields.PmsStatusId</MudTd>
+                <MudTd DataLabel="Total Items">@fields.TotalItems</MudTd>
+                <MudTd DataLabel="Total Weight">@fields.TotalWeight</MudTd>
+                <MudTd DataLabel="Delivery Line Id">@fields.DeliveryLineId</MudTd>
+                <MudTd DataLabel="Pick Effort Type">@fields.PickEffortType</MudTd>
+                <MudTd DataLabel="Trace Id">@context.TraceId</MudTd>
+                <MudTd DataLabel="Message Detail">
+                    <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Color="Color.Secondary" Size="Size.Small"
+                                   OnClick="@(() => CopyMessageDetailAsync(context.MessageDetail))" />
+                </MudTd>
+            </RowTemplate>
+            <LoadingContent>
+                <MudText Class="pa-4">Đang tải dữ liệu...</MudText>
+            </LoadingContent>
+            <NoRecordsContent>
+                <MudText Class="pa-4">Không có dữ liệu.</MudText>
+            </NoRecordsContent>
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[] { 10, 20, 50 }" />
+            </PagerContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<PickupTaskIdOption> pickupTaskIdOptions = [];
+    private List<DeliveryLineIdOption> deliveryLineIdOptions = [];
+    private PickupTaskIdOption? selectedPickupTask;
+    private DeliveryLineIdOption? selectedDeliveryLine;
+    private List<PickupTaskTraceLog> currentRows = [];
+    private MudTable<PickupTaskTraceLog>? tableRef;
+    private bool isLoading;
+    private int currentPageIndex = 1;
+    private int currentPageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        List<string> ids = await StorageService.GetDistinctPickupTaskIdsAsync(CancellationToken.None);
+        pickupTaskIdOptions = ids.Select(id => new PickupTaskIdOption(id)).ToList();
+
+        List<string> deliveryLineIds = await StorageService.GetDistinctDeliveryLineIdsAsync(CancellationToken.None);
+        deliveryLineIdOptions = deliveryLineIds.Select(id => new DeliveryLineIdOption(id)).ToList();
+    }
+
+    private Task<IEnumerable<PickupTaskIdOption>> SearchPickupTaskIds(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(pickupTaskIdOptions, searchTerm));
+
+    private Task<IEnumerable<DeliveryLineIdOption>> SearchDeliveryLineIds(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(deliveryLineIdOptions, searchTerm));
+
+    private async Task OnPickupTaskSelectedAsync(PickupTaskIdOption? value)
+    {
+        selectedPickupTask = value;
+        await ReloadAsync();
+    }
+
+    private async Task OnDeliveryLineSelectedAsync(DeliveryLineIdOption? value)
+    {
+        selectedDeliveryLine = value;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (tableRef is null)
+        {
+            return;
+        }
+
+        tableRef.NavigateTo(0);
+        await tableRef.ReloadServerData();
+    }
+
+    private async Task<TableData<PickupTaskTraceLog>> LoadServerData(TableState state, CancellationToken cancellationToken)
+    {
+        isLoading = true;
+        try
+        {
+            currentPageIndex = state.Page + 1;
+            currentPageSize = state.PageSize;
+
+            (List<PickupTaskTraceLog> items, int totalCount) = await StorageService.QueryAsync(
+                selectedPickupTask?.PickupTaskId,
+                selectedDeliveryLine?.DeliveryLineId,
+                currentPageIndex,
+                currentPageSize,
+                cancellationToken);
+
+            currentRows = items;
+
+            return new TableData<PickupTaskTraceLog> { TotalItems = totalCount, Items = items };
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private int GetRowIndex(PickupTaskTraceLog item)
+    {
+        int indexInPage = currentRows.IndexOf(item);
+        return ((currentPageIndex - 1) * currentPageSize) + indexInPage + 1;
+    }
+
+    private async Task CopyMessageDetailAsync(string messageDetail)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", messageDetail);
+            Snackbar.Add("Đã copy Message Detail.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể copy: {ex.Message}", Severity.Error);
+        }
+    }
+}
