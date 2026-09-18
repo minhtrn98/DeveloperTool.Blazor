@@ -69,15 +69,5 @@ public static class ConfigurationExtensions
         });
         return services;
     }
-
-    public static bool IsDevelopmentOrLocal(this IWebHostEnvironment env)
-    {
-        return env.IsDevelopment() || env.IsLocal();
-    }
-
-    public static bool IsLocal(this IWebHostEnvironment env)
-    {
-        return env.IsEnvironment("Local");
-    }
 }
 

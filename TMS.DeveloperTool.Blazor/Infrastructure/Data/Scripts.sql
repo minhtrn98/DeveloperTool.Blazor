@@ -1,46 +1,5 @@
 create database "DeveloperDB";
 
-CREATE TABLE route_checkpoint_templates (
-    id UUID PRIMARY KEY,
-    "name" VARCHAR(255) NOT NULL,
-    jump_seconds INTEGER NOT NULL
-);
-
-CREATE TABLE route_checkpoints (
-    id UUID PRIMARY KEY,
-    lon float8 NOT NULL,
-    lat float8 NOT NULL,
-    "address" TEXT NOT NULL,
-    km INTEGER NOT NULL,
-    "order" INTEGER NOT NULL,
-    template_id UUID NOT NULL,
-    CONSTRAINT fk_route_checkpoints_template FOREIGN KEY (template_id) REFERENCES route_checkpoint_templates (id) ON DELETE CASCADE
-);
-
-CREATE TABLE vehicles (
-    license_plate VARCHAR(8) PRIMARY KEY,
-    last_odo float8 NOT NULL,
-    is_moving BOOL NOT NULL
-);
-
-CREATE TABLE employees (
-    driver_id UUID PRIMARY KEY,
-    "name" VARCHAR(255) NOT NULL,
-    bearer_token TEXT NOT NULL,
-    token_expired_at TIMESTAMPTZ NULL,
-    code VARCHAR(50) NOT NULL
-);
-
-CREATE TABLE request_histories (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    "name" TEXT NOT NULL,
-    method TEXT NOT NULL,
-    service TEXT NOT NULL,
-    endpoint TEXT NOT NULL,
-    json_body TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 CREATE TABLE order_step1_trace_logs (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     log_id TEXT NOT NULL,
@@ -49,6 +8,7 @@ CREATE TABLE order_step1_trace_logs (
     span_id TEXT NOT NULL,
     log_timestamp TIMESTAMPTZ NOT NULL,
     message_detail TEXT NOT NULL,
+    env TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -65,6 +25,7 @@ CREATE TABLE route_stop_trace_logs (
     vehicle_id TEXT NOT NULL,
     assignment_id TEXT NOT NULL,
     message_detail TEXT NOT NULL,
+    env TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -78,14 +39,12 @@ CREATE TABLE pickup_task_trace_logs (
     delivery_line_id TEXT NOT NULL DEFAULT '',
     event_id TEXT NOT NULL,
     message_detail TEXT NOT NULL,
+    env TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Run this if pickup_task_trace_logs already exists without the delivery_line_id column:
--- ALTER TABLE pickup_task_trace_logs ADD COLUMN IF NOT EXISTS delivery_line_id TEXT NOT NULL DEFAULT '';
-
 CREATE TABLE log_api_tokens (
-    id SMALLINT PRIMARY KEY,
+    env TEXT PRIMARY KEY,
     access_token TEXT NOT NULL DEFAULT '',
     access_token_expired_at TIMESTAMPTZ NULL,
     refresh_token TEXT NOT NULL DEFAULT '',
@@ -93,9 +52,6 @@ CREATE TABLE log_api_tokens (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_route_checkpoints_template_id ON route_checkpoints (template_id);
-CREATE INDEX idx_request_histories_created_at ON request_histories (created_at DESC);
-CREATE UNIQUE INDEX IF NOT EXISTS ux_request_histories_signature ON public.request_histories (name, method, service, endpoint, json_body);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_order_step1_trace_logs_log_id ON public.order_step1_trace_logs (log_id);
 CREATE INDEX IF NOT EXISTS idx_order_step1_trace_logs_order_id ON public.order_step1_trace_logs (order_id, log_timestamp DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_route_stop_trace_logs_log_id ON public.route_stop_trace_logs (log_id);
@@ -107,190 +63,68 @@ CREATE INDEX IF NOT EXISTS idx_pickup_task_trace_logs_pickup_task_id ON public.p
 CREATE INDEX IF NOT EXISTS idx_pickup_task_trace_logs_delivery_line_id ON public.pickup_task_trace_logs (delivery_line_id, log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_pickup_task_trace_logs_log_timestamp ON public.pickup_task_trace_logs (log_timestamp DESC);
 
--- init data for vehicles table
-INSERT INTO
-    vehicles (license_plate, last_odo, is_moving)
-VALUES
-    ('51d19318', 0, false),
-    ('51d22155', 0, false),
-    ('50g02257', 0, false),
-    ('50h22719', 0, false),
-    ('51d19373', 0, false),
-    ('50h10505', 0, false),
-    ('50h22833', 0, false),
-    ('50h10536', 0, false),
-    ('50h12990', 0, false),
-    ('29h36869', 0, false),
-    ('50h07206', 0, false),
-    ('50h20868', 0, false),
-    ('51c39765', 0, false),
-    ('29c34166', 0, false),
-    ('29e10544', 0, false),
-    ('29d30827', 0, false),
-    ('51d43029', 0, false),
-    ('50h22177', 0, false),
-    ('50h22721', 0, false),
-    ('29h36757', 0, false),
-    ('51h12312', 0, false),
-    ('50h24671', 0, false),
-    ('50g02294', 0, false),
-    ('50h22353', 0, false),
-    ('50h10631', 0, false),
-    ('50h10545', 0, false),
-    ('50g02221', 0, false),
-    ('50h20853', 0, false),
-    ('51d64584', 0, false),
-    ('50g01474', 0, false),
-    ('50h22889', 0, false),
-    ('50h20891', 0, false),
-    ('50h20956', 0, false),
-    ('50g02270', 0, false),
-    ('50h24670', 0, false),
-    ('50g02279', 0, false),
-    ('50h22620', 0, false),
-    ('51b50371', 0, false),
-    ('51b29785', 0, false),
-    ('51c84126', 0, false),
-    ('50h12680', 0, false),
-    ('51d64576', 0, false),
-    ('50h24418', 0, false),
-    ('29c55252', 0, false),
-    ('29h36867', 0, false),
-    ('51c88909', 0, false),
-    ('51c60161', 0, false),
-    ('50h22491', 0, false),
-    ('51c88716', 0, false),
-    ('50h10509', 0, false),
-    ('50g02214', 0, false),
-    ('50h22275', 0, false),
-    ('50h22321', 0, false),
-    ('50h00441', 0, false),
-    ('50h21098', 0, false),
-    ('51c82432', 0, false),
-    ('50g02226', 0, false),
-    ('50h22662', 0, false),
-    ('51c83737', 0, false),
-    ('51d19308', 0, false),
-    ('51c96592', 0, false),
-    ('50h22112', 0, false),
-    ('51b29877', 0, false),
-    ('50h24300', 0, false),
-    ('50g02288', 0, false),
-    ('50h22730', 0, false),
-    ('29c61163', 0, false),
-    ('50h20217', 0, false),
-    ('50h24217', 0, false),
-    ('50h22431', 0, false),
-    ('29d30872', 0, false),
-    ('30g35129', 0, false),
-    ('51b50271', 0, false),
-    ('51c84112', 0, false),
-    ('50g01458', 0, false),
-    ('50g02276', 0, false),
-    ('50h22492', 0, false),
-    ('29c34050', 0, false),
-    ('50h21036', 0, false),
-    ('50h22238', 0, false),
-    ('50h21186', 0, false),
-    ('50g01410', 0, false),
-    ('50h20901', 0, false),
-    ('50h20065', 0, false),
-    ('50g01380', 0, false),
-    ('50h22600', 0, false),
-    ('50h21065', 0, false),
-    ('50h22121', 0, false),
-    ('51b29873', 0, false),
-    ('50h14553', 0, false),
-    ('51c39710', 0, false),
-    ('29k13282', 0, false),
-    ('50h22210', 0, false),
-    ('50h20904', 0, false),
-    ('50h20131', 0, false),
-    ('29c80869', 0, false),
-    ('29d32295', 0, false),
-    ('50g02300', 0, false),
-    ('50g01376', 0, false),
-    ('50h22461', 0, false),
-    ('29h41065', 0, false),
-    ('51c68513', 0, false),
-    ('51c87400', 0, false),
-    ('50h07276', 0, false),
-    ('50h20918', 0, false),
-    ('50h24289', 0, false),
-    ('50g02275', 0, false),
-    ('50h12808', 0, false),
-    ('50g02278', 0, false),
-    ('50g02285', 0, false),
-    ('50h21055', 0, false),
-    ('50h22797', 0, false),
-    ('51c55733', 0, false),
-    ('50h20903', 0, false),
-    ('50h22378', 0, false),
-    ('51d22189', 0, false),
-    ('50g02249', 0, false),
-    ('54g00000', 0, false),
-    ('50g02259', 0, false),
-    ('29c28857', 0, false),
-    ('50h10747', 0, false),
-    ('50g02217', 0, false),
-    ('29c61606', 0, false),
-    ('50h14645', 0, false),
-    ('50h22347', 0, false),
-    ('50g02258', 0, false),
-    ('50h22463', 0, false),
-    ('50h10630', 0, false),
-    ('50h07993', 0, false),
-    ('51c86899', 0, false),
-    ('50g01450', 0, false),
-    ('51c86101', 0, false),
-    ('51d64937', 0, false),
-    ('51b50370', 0, false),
-    ('50h10606', 0, false),
-    ('29c42733', 0, false),
-    ('50g02284', 0, false),
-    ('29c52322', 0, false),
-    ('50g01412', 0, false),
-    ('51c35180', 0, false),
-    ('50h22542', 0, false),
-    ('51c66040', 0, false),
-    ('51c81975', 0, false),
-    ('50h22221', 0, false),
-    ('50h20208', 0, false),
-    ('50h20913', 0, false),
-    ('50h22222', 0, false),
-    ('50g02251', 0, false),
-    ('50h24508', 0, false),
-    ('51c80488', 0, false),
-    ('51c81694', 0, false),
-    ('50h12736', 0, false),
-    ('50h20925', 0, false),
-    ('51c59702', 0, false),
-    ('51d18981', 0, false),
-    ('29c80939', 0, false),
-    ('51d18921', 0, false),
-    ('50h10837', 0, false),
-    ('50g01320', 0, false),
-    ('50g01357', 0, false),
-    ('51c81357', 0, false),
-    ('51d43001', 0, false),
-    ('51c86006', 0, false),
-    ('50g01396', 0, false),
-    ('50h20955', 0, false),
-    ('51b50351', 0, false),
-    ('50h22213', 0, false),
-    ('50h00619', 0, false),
-    ('51c82484', 0, false),
-    ('50h22634', 0, false),
-    ('50h22495', 0, false),
-    ('29e10571', 0, false),
-    ('29e10467', 0, false),
-    ('50h12971', 0, false),
-    ('50h07249', 0, false),
-    ('50h20921', 0, false),
-    ('50h22965', 0, false),
-    ('50h22349', 0, false),
-    ('50h22920', 0, false),
-    ('51d39712', 0, false),
-    ('50g02265', 0, false),
-    ('50h08069', 0, false),
-    ('51c39685', 0, false);
+CREATE SCHEMA IF NOT EXISTS pro;
+
+CREATE TABLE pro.order_step1_trace_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    order_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    message_detail TEXT NOT NULL,
+    env TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE pro.route_stop_trace_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    action TEXT NOT NULL,
+    driver TEXT NOT NULL,
+    office TEXT NOT NULL,
+    event_id TEXT NOT NULL,
+    vehicle_id TEXT NOT NULL,
+    assignment_id TEXT NOT NULL,
+    message_detail TEXT NOT NULL,
+    env TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE pro.pickup_task_trace_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    pickup_task_id TEXT NOT NULL,
+    delivery_line_id TEXT NOT NULL DEFAULT '',
+    event_id TEXT NOT NULL,
+    message_detail TEXT NOT NULL,
+    env TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
+CREATE TABLE pro.log_api_tokens (
+    env TEXT PRIMARY KEY,
+    access_token TEXT NOT NULL DEFAULT '',
+    access_token_expired_at TIMESTAMPTZ NULL,
+    refresh_token TEXT NOT NULL DEFAULT '',
+    refresh_token_expired_at TIMESTAMPTZ NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_order_step1_trace_logs_log_id ON pro.order_step1_trace_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_pro_order_step1_trace_logs_order_id ON pro.order_step1_trace_logs (order_id, log_timestamp DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_route_stop_trace_logs_log_id ON pro.route_stop_trace_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_pro_route_stop_trace_logs_vehicle_id ON pro.route_stop_trace_logs (vehicle_id, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_route_stop_trace_logs_assignment_id ON pro.route_stop_trace_logs (assignment_id, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_route_stop_trace_logs_log_timestamp ON pro.route_stop_trace_logs (log_timestamp DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_pickup_task_trace_logs_log_id ON pro.pickup_task_trace_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_trace_logs_pickup_task_id ON pro.pickup_task_trace_logs (pickup_task_id, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_trace_logs_delivery_line_id ON pro.pickup_task_trace_logs (delivery_line_id, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_trace_logs_log_timestamp ON pro.pickup_task_trace_logs (log_timestamp DESC);

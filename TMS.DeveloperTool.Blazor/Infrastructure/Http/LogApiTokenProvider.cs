@@ -10,7 +10,8 @@ namespace TMS.DeveloperTool.Blazor.Infrastructure.Http;
 public sealed class LogApiTokenProvider(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     IHttpClientFactory httpClientFactory,
-    LogApiOptions logApiOptions)
+    LogApiOptions logApiOptions,
+    IWebHostEnvironment webHostEnvironment)
 {
     private const string LoginPath = "/api/v1/login";
     private static readonly TimeSpan ExpiryBuffer = TimeSpan.FromMinutes(1);
@@ -19,10 +20,12 @@ public sealed class LogApiTokenProvider(
 
     public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
     {
+        string env = webHostEnvironment.EnvironmentName;
+
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         LogApiToken? token = await dbContext.LogApiTokens
             .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Id == LogApiToken.SingletonId, cancellationToken);
+            .FirstOrDefaultAsync(t => t.Env == env, cancellationToken);
 
         if (IsAccessTokenValid(token))
         {
@@ -34,7 +37,7 @@ public sealed class LogApiTokenProvider(
         {
             await using ApplicationDbContext lockedDbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
             token = await lockedDbContext.LogApiTokens
-                .FirstOrDefaultAsync(t => t.Id == LogApiToken.SingletonId, cancellationToken);
+                .FirstOrDefaultAsync(t => t.Env == env, cancellationToken);
 
             if (IsAccessTokenValid(token))
             {
@@ -53,7 +56,7 @@ public sealed class LogApiTokenProvider(
 
             LogApiLoginResponse loginResponse = await LoginAsync(refreshToken, cancellationToken);
 
-            token ??= new LogApiToken();
+            token ??= new LogApiToken { Env = env };
             token.AccessToken = loginResponse.AccessJwt;
             token.AccessTokenExpiredAt = DateTimeOffset.FromUnixTimeSeconds(loginResponse.AccessJwtExpiry);
             token.RefreshToken = loginResponse.RefreshJwt;

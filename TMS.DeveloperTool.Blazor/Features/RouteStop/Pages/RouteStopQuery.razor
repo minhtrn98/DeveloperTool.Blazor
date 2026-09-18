@@ -41,6 +41,7 @@
             <HeaderContent>
                 <MudTh>STT</MudTh>
                 <MudTh>Thời gian</MudTh>
+                <MudTh>Env</MudTh>
                 <MudTh>Action</MudTh>
                 <MudTh>Driver</MudTh>
                 <MudTh>License Plate</MudTh>
@@ -57,6 +58,7 @@
                 @{ RouteStopMessageFields fields = RouteStopMessageFieldsParser.Parse(context.MessageDetail); }
                 <MudTd DataLabel="STT">@GetRowIndex(context)</MudTd>
                 <MudTd DataLabel="Thời gian">@context.LogTimestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
+                <MudTd DataLabel="Env">@context.Env</MudTd>
                 <MudTd DataLabel="Action">@context.Action</MudTd>
                 <MudTd DataLabel="Driver">
                     @fields.DriverName

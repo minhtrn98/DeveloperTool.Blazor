@@ -9,5 +9,6 @@ public sealed class OrderStep1TraceLog
     public string SpanId { get; set; } = string.Empty;
     public DateTimeOffset LogTimestamp { get; set; }
     public string MessageDetail { get; set; } = string.Empty;
+    public string Env { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

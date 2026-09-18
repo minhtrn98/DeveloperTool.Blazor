@@ -3,15 +3,15 @@ using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Models;
 
 namespace TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Services;
 
-public sealed class PickupTaskTraceLogStorageService(IDbContextFactory<ApplicationDbContext> dbContextFactory)
+public sealed class PickupTaskTraceLogStorageService(IDbContextFactory<ApplicationDbContext> dbContextFactory, IWebHostEnvironment webHostEnvironment)
 {
     public async Task<bool> SaveIfNewAsync(PickupTaskTraceLogEntry entry, CancellationToken cancellationToken)
     {
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
-            INSERT INTO pickup_task_trace_logs (log_id, trace_id, span_id, log_timestamp, pickup_task_id, delivery_line_id, event_id, message_detail, created_at)
-            VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.PickupTaskId}, {entry.DeliveryLineId}, {entry.EventId}, {entry.MessageDetail}, {DateTimeOffset.UtcNow})
+            INSERT INTO pickup_task_trace_logs (log_id, trace_id, span_id, log_timestamp, pickup_task_id, delivery_line_id, event_id, message_detail, env, created_at)
+            VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.PickupTaskId}, {entry.DeliveryLineId}, {entry.EventId}, {entry.MessageDetail}, {webHostEnvironment.EnvironmentName}, {DateTimeOffset.UtcNow})
             ON CONFLICT (log_id) DO NOTHING;
             """, cancellationToken);
 

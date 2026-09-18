@@ -3,15 +3,15 @@ using TMS.DeveloperTool.Blazor.Features.RouteStop.Models;
 
 namespace TMS.DeveloperTool.Blazor.Features.RouteStop.Services;
 
-public sealed class RouteStopTraceLogStorageService(IDbContextFactory<ApplicationDbContext> dbContextFactory)
+public sealed class RouteStopTraceLogStorageService(IDbContextFactory<ApplicationDbContext> dbContextFactory, IWebHostEnvironment webHostEnvironment)
 {
     public async Task<bool> SaveIfNewAsync(RouteStopTraceLogEntry entry, CancellationToken cancellationToken)
     {
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
-            INSERT INTO route_stop_trace_logs (log_id, trace_id, span_id, log_timestamp, action, driver, office, event_id, vehicle_id, assignment_id, message_detail, created_at)
-            VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.Action}, {entry.Driver}, {entry.Office}, {entry.EventId}, {entry.VehicleId}, {entry.AssignmentId}, {entry.MessageDetail}, {DateTimeOffset.UtcNow})
+            INSERT INTO route_stop_trace_logs (log_id, trace_id, span_id, log_timestamp, action, driver, office, event_id, vehicle_id, assignment_id, message_detail, env, created_at)
+            VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.Action}, {entry.Driver}, {entry.Office}, {entry.EventId}, {entry.VehicleId}, {entry.AssignmentId}, {entry.MessageDetail}, {webHostEnvironment.EnvironmentName}, {DateTimeOffset.UtcNow})
             ON CONFLICT (log_id) DO NOTHING;
             """, cancellationToken);
 

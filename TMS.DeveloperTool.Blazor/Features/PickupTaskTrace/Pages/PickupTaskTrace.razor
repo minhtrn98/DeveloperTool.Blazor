@@ -3,11 +3,13 @@
 @using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services
 @using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Models
 @using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Services
+@using TMS.DeveloperTool.Blazor.Infrastructure.Constants
 @inject PickupTaskTraceLogQueryService LogQueryService
 @inject PickupTaskTraceLogStorageService StorageService
 @inject EventService EventService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
+@inject IWebHostEnvironment WebHostEnvironment
 
 <AppPageTitle MenuName="Điều tin" />
 
@@ -35,12 +37,15 @@
                        OnClick="StopTrace" Disabled="@(!isTracing)">
                 Stop trace
             </MudButton>
-            <MudButton Variant="@(autoSendToQueue ? Variant.Filled : Variant.Outlined)"
-                       Color="@(autoSendToQueue ? Color.Success : Color.Default)"
-                       StartIcon="@(autoSendToQueue ? Icons.Material.Filled.Sync : Icons.Material.Filled.SyncDisabled)"
-                       OnClick="ToggleAutoSendToQueue">
-                Auto bắn Pickup Task Queue: @(autoSendToQueue ? "ON" : "OFF")
-            </MudButton>
+            @if (CanSendToQueue)
+            {
+                <MudButton Variant="@(autoSendToQueue ? Variant.Filled : Variant.Outlined)"
+                           Color="@(autoSendToQueue ? Color.Success : Color.Default)"
+                           StartIcon="@(autoSendToQueue ? Icons.Material.Filled.Sync : Icons.Material.Filled.SyncDisabled)"
+                           OnClick="ToggleAutoSendToQueue">
+                    Auto bắn Pickup Task Queue: @(autoSendToQueue ? "ON" : "OFF")
+                </MudButton>
+            }
 
             @if (isTracing)
             {
@@ -80,7 +85,10 @@
                     <MudTh>Pick Effort Type</MudTh>
                     <MudTh>Trace Id</MudTh>
                     <MudTh>Message Detail</MudTh>
-                    <MudTh>Pickup Task Queue</MudTh>
+                    @if (CanSendToQueue)
+                    {
+                        <MudTh>Pickup Task Queue</MudTh>
+                    }
                 </HeaderContent>
                 <RowTemplate>
                     @{ PickupTaskMessageFields fields = PickupTaskMessageFieldsParser.Parse(context.MessageDetail); }
@@ -99,11 +107,14 @@
                         <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Color="Color.Secondary" Size="Size.Small"
                                        OnClick="@(() => CopyMessageDetailAsync(context.MessageDetail))" />
                     </MudTd>
-                    <MudTd DataLabel="Pickup Task Queue">
-                        <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary" Size="Size.Small"
-                                       Disabled="@sendingLogIds.Contains(context.LogId)"
-                                       OnClick="@(() => SendToPickupTaskQueueAsync(context))" />
-                    </MudTd>
+                    @if (CanSendToQueue)
+                    {
+                        <MudTd DataLabel="Pickup Task Queue">
+                            <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary" Size="Size.Small"
+                                           Disabled="@sendingLogIds.Contains(context.LogId)"
+                                           OnClick="@(() => SendToPickupTaskQueueAsync(context))" />
+                        </MudTd>
+                    }
                 </RowTemplate>
             </MudTable>
         }
@@ -118,6 +129,8 @@
     private bool isTracing;
     private bool autoSendToQueue;
     private string? lastError;
+
+    private bool CanSendToQueue => WebHostEnvironment.IsEnvironment(ApplicationConstants.EnvironmentNames.Local);
 
     private readonly List<PickupTaskTraceLogEntry> rows = [];
     private readonly HashSet<string> seenLogIds = new(StringComparer.Ordinal);

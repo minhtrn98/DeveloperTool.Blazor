@@ -35,7 +35,6 @@ public static class DatabaseServiceExtensions
     /// </summary>
     public static IServiceCollection AddCachingServices(this IServiceCollection services)
     {
-        services.AddSingleton<CacheService>();
         services.AddScoped<BrowserContext>();
         return services;
     }
@@ -45,10 +44,7 @@ public static class DatabaseServiceExtensions
     /// </summary>
     public static IServiceCollection AddTmsDatabases(this IServiceCollection services)
     {
-        services.AddTMSDbQuery("DriverDb");
         services.AddTMSDbQuery("FleetDb");
-        services.AddTMSDbQuery("RouteDb");
-        services.AddTMSDbQuery("PlanningDb");
         services.AddTMSDbQuery("OrderDb");
         return services;
     }
@@ -58,9 +54,7 @@ public static class DatabaseServiceExtensions
     /// </summary>
     public static IServiceCollection AddRepositories(this IServiceCollection services)
     {
-        services.AddScoped<DriverRepository>();
         services.AddScoped<FleetRepository>();
-        services.AddScoped<PlanningRepository>();
         services.AddScoped<OrderRepository>();
         return services;
     }

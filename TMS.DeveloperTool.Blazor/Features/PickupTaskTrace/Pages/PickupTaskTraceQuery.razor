@@ -33,6 +33,7 @@
             <HeaderContent>
                 <MudTh>STT</MudTh>
                 <MudTh>Thời gian</MudTh>
+                <MudTh>Env</MudTh>
                 <MudTh>Mã điều tin</MudTh>
                 <MudTh>Dispatch Type</MudTh>
                 <MudTh>Dispatch Method</MudTh>
@@ -48,6 +49,7 @@
                 @{ PickupTaskMessageFields fields = PickupTaskMessageFieldsParser.Parse(context.MessageDetail); }
                 <MudTd DataLabel="STT">@GetRowIndex(context)</MudTd>
                 <MudTd DataLabel="Thời gian">@context.LogTimestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
+                <MudTd DataLabel="Env">@context.Env</MudTd>
                 <MudTd DataLabel="Mã điều tin">@context.PickupTaskId</MudTd>
                 <MudTd DataLabel="Dispatch Type">@fields.DispatchType</MudTd>
                 <MudTd DataLabel="Dispatch Method">@fields.DispatchMethod</MudTd>

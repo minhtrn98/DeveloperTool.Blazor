@@ -3,15 +3,15 @@ using TMS.DeveloperTool.Blazor.Features.OrderStep1.Models;
 
 namespace TMS.DeveloperTool.Blazor.Features.OrderStep1.Services;
 
-public sealed class OrderStep1TraceLogStorageService(IDbContextFactory<ApplicationDbContext> dbContextFactory)
+public sealed class OrderStep1TraceLogStorageService(IDbContextFactory<ApplicationDbContext> dbContextFactory, IWebHostEnvironment webHostEnvironment)
 {
     public async Task<bool> SaveIfNewAsync(OrderStep1TraceLogEntry entry, CancellationToken cancellationToken)
     {
         await using ApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
-            INSERT INTO order_step1_trace_logs (log_id, order_id, trace_id, span_id, log_timestamp, message_detail, created_at)
-            VALUES ({entry.LogId}, {entry.OrderId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.MessageDetail}, {DateTimeOffset.UtcNow})
+            INSERT INTO order_step1_trace_logs (log_id, order_id, trace_id, span_id, log_timestamp, message_detail, env, created_at)
+            VALUES ({entry.LogId}, {entry.OrderId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.MessageDetail}, {webHostEnvironment.EnvironmentName}, {DateTimeOffset.UtcNow})
             ON CONFLICT (log_id) DO NOTHING;
             """, cancellationToken);
 

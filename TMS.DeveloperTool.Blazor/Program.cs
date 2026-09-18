@@ -1,10 +1,7 @@
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Configure environment-specific settings
-if (builder.Environment.IsDevelopmentOrLocal())
-{
-    builder.WebHost.UseStaticWebAssets();
-}
+builder.WebHost.UseStaticWebAssets();
 
 // Configure logging
 builder.ConfigureSerilog();

@@ -4,8 +4,6 @@ namespace TMS.DeveloperTool.Blazor.Infrastructure.Data;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
-    public DbSet<Vehicle> Vehicles { get; set; }
-    public DbSet<Employee> Employees { get; set; }
     public DbSet<OrderStep1TraceLog> OrderStep1TraceLogs { get; set; }
     public DbSet<RouteStopTraceLog> RouteStopTraceLogs { get; set; }
     public DbSet<PickupTaskTraceLog> PickupTaskTraceLogs { get; set; }
@@ -16,12 +14,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         base.OnModelCreating(modelBuilder);
 
         // Configure table names to match PostgreSQL schema (lowercase with underscores)
-        modelBuilder.Entity<Vehicle>()
-            .ToTable("vehicles");
-
-        modelBuilder.Entity<Employee>()
-            .ToTable("employees");
-
         modelBuilder.Entity<OrderStep1TraceLog>()
             .ToTable("order_step1_trace_logs");
 
@@ -35,24 +27,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .ToTable("log_api_tokens");
 
         // Configure column names to match PostgreSQL schema
-        modelBuilder.Entity<Vehicle>(entity =>
-        {
-            entity.Property(e => e.LicensePlate).HasColumnName("license_plate");
-            entity.Property(e => e.LastOdo).HasColumnName("last_odo");
-            entity.Property(e => e.IsMoving).HasColumnName("is_moving");
-        });
-
-        modelBuilder.Entity<Employee>(entity =>
-        {
-            entity.Property(e => e.EmployeeId).HasColumnName("employee_id");
-            entity.Property(e => e.Name).HasColumnName("name");
-            entity.Property(e => e.BearerToken).HasColumnName("bearer_token");
-            entity.Property(e => e.TokenExpiredAt).HasColumnName("token_expired_at");
-            entity.Property(e => e.Code).HasColumnName("code");
-            entity.Ignore(e => e.Email);
-            entity.Ignore(e => e.Phone);
-        });
-
         modelBuilder.Entity<OrderStep1TraceLog>(entity =>
         {
             entity.Property(e => e.Id).HasColumnName("id");
@@ -62,6 +36,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.SpanId).HasColumnName("span_id");
             entity.Property(e => e.LogTimestamp).HasColumnName("log_timestamp");
             entity.Property(e => e.MessageDetail).HasColumnName("message_detail");
+            entity.Property(e => e.Env).HasColumnName("env");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.LogId).IsUnique();
         });
@@ -80,6 +55,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.VehicleId).HasColumnName("vehicle_id");
             entity.Property(e => e.AssignmentId).HasColumnName("assignment_id");
             entity.Property(e => e.MessageDetail).HasColumnName("message_detail");
+            entity.Property(e => e.Env).HasColumnName("env");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.LogId).IsUnique();
         });
@@ -95,13 +71,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.DeliveryLineId).HasColumnName("delivery_line_id");
             entity.Property(e => e.EventId).HasColumnName("event_id");
             entity.Property(e => e.MessageDetail).HasColumnName("message_detail");
+            entity.Property(e => e.Env).HasColumnName("env");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.LogId).IsUnique();
         });
 
         modelBuilder.Entity<LogApiToken>(entity =>
         {
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.HasKey(e => e.Env);
+            entity.Property(e => e.Env).HasColumnName("env");
             entity.Property(e => e.AccessToken).HasColumnName("access_token");
             entity.Property(e => e.AccessTokenExpiredAt).HasColumnName("access_token_expired_at");
             entity.Property(e => e.RefreshToken).HasColumnName("refresh_token");

@@ -2,11 +2,13 @@
 @implements IDisposable
 @using TMS.DeveloperTool.Blazor.Features.OrderStep1.Models
 @using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services
+@using TMS.DeveloperTool.Blazor.Infrastructure.Constants
 @inject LogQueryService LogQueryService
 @inject OrderStep1TraceLogStorageService StorageService
 @inject EventService EventService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
+@inject IWebHostEnvironment WebHostEnvironment
 
 <AppPageTitle MenuName="Order Step 1" />
 
@@ -40,12 +42,15 @@
                        OnClick="StopTrace" Disabled="@(!isTracing)">
                 Stop trace
             </MudButton>
-            <MudButton Variant="@(autoSendToQueue ? Variant.Filled : Variant.Outlined)"
-                       Color="@(autoSendToQueue ? Color.Success : Color.Default)"
-                       StartIcon="@(autoSendToQueue ? Icons.Material.Filled.Sync : Icons.Material.Filled.SyncDisabled)"
-                       OnClick="ToggleAutoSendToQueue">
-                Auto bắn Order Queue: @(autoSendToQueue ? "ON" : "OFF")
-            </MudButton>
+            @if (CanSendToQueue)
+            {
+                <MudButton Variant="@(autoSendToQueue ? Variant.Filled : Variant.Outlined)"
+                           Color="@(autoSendToQueue ? Color.Success : Color.Default)"
+                           StartIcon="@(autoSendToQueue ? Icons.Material.Filled.Sync : Icons.Material.Filled.SyncDisabled)"
+                           OnClick="ToggleAutoSendToQueue">
+                    Auto bắn Order Queue: @(autoSendToQueue ? "ON" : "OFF")
+                </MudButton>
+            }
 
             @if (isTracing)
             {
@@ -79,7 +84,10 @@
                     <MudTh>Trace Id</MudTh>
                     <MudTh>Span Id</MudTh>
                     <MudTh>Message Detail</MudTh>
-                    <MudTh>Order Queue</MudTh>
+                    @if (CanSendToQueue)
+                    {
+                        <MudTh>Order Queue</MudTh>
+                    }
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="STT">@(rows.IndexOf(context) + 1)</MudTd>
@@ -91,11 +99,14 @@
                         <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Color="Color.Secondary" Size="Size.Small"
                                        OnClick="@(() => CopyMessageDetailAsync(context.MessageDetail))" />
                     </MudTd>
-                    <MudTd DataLabel="Order Queue">
-                        <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary" Size="Size.Small"
-                                       Disabled="@sendingLogIds.Contains(context.LogId)"
-                                       OnClick="@(() => SendToOrderQueueAsync(context))" />
-                    </MudTd>
+                    @if (CanSendToQueue)
+                    {
+                        <MudTd DataLabel="Order Queue">
+                            <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary" Size="Size.Small"
+                                           Disabled="@sendingLogIds.Contains(context.LogId)"
+                                           OnClick="@(() => SendToOrderQueueAsync(context))" />
+                        </MudTd>
+                    }
                 </RowTemplate>
             </MudTable>
         }
@@ -112,6 +123,8 @@
     private bool isTracing;
     private bool autoSendToQueue;
     private string? lastError;
+
+    private bool CanSendToQueue => WebHostEnvironment.IsEnvironment(ApplicationConstants.EnvironmentNames.Local);
 
     private readonly List<OrderStep1TraceLogEntry> rows = [];
     private readonly HashSet<string> seenLogIds = new(StringComparer.Ordinal);

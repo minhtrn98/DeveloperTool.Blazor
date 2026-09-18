@@ -14,5 +14,6 @@ public sealed class RouteStopTraceLog
     public string VehicleId { get; set; } = string.Empty;
     public string AssignmentId { get; set; } = string.Empty;
     public string MessageDetail { get; set; } = string.Empty;
+    public string Env { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
