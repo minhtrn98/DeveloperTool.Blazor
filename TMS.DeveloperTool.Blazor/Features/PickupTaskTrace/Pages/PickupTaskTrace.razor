@@ -5,6 +5,7 @@
 @using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Services
 @inject PickupTaskTraceLogQueryService LogQueryService
 @inject PickupTaskTraceLogStorageService StorageService
+@inject EventService EventService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 
@@ -33,6 +34,12 @@
             <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.Stop"
                        OnClick="StopTrace" Disabled="@(!isTracing)">
                 Stop trace
+            </MudButton>
+            <MudButton Variant="@(autoSendToQueue ? Variant.Filled : Variant.Outlined)"
+                       Color="@(autoSendToQueue ? Color.Success : Color.Default)"
+                       StartIcon="@(autoSendToQueue ? Icons.Material.Filled.Sync : Icons.Material.Filled.SyncDisabled)"
+                       OnClick="ToggleAutoSendToQueue">
+                Auto bắn Pickup Task Queue: @(autoSendToQueue ? "ON" : "OFF")
             </MudButton>
 
             @if (isTracing)
@@ -73,6 +80,7 @@
                     <MudTh>Pick Effort Type</MudTh>
                     <MudTh>Trace Id</MudTh>
                     <MudTh>Message Detail</MudTh>
+                    <MudTh>Pickup Task Queue</MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     @{ PickupTaskMessageFields fields = PickupTaskMessageFieldsParser.Parse(context.MessageDetail); }
@@ -91,6 +99,11 @@
                         <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Color="Color.Secondary" Size="Size.Small"
                                        OnClick="@(() => CopyMessageDetailAsync(context.MessageDetail))" />
                     </MudTd>
+                    <MudTd DataLabel="Pickup Task Queue">
+                        <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary" Size="Size.Small"
+                                       Disabled="@sendingLogIds.Contains(context.LogId)"
+                                       OnClick="@(() => SendToPickupTaskQueueAsync(context))" />
+                    </MudTd>
                 </RowTemplate>
             </MudTable>
         }
@@ -103,10 +116,12 @@
     private DateTime? startDate = DateTime.Today;
     private TimeSpan? startTimeOfDay = DateTime.Now.TimeOfDay;
     private bool isTracing;
+    private bool autoSendToQueue;
     private string? lastError;
 
     private readonly List<PickupTaskTraceLogEntry> rows = [];
     private readonly HashSet<string> seenLogIds = new(StringComparer.Ordinal);
+    private readonly HashSet<string> sendingLogIds = new(StringComparer.Ordinal);
     private DateTimeOffset nextQueryStart;
 
     private CancellationTokenSource? traceCts;
@@ -141,6 +156,11 @@
     {
         traceCts?.Cancel();
         isTracing = false;
+    }
+
+    private void ToggleAutoSendToQueue()
+    {
+        autoSendToQueue = !autoSendToQueue;
     }
 
     private async Task RunTraceLoopAsync(CancellationToken cancellationToken)
@@ -197,10 +217,46 @@
 
                 await StorageService.SaveIfNewAsync(entry, cancellationToken);
                 rows.Insert(0, entry);
+
+                if (autoSendToQueue)
+                {
+                    await AutoSendToQueueAsync(entry, cancellationToken);
+                }
+
                 await InvokeAsync(StateHasChanged);
             }
 
             nextQueryStart = chunkEnd;
+        }
+    }
+
+    private async Task AutoSendToQueueAsync(PickupTaskTraceLogEntry entry, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await EventService.PublishPickupTaskEvent(entry.MessageDetail, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            lastError = $"Auto bắn queue thất bại (pickup task {entry.PickupTaskId}): {ex.Message}";
+        }
+    }
+
+    private async Task SendToPickupTaskQueueAsync(PickupTaskTraceLogEntry entry)
+    {
+        sendingLogIds.Add(entry.LogId);
+        try
+        {
+            await EventService.PublishPickupTaskEvent(entry.MessageDetail);
+            Snackbar.Add($"Đã bắn message của điều tin {entry.PickupTaskId} vào pickuptasks_queue.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Bắn vào pickuptasks_queue thất bại: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            sendingLogIds.Remove(entry.LogId);
         }
     }
 
