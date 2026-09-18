@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using StackExchange.Redis;
-using TMS.DeveloperTool.Blazor.Features.DriverChange.Services;
 using TMS.DeveloperTool.Blazor.Infrastructure.Security;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Extensions;
@@ -8,26 +6,10 @@ namespace TMS.DeveloperTool.Blazor.Infrastructure.Extensions;
 public static class DatabaseServiceExtensions
 {
     /// <summary>
-    /// Adds Redis and database services.
+    /// Adds database services.
     /// </summary>
     public static IServiceCollection AddDatabaseServices(this IServiceCollection services)
     {
-        // Redis Multiplexer
-        services.AddSingleton<IConnectionMultiplexer>(provider =>
-        {
-            MyRedisOptions redisOptions = provider.GetRequiredService<MyRedisOptions>();
-            ConfigurationOptions configuration = ConfigurationOptions.Parse(redisOptions.ConnectionString, true);
-            configuration.Password = redisOptions.Password;
-            configuration.AbortOnConnectFail = redisOptions.AbortOnConnectFail;
-            configuration.ConnectRetry = redisOptions.ConnectRetry;
-            configuration.ConnectTimeout = redisOptions.ConnectTimeout;
-            configuration.SyncTimeout = redisOptions.SyncTimeout;
-            configuration.AsyncTimeout = redisOptions.AsyncTimeout;
-            configuration.DefaultDatabase = redisOptions.Database;
-
-            return ConnectionMultiplexer.Connect(configuration);
-        });
-
         // Application DbContext — registered via factory (not AddDbContext) so every
         // consumer creates its own short-lived context instance per operation instead of
         // sharing one scoped instance for the whole Blazor Server circuit. A single scoped
@@ -53,7 +35,6 @@ public static class DatabaseServiceExtensions
     /// </summary>
     public static IServiceCollection AddCachingServices(this IServiceCollection services)
     {
-        services.AddSingleton<RequestChangeDriverMonitorService>();
         services.AddSingleton<CacheService>();
         services.AddScoped<BrowserContext>();
         return services;
@@ -69,7 +50,6 @@ public static class DatabaseServiceExtensions
         services.AddTMSDbQuery("RouteDb");
         services.AddTMSDbQuery("PlanningDb");
         services.AddTMSDbQuery("OrderDb");
-        services.AddTMSDbQuery("TrackingDb");
         return services;
     }
 
@@ -80,11 +60,8 @@ public static class DatabaseServiceExtensions
     {
         services.AddScoped<DriverRepository>();
         services.AddScoped<FleetRepository>();
-        services.AddScoped<RouteRepository>();
         services.AddScoped<PlanningRepository>();
         services.AddScoped<OrderRepository>();
-        services.AddScoped<ManifestRepository>();
-        services.AddScoped<TrackingRepository>();
         return services;
     }
 }

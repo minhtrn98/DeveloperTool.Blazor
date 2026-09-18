@@ -1,165 +1,18 @@
-﻿@using System.Net
-@using System.Net.Sockets
 @using TMS.DeveloperTool.Blazor.Infrastructure.Constants
-@inject IWebHostEnvironment WebHostEnvironment
-@inject IHttpContextAccessor HttpContextAccessor
-@inject MenuVisibilityOptions MenuVisibilityOptions
 
 <MudNavMenu>
-    @if (ShouldShow(ApplicationConstants.MenuKeys.OrderStep1Trace) ||
-        ShouldShow(ApplicationConstants.MenuKeys.OrderStep1Timeline))
-    {
-        <MudNavGroup Title="Order Step 1" Expanded="false">
-            @if (ShouldShow(ApplicationConstants.MenuKeys.OrderStep1Trace))
-            {
-                <MudNavLink Href="@ApplicationConstants.Routes.OrderStep1Trace" Match="NavLinkMatch.All">Trace log</MudNavLink>
-            }
-            @if (ShouldShow(ApplicationConstants.MenuKeys.OrderStep1Timeline))
-            {
-                <MudNavLink Href="@ApplicationConstants.Routes.OrderStep1Timeline" Match="NavLinkMatch.All">Timeline trạng thái
-                </MudNavLink>
-            }
-        </MudNavGroup>
-    }
+    <MudNavGroup Title="Order Step 1" Expanded="false">
+        <MudNavLink Href="@ApplicationConstants.Routes.OrderStep1Trace" Match="NavLinkMatch.All">Trace log</MudNavLink>
+        <MudNavLink Href="@ApplicationConstants.Routes.OrderStep1Timeline" Match="NavLinkMatch.All">Timeline trạng thái</MudNavLink>
+    </MudNavGroup>
 
-    @if (ShouldShow(ApplicationConstants.MenuKeys.RouteStopTrace) ||
-        ShouldShow(ApplicationConstants.MenuKeys.RouteStopQuery))
-    {
-        <MudNavGroup Title="Route Stop" Expanded="false">
-            @if (ShouldShow(ApplicationConstants.MenuKeys.RouteStopTrace))
-            {
-                <MudNavLink Href="@ApplicationConstants.Routes.RouteStopTrace" Match="NavLinkMatch.All">Trace log</MudNavLink>
-            }
-            @if (ShouldShow(ApplicationConstants.MenuKeys.RouteStopQuery))
-            {
-                <MudNavLink Href="@ApplicationConstants.Routes.RouteStopQuery" Match="NavLinkMatch.All">Tra cứu log</MudNavLink>
-            }
-        </MudNavGroup>
-    }
+    <MudNavGroup Title="Route Stop" Expanded="false">
+        <MudNavLink Href="@ApplicationConstants.Routes.RouteStopTrace" Match="NavLinkMatch.All">Trace log</MudNavLink>
+        <MudNavLink Href="@ApplicationConstants.Routes.RouteStopQuery" Match="NavLinkMatch.All">Tra cứu log</MudNavLink>
+    </MudNavGroup>
 
-    @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTaskTrace) ||
-        ShouldShow(ApplicationConstants.MenuKeys.PickupTaskTraceQuery))
-    {
-        <MudNavGroup Title="Điều tin" Expanded="false">
-            @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTaskTrace))
-            {
-                <MudNavLink Href="@ApplicationConstants.Routes.PickupTaskTrace" Match="NavLinkMatch.All">Trace log</MudNavLink>
-            }
-            @if (ShouldShow(ApplicationConstants.MenuKeys.PickupTaskTraceQuery))
-            {
-                <MudNavLink Href="@ApplicationConstants.Routes.PickupTaskTraceQuery" Match="NavLinkMatch.All">Tra cứu log</MudNavLink>
-            }
-        </MudNavGroup>
-    }
-
-    @if (ShouldShow(ApplicationConstants.MenuKeys.ManifestDashboard))
-    {
-        <MudNavLink Href="@ApplicationConstants.Routes.ManifestDashboard" Match="NavLinkMatch.All">Sổ phát</MudNavLink>
-    }
-
-    @if (ShouldShow(ApplicationConstants.MenuKeys.OrderItemJourney))
-    {
-        <MudNavLink Href="@ApplicationConstants.Routes.OrderItemJourney" Match="NavLinkMatch.All">Hành trình vận đơn</MudNavLink>
-    }
+    <MudNavGroup Title="Điều tin" Expanded="false">
+        <MudNavLink Href="@ApplicationConstants.Routes.PickupTaskTrace" Match="NavLinkMatch.All">Trace log</MudNavLink>
+        <MudNavLink Href="@ApplicationConstants.Routes.PickupTaskTraceQuery" Match="NavLinkMatch.All">Tra cứu log</MudNavLink>
+    </MudNavGroup>
 </MudNavMenu>
-
-    @code {
-    private readonly string[] _allMenuKeys =
-    [
-        ApplicationConstants.MenuKeys.OrderStep1Trace,
-        ApplicationConstants.MenuKeys.OrderStep1Timeline,
-        ApplicationConstants.MenuKeys.RouteStopTrace,
-        ApplicationConstants.MenuKeys.RouteStopQuery,
-        ApplicationConstants.MenuKeys.PickupTaskTrace,
-        ApplicationConstants.MenuKeys.PickupTaskTraceQuery,
-        ApplicationConstants.MenuKeys.ManifestDashboard,
-        ApplicationConstants.MenuKeys.OrderItemJourney
-    ];
-
-    private HashSet<string> _allowedMenusForCurrentRequest = new (StringComparer.OrdinalIgnoreCase);
-
-    protected override void OnInitialized()
-    {
-        bool isLocal = WebHostEnvironment.IsEnvironment(ApplicationConstants.EnvironmentNames.Local);
-        if (!isLocal)
-        {
-            _allowedMenusForCurrentRequest = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            return;
-        }
-
-        bool isLocalRequest = IsLocalRequest();
-        string[] allowedMenuList = isLocalRequest ? _allMenuKeys : MenuVisibilityOptions.LocalNonLocalIpVisibleMenus;
-        _allowedMenusForCurrentRequest = new HashSet<string>(allowedMenuList, StringComparer.OrdinalIgnoreCase);
-    }
-
-    private bool ShouldShow(string menuKey)
-    {
-        return _allowedMenusForCurrentRequest.Contains(menuKey);
-    }
-
-    private bool IsLocalRequest()
-    {
-        IPAddress? remoteIp = ResolveClientIpAddress();
-        if (remoteIp is null)
-        {
-            return false;
-        }
-
-        remoteIp = NormalizeIp(remoteIp);
-        if (IPAddress.IsLoopback(remoteIp))
-        {
-            return true;
-        }
-
-        foreach (IPAddress serverIp in GetServerIpAddresses())
-        {
-            if (NormalizeIp(serverIp).Equals(remoteIp))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private IPAddress? ResolveClientIpAddress()
-    {
-        HttpContext? context = HttpContextAccessor.HttpContext;
-        if (context is null)
-        {
-            return null;
-        }
-
-        string? forwardedFor = context.Request.Headers[ApplicationConstants.HttpHeaders.XForwardedFor].FirstOrDefault();
-        if (!string.IsNullOrWhiteSpace(forwardedFor))
-        {
-            string candidate = forwardedFor.Split(',')[0].Trim();
-            if (IPAddress.TryParse(candidate, out IPAddress? forwardedIp))
-            {
-                return forwardedIp;
-            }
-        }
-
-        return context.Connection.RemoteIpAddress;
-    }
-
-    private static IPAddress NormalizeIp(IPAddress ip)
-    {
-        return ip.IsIPv4MappedToIPv6 ? ip.MapToIPv4() : ip;
-    }
-
-    private static IEnumerable<IPAddress> GetServerIpAddresses()
-    {
-        IPAddress[] hostAddresses = Dns.GetHostAddresses(Dns.GetHostName());
-        foreach (IPAddress address in hostAddresses)
-        {
-            if (address.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6)
-            {
-                yield return address;
-            }
-        }
-
-        yield return IPAddress.Loopback;
-        yield return IPAddress.IPv6Loopback;
-    }
-}

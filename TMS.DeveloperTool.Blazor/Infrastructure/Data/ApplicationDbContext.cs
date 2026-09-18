@@ -6,9 +6,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 {
     public DbSet<Vehicle> Vehicles { get; set; }
     public DbSet<Employee> Employees { get; set; }
-    public DbSet<RouteCheckPoint> RouteCheckPoints { get; set; }
-    public DbSet<RouteCheckPointTemplate> RouteCheckPointTemplates { get; set; }
-    public DbSet<RequestHistory> RequestHistories { get; set; }
     public DbSet<OrderStep1TraceLog> OrderStep1TraceLogs { get; set; }
     public DbSet<RouteStopTraceLog> RouteStopTraceLogs { get; set; }
     public DbSet<PickupTaskTraceLog> PickupTaskTraceLogs { get; set; }
@@ -25,15 +22,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Employee>()
             .ToTable("employees");
 
-        modelBuilder.Entity<RouteCheckPointTemplate>()
-            .ToTable("route_checkpoint_templates");
-
-        modelBuilder.Entity<RouteCheckPoint>()
-            .ToTable("route_checkpoints");
-
-        modelBuilder.Entity<RequestHistory>()
-            .ToTable("request_histories");
-
         modelBuilder.Entity<OrderStep1TraceLog>()
             .ToTable("order_step1_trace_logs");
 
@@ -47,24 +35,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .ToTable("log_api_tokens");
 
         // Configure column names to match PostgreSQL schema
-        modelBuilder.Entity<RouteCheckPointTemplate>(entity =>
-        {
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Name).HasColumnName("name");
-            entity.Property(e => e.JumpSeconds).HasColumnName("jump_seconds");
-        });
-
-        modelBuilder.Entity<RouteCheckPoint>(entity =>
-        {
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Lon).HasColumnName("lon");
-            entity.Property(e => e.Lat).HasColumnName("lat");
-            entity.Property(e => e.Address).HasColumnName("address");
-            entity.Property(e => e.Km).HasColumnName("km");
-            entity.Property(e => e.Order).HasColumnName("order");
-            entity.Property(e => e.TemplateId).HasColumnName("template_id");
-        });
-
         modelBuilder.Entity<Vehicle>(entity =>
         {
             entity.Property(e => e.LicensePlate).HasColumnName("license_plate");
@@ -81,19 +51,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.Code).HasColumnName("code");
             entity.Ignore(e => e.Email);
             entity.Ignore(e => e.Phone);
-        });
-
-        modelBuilder.Entity<RequestHistory>(entity =>
-        {
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Name).HasColumnName("name");
-            entity.Property(e => e.Method).HasColumnName("method");
-            entity.Property(e => e.Service).HasColumnName("service");
-            entity.Property(e => e.Endpoint).HasColumnName("endpoint");
-            entity.Property(e => e.JsonBody).HasColumnName("json_body");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-            entity.HasIndex(e => new { e.Name, e.Method, e.Service, e.Endpoint, e.JsonBody })
-                .IsUnique();
         });
 
         modelBuilder.Entity<OrderStep1TraceLog>(entity =>

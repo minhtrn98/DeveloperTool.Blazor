@@ -1,11 +1,8 @@
-﻿using DriverDeptRecord = (System.Guid DriverId, string DeptCode);
-using DriverRecord = (System.Guid Id, string Name, string Code);
-using DriverRoleRecord = (System.Guid DriverId, System.Guid RoleId, string RoleName, long PermissionsVersion);
-using RolePermissionRecord = (System.Guid RoleId, string PermissionKey);
+﻿using DriverRecord = (System.Guid Id, string Name, string Code);
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Repositories;
 
-public sealed class DriverRepository([FromKeyedServices("DriverDb")] ApplicationDbQuery dbQuery, CacheService cacheService)
+public sealed class DriverRepository([FromKeyedServices("DriverDb")] ApplicationDbQuery dbQuery)
 {
     public async Task<Dictionary<Guid, string>> GetDriverNamesAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
     {
@@ -16,28 +13,6 @@ public sealed class DriverRepository([FromKeyedServices("DriverDb")] Application
         ";
         IEnumerable<DriverRecord> drivers = await dbQuery.QueryAsync<DriverRecord>(sql, new { Ids = ids }, cancellationToken);
         return drivers.ToDictionary(d => d.Id, d => d.Name);
-    }
-
-    public async Task<Dictionary<Guid, EmployeeContactDto>> GetEmployeeContactsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
-    {
-        const string sql = """
-            SELECT id as "Id", email as "Email", phone as "Phone"
-            FROM public.employees
-            WHERE id = ANY(@Ids) and is_active = true
-        """;
-        IEnumerable<EmployeeContactDto> contacts = await dbQuery.QueryAsync<EmployeeContactDto>(sql, new { Ids = ids }, cancellationToken);
-        return contacts.ToDictionary(d => d.Id, d => d);
-    }
-
-    public async Task<EmployeeDto?> GetEmployeeByCodeAsync(string code, CancellationToken cancellationToken)
-    {
-        const string sql = """
-            SELECT id as "Id", name as "Name", code as "Code"
-            FROM public.employees
-            WHERE code = @Code and is_active = true
-        """;
-        EmployeeDto? driver = await dbQuery.FirstOrDefaultAsync<EmployeeDto>(sql, new { Code = code }, cancellationToken);
-        return driver;
     }
 
     public async Task<EmployeeDto?> GetEmployeeByLicenseNoAsync(string licenseNo, CancellationToken cancellationToken)
@@ -51,61 +26,6 @@ public sealed class DriverRepository([FromKeyedServices("DriverDb")] Application
         return driver;
     }
 
-    public async Task<Dictionary<Guid, RoleDto[]>> GetEmployeeRolesAsync(IEnumerable<Guid> driverIds, CancellationToken cancellationToken)
-    {
-        const string sql = """
-            SELECT e.id as "DriverId", r.id as "RoleId", r.name as "RoleName", r.permissions_version as "PermissionsVersion"
-            FROM public.employees e
-            JOIN public.app_user_roles er ON e.id = er.employee_id
-            JOIN public.app_roles r ON er.role_id = r.id
-            WHERE e.id = ANY(@DriverIds) and e.is_active = true
-        """;
-        IEnumerable<DriverRoleRecord> driverRoles = await dbQuery.QueryAsync<DriverRoleRecord>(sql, new { DriverIds = driverIds }, cancellationToken);
-        return driverRoles
-            .GroupBy(dr => dr.DriverId)
-            .ToDictionary(g => g.Key, g => g.Select(dr => new RoleDto(dr.RoleId, dr.RoleName, dr.PermissionsVersion)).ToArray());
-    }
-
-    public async Task<Dictionary<Guid, string[]>> GetEmployeeDepartmentsAsync(IEnumerable<Guid> driverIds, CancellationToken cancellationToken)
-    {
-        const string sql = """
-            SELECT e.id as "DriverId", d.code as "DeptCode"
-            FROM public.employees e
-            JOIN public.app_user_departments ud ON e.id = ud.employee_id
-            JOIN public.departments d ON ud.department_id = d.id
-            WHERE e.id = ANY(@DriverIds) and e.is_active = true
-        """;
-        IEnumerable<DriverDeptRecord> driverDepts = await dbQuery.QueryAsync<DriverDeptRecord>(sql, new { DriverIds = driverIds }, cancellationToken);
-        return driverDepts
-            .GroupBy(dr => dr.DriverId)
-            .ToDictionary(g => g.Key, g => g.Select(dr => dr.DeptCode).ToArray());
-    }
-
-    public async Task<Dictionary<Guid, string[]>> GetAllRolePermissionsAsync(CancellationToken cancellationToken)
-    {
-        const string sql = """
-            select r.id as "RoleId", p.key as "PermissionKey"
-            from public.app_roles r
-            join public.app_role_permissions rp on r.id = rp.role_id
-            join public.app_permissions p on rp.permission_id = p.id
-        """;
-        IEnumerable<RolePermissionRecord> rolePermissions = await dbQuery.QueryAsync<RolePermissionRecord>(sql, null, cancellationToken);
-        return rolePermissions
-            .GroupBy(rp => rp.RoleId)
-            .ToDictionary(g => g.Key, g => g.Select(rp => rp.PermissionKey).ToArray());
-    }
-
-    public async Task<DriverRecord?> GetDriverByIdAsync(Guid id, CancellationToken cancellationToken)
-    {
-        const string sql = @"
-            SELECT id, name, code
-            FROM public.employees
-            WHERE id = @Id
-        ";
-        DriverRecord? driver = await dbQuery.FirstOrDefaultAsync<DriverRecord>(sql, new { Id = id }, cancellationToken);
-        return driver;
-    }
-
     public async Task<List<string>> GetAllPermissionsAsync(CancellationToken cancellationToken)
     {
         const string sql = """
@@ -114,24 +34,5 @@ public sealed class DriverRepository([FromKeyedServices("DriverDb")] Application
         """;
         IEnumerable<string> permissions = await dbQuery.QueryAsync<string>(sql, null, cancellationToken);
         return [.. permissions];
-    }
-
-    public async Task<List<DepartmentDto>> GetDepartmentsAsync(CancellationToken cancellationToken)
-    {
-        IEnumerable<DepartmentDto>? cache = cacheService.GetDepartmentsCache();
-        if (cache != null)
-        {
-            return [.. cache];
-        }
-
-        const string sql = """
-            SELECT id as "Id", code as "Code", name as "Name", company_id as "CompanyId"
-            FROM public.departments
-        """;
-        IEnumerable<DepartmentDto> departments = await dbQuery.QueryAsync<DepartmentDto>(sql, null, cancellationToken);
-
-        cacheService.SetDepartmentsCache(departments);
-
-        return [.. departments];
     }
 }

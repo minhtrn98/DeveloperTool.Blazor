@@ -1,18 +1,5 @@
-﻿@using TMS.DeveloperTool.Blazor.Infrastructure.Http
-@using TMS.DeveloperTool.Blazor.Infrastructure.Security
-@using TMS.DeveloperTool.Blazor.Infrastructure.Messaging
-@using TMS.DeveloperTool.Blazor.Services
-@using TMS.DeveloperTool.Blazor.Components.Dialogs
-@inherits LayoutComponentBase
-@implements IDisposable
-@inject MyEmployeeService MyEmployeeService
-@inject DriverRepository DriverRepository
-@inject ISnackbar Snackbar
+﻿@inherits LayoutComponentBase
 @inject IWebHostEnvironment WebHostEnvironment
-@inject IDialogService DialogService
-@inject CacheService CacheService
-@inject BrowserContext BrowserContext
-@inject DepartmentChangedNotifier DepartmentChangedNotifier
 
 <MudThemeProvider Theme="@_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
@@ -25,40 +12,6 @@
                        OnClick="@((e) => DrawerToggle())" />
         <MudText Typo="Typo.h5" Class="ml-3">TMS DeveloperTools [@CurrentEnvironment]</MudText>
         <MudSpacer />
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(_isGeneratingTokens || _isSyncingDrivers)"
-                   StartIcon="@Icons.Material.Filled.VpnKey" OnClick="GenerateDriverTokensAsync" Class="me-2">
-            @if (_isGeneratingTokens)
-            {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
-                <MudText>Đang tạo token</MudText>
-            }
-            else
-            {
-                <MudText>Tạo token</MudText>
-            }
-        </MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Tertiary" StartIcon="@Icons.Material.Filled.PersonAdd"
-                   OnClick="ShowAddDriverDialog" Class="me-2">
-            <MudText>Thêm NV</MudText>
-        </MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Secondary"
-                   Disabled="@(_isGeneratingTokens || _isSyncingDrivers)" StartIcon="@Icons.Material.Filled.Sync"
-                   OnClick="SyncDriversAsync" Class="me-2">
-            @if (_isSyncingDrivers)
-            {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
-                <MudText>Đang đồng bộ NV</MudText>
-            }
-            else
-            {
-                <MudText>Đồng bộ NV</MudText>
-            }
-        </MudButton>
-        <MudStack Style="width: 400px">
-            <MudAutocomplete T="DepartmentDto" Value="SelectedDepartment" ValueChanged="OnDepartmentChanged"
-                             SearchFunc="SearchDepartments" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<DepartmentDto>"
-                             Label="Department" Variant="Variant.Outlined" Dense="true" Clearable="true" MaxItems="20" />
-        </MudStack>
         <MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@DarkModeToggle" />
     </MudAppBar>
     <MudDrawer id="nav-drawer" @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
@@ -77,13 +30,8 @@
 </div>
 
 @code {
-    private const string DefaultDepartmentCode = "K3B";
     private bool _drawerOpen = true;
     private bool _isDarkMode = true;
-    private bool _isGeneratingTokens;
-    private bool _isSyncingDrivers;
-    private List<DepartmentDto> _departments = [];
-    private DepartmentDto? _selectedDepartment;
     private MudTheme? _theme = null;
     private string CurrentEnvironment => WebHostEnvironment.EnvironmentName;
 
@@ -97,79 +45,6 @@
             PaletteDark = _darkPalette,
             LayoutProperties = new LayoutProperties()
         };
-
-        try
-        {
-            _departments = (await DriverRepository.GetDepartmentsAsync(CancellationToken.None))
-                .OrderBy(x => x.Code)
-                .ThenBy(x => x.Name)
-                .ToList();
-
-            _selectedDepartment = CacheService.GetSessionDepartment(BrowserContext.BrowserId)
-                ?? _departments.FirstOrDefault(x => string.Equals(x.Code, DefaultDepartmentCode, StringComparison.OrdinalIgnoreCase));
-
-            if (_selectedDepartment is not null)
-            {
-                CacheService.SetSessionDepartment(BrowserContext.BrowserId, _selectedDepartment);
-            }
-
-            DepartmentChangedNotifier.OnDepartmentChanged += OnDepartmentChangedFromOtherTab;
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Không tải được danh sách phòng ban: {ex.Message}", Severity.Error);
-        }
-    }
-
-    private DepartmentDto? SelectedDepartment
-    {
-        get => _selectedDepartment;
-        set => _selectedDepartment = value;
-    }
-
-    private Task OnDepartmentChanged(DepartmentDto? value)
-    {
-        SelectedDepartment = value;
-
-        string browserId = BrowserContext.BrowserId ?? string.Empty;
-        if (value is not null)
-        {
-            CacheService.SetSessionDepartment(browserId, value);
-        }
-        else
-        {
-            CacheService.RemoveSessionDepartment(browserId);
-        }
-
-        DepartmentChangedNotifier.Notify(browserId, value);
-
-        return Task.CompletedTask;
-    }
-
-    private void OnDepartmentChangedFromOtherTab(string browserId, DepartmentDto? department)
-    {
-        if (browserId != (BrowserContext.BrowserId ?? string.Empty))
-        {
-            return;
-        }
-
-        // Event fires on a thread-pool thread — must marshal back to the circuit
-        InvokeAsync(() =>
-        {
-            _selectedDepartment = department;
-            StateHasChanged();
-        });
-    }
-
-    public void Dispose()
-    {
-        DepartmentChangedNotifier.OnDepartmentChanged -= OnDepartmentChangedFromOtherTab;
-    }
-
-    private Task<IEnumerable<DepartmentDto>> SearchDepartments(string value, CancellationToken cancellationToken)
-    {
-        IEnumerable<DepartmentDto> results = AutocompleteSearchHelper.SearchByLike(_departments, value);
-        return Task.FromResult(results);
     }
 
     private void DrawerToggle()
@@ -180,69 +55,6 @@
     private void DarkModeToggle()
     {
         _isDarkMode = !_isDarkMode;
-    }
-
-    private async Task ShowAddDriverDialog()
-    {
-        var dialog = await DialogService.ShowAsync<AddDriverDialog>();
-        var result = await dialog.Result;
-    }
-
-    private async Task GenerateDriverTokensAsync()
-    {
-        if (_isGeneratingTokens || _isSyncingDrivers)
-        {
-            return;
-        }
-
-        _isGeneratingTokens = true;
-        try
-        {
-            int updatedCount = await MyEmployeeService.GenerateTokensForAllEmployeesAsync();
-            if (updatedCount == 0)
-            {
-                Snackbar.Add("Tất cả tài xế đã có token.", Severity.Info);
-                return;
-            }
-            Snackbar.Add($"Đã tạo token cho {updatedCount} tài xế.", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Không tạo được token: {ex.Message}", Severity.Error);
-        }
-        finally
-        {
-            _isGeneratingTokens = false;
-        }
-    }
-
-    private async Task SyncDriversAsync()
-    {
-        if (_isGeneratingTokens || _isSyncingDrivers)
-        {
-            return;
-        }
-
-        _isSyncingDrivers = true;
-        try
-        {
-            int insertedCount = await MyEmployeeService.SyncMissingEmployeesFromPickupTaskAsync();
-            if (insertedCount == 0)
-            {
-                Snackbar.Add("Không có tài xế mới để đồng bộ.", Severity.Info);
-                return;
-            }
-
-            Snackbar.Add($"Đã đồng bộ {insertedCount} tài xế.", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Không đồng bộ được tài xế: {ex.Message}", Severity.Error);
-        }
-        finally
-        {
-            _isSyncingDrivers = false;
-        }
     }
 
     private readonly PaletteLight _lightPalette = new()

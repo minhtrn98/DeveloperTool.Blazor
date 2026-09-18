@@ -32,25 +32,6 @@ public static class ApplicationConstants
     public static class Routes
     {
         public const string Home = "/";
-        public const string Pairing = "/pairing";
-        public const string PairingConfirmSwap = "/pairing/confirm-swap";
-        public const string SimulateRoute = "/simulate-route";
-        public const string PickupTasks = "/pickup-tasks";
-        public const string PickupTasksCreateEvent = "/pickup-tasks/create-event";
-        public const string PickupTaskReattribution = "/pickup-tasks/reattribution";
-        public const string TopMovingVehicles = "/top-moving-vehicles";
-        public const string VehicleStatuses = "/vehicle-statuses";
-        public const string RoutingConfig = "/routing-config";
-        public const string DriverChange = "/driver-change";
-        public const string JsonBuilder = "/json-builder";
-        public const string JobTrigger = "/job-trigger";
-        public const string ApiRequest = "/api-request";
-        public const string ManifestOrders = "/manifest/orders";
-        public const string ManifestList = "/manifest/list";
-        public const string ManifestDashboard = "/manifest/dashboard";
-        public const string OrderItemJourney = "/manifest/order-item-journey";
-        public const string LenHangChuyenThu = "/len-hang/chuyen-thu";
-        public const string LenHangBuuKien = "/len-hang/buu-kien";
         public const string OrderStep1Trace = "/order-step1-trace";
         public const string OrderStep1Timeline = "/order-step1-timeline";
         public const string RouteStopTrace = "/route-stop-trace";
@@ -62,36 +43,6 @@ public static class ApplicationConstants
     public static class EnvironmentNames
     {
         public const string Local = "Local";
-    }
-
-    public static class HttpHeaders
-    {
-        public const string XForwardedFor = "X-Forwarded-For";
-    }
-
-    public static class MenuKeys
-    {
-        public const string Home = "Home";
-        public const string Pairing = "Pairing";
-        public const string ConfirmSwap = "ConfirmSwap";
-        public const string SimulateRoute = "SimulateRoute";
-        public const string PickupTasks = "PickupTasks";
-        public const string CreatePickupTaskEvent = "CreatePickupTaskEvent";
-        public const string PickupTaskReattribution = "PickupTaskReattribution";
-        public const string TopMovingVehicles = "TopMovingVehicles";
-        public const string VehicleStatuses = "VehicleStatuses";
-        public const string RoutingConfig = "RoutingConfig";
-        public const string ApiRequest = "ApiRequest";
-        public const string Manifests = "Manifests";
-        public const string ManifestDashboard = "ManifestDashboard";
-        public const string OrderItemJourney = "OrderItemJourney";
-        public const string LenHang = "LenHang";
-        public const string OrderStep1Trace = "OrderStep1Trace";
-        public const string OrderStep1Timeline = "OrderStep1Timeline";
-        public const string RouteStopTrace = "RouteStopTrace";
-        public const string RouteStopQuery = "RouteStopQuery";
-        public const string PickupTaskTrace = "PickupTaskTrace";
-        public const string PickupTaskTraceQuery = "PickupTaskTraceQuery";
     }
 
     /// <summary>

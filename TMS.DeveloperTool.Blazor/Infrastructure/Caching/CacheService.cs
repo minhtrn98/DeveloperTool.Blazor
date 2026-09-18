@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using TMS.DeveloperTool.Blazor.Features.Routing.Models;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Caching;
 
@@ -7,44 +6,6 @@ public sealed class CacheService
 {
     // Implement caching functionalities here using in-memory data structures with singleton lifetime.
     private readonly ConcurrentDictionary<string, object> _cache = new();
-    private readonly ConcurrentDictionary<string, DepartmentDto> _sessionDepartments = new();
-
-    public void SetSessionDepartment(string sessionId, DepartmentDto department)
-        => _sessionDepartments[sessionId] = department;
-
-    public DepartmentDto? GetSessionDepartment(string sessionId)
-        => _sessionDepartments.TryGetValue(sessionId, out DepartmentDto? dept) ? dept : null;
-
-    public void RemoveSessionDepartment(string sessionId)
-        => _sessionDepartments.TryRemove(sessionId, out _);
-
-    public void SetPostOfficesCache(IEnumerable<PostOffice> postOffices)
-    {
-        _cache["PostOffices"] = postOffices;
-    }
-
-    public void SetDepartmentsCache(IEnumerable<DepartmentDto> departmentDtos)
-    {
-        _cache["DepartmentDtos"] = departmentDtos;
-    }
-
-    public IEnumerable<PostOffice>? GetPostOfficesCache()
-    {
-        if (_cache.TryGetValue("PostOffices", out var cachedValue) && cachedValue is IEnumerable<PostOffice> postOffices)
-        {
-            return postOffices;
-        }
-        return null;
-    }
-
-    public IEnumerable<DepartmentDto>? GetDepartmentsCache()
-    {
-        if (_cache.TryGetValue("DepartmentDtos", out var cachedValue) && cachedValue is IEnumerable<DepartmentDto> departmentDtos)
-        {
-            return departmentDtos;
-        }
-        return null;
-    }
 
     public void Set<T>(string key, T value)
     {

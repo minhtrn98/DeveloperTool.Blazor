@@ -10,8 +10,7 @@ public sealed class RabbitMqConfig
     public required string Password { get; init; }
     public List<ExchangeConfig> Exchanges { get; init; } = [];
 
-    public ExchangeConfig GetVehicleEventsExchange() => Exchanges[0];
-    public ExchangeConfig GetPmsEventsExchange() => Exchanges[1];
+    public ExchangeConfig GetPmsEventsExchange() => Exchanges[0];
 }
 
 public sealed class ExchangeConfig
@@ -20,7 +19,6 @@ public sealed class ExchangeConfig
     public required string Type { get; init; }
     public Dictionary<string, QueueConfig> Queues { get; init; } = [];
 
-    public QueueConfig GetVehicleQueue() => Queues["vehicles"];
     public QueueConfig GetPickupTasksQueue() => Queues["pickuptasks"];
     public QueueConfig GetOrdersQueue() => Queues["orders"];
 }

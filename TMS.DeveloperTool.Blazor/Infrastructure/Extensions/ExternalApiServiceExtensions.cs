@@ -1,17 +1,7 @@
-using Refit;
-using TMS.DeveloperTool.Blazor.Features.ApiRequest.Services;
-using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services;
-using TMS.DeveloperTool.Blazor.Features.JsonBuilder.Services.Strategies;
-using TMS.DeveloperTool.Blazor.Features.Manifest.Services;
 using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services;
-using TMS.DeveloperTool.Blazor.Features.Pairing.Services;
-using TMS.DeveloperTool.Blazor.Features.PickupTask.Services;
 using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Services;
 using TMS.DeveloperTool.Blazor.Features.RouteStop.Services;
-using TMS.DeveloperTool.Blazor.Features.Routing.Services;
-using TMS.DeveloperTool.Blazor.Features.Simulation.Services;
 using TMS.DeveloperTool.Blazor.Infrastructure.Http;
-using TMS.DeveloperTool.Blazor.Infrastructure.Security;
 using TMS.DeveloperTool.Blazor.Services;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Extensions;
@@ -24,62 +14,6 @@ public static class ExternalApiServiceExtensions
     public static IServiceCollection AddExternalApis(this IServiceCollection services)
     {
         services.AddHttpClient();
-        services.AddTransient<LoggingHttpHandler>();
-        services.AddTransient<DepartmentHeaderHandler>();
-
-        // Named HttpClient for ApiRequestPage with department headers
-        services.AddHttpClient("ApiRequest")
-            .AddHttpMessageHandler<DepartmentHeaderHandler>()
-            .AddHttpMessageHandler<LoggingHttpHandler>()
-            ;
-
-        // Fleet API with custom Refit settings
-        RefitSettings refitSettings = new(new SystemTextJsonContentSerializer(
-            new System.Text.Json.JsonSerializerOptions
-            {
-                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-            }));
-
-        services.AddRefitClient<IFleetAssignmentApi>(refitSettings)
-            .ConfigureHttpClient((sp, c) =>
-            {
-                ApiUrlsOptions apiUrls = sp.GetRequiredService<ApiUrlsOptions>();
-                c.BaseAddress = new Uri(apiUrls.Fleet);
-            })
-            .AddHttpMessageHandler<DepartmentHeaderHandler>()
-            .AddHttpMessageHandler<LoggingHttpHandler>();
-
-        // Pickup Task API
-        services.AddRefitClient<IPickupTaskApi>(refitSettings)
-            .ConfigureHttpClient((sp, c) =>
-            {
-                ApiUrlsOptions apiUrls = sp.GetRequiredService<ApiUrlsOptions>();
-                c.BaseAddress = new Uri(apiUrls.Order);
-            })
-            .AddHttpMessageHandler<DepartmentHeaderHandler>()
-            .AddHttpMessageHandler<LoggingHttpHandler>();
-
-        // QuanLyXe Vehicle Status API
-        services.AddTransient<QuanLyXeApiKeyHandler>();
-
-        services.AddRefitClient<IVehicleStatusApi>(refitSettings)
-            .ConfigureHttpClient((sp, c) =>
-            {
-                QuanLyXeOptions opts = sp.GetRequiredService<QuanLyXeOptions>();
-                c.BaseAddress = new Uri(opts.BaseUrl);
-            })
-            .AddHttpMessageHandler<QuanLyXeApiKeyHandler>();
-
-        // Manifest API
-        services.AddRefitClient<IManifestApi>(refitSettings)
-            .ConfigureHttpClient((sp, c) =>
-            {
-                ApiUrlsOptions apiUrls = sp.GetRequiredService<ApiUrlsOptions>();
-                c.BaseAddress = new Uri(apiUrls.Order);
-            })
-            .AddHttpMessageHandler<DepartmentHeaderHandler>()
-            .AddHttpMessageHandler<LoggingHttpHandler>();
 
         return services;
     }
@@ -89,21 +23,7 @@ public static class ExternalApiServiceExtensions
     /// </summary>
     public static IServiceCollection AddFeatureServices(this IServiceCollection services)
     {
-        services.AddScoped<FakeVehicleTransportService>();
-        services.AddScoped<RouteCheckPointTemplateService>();
-        services.AddScoped<PairingService>();
-        services.AddScoped<PickupTaskActionService>();
-        services.AddScoped<JobTriggerService>();
-        services.AddScoped<CreatePickupTaskEventService>();
-        services.AddScoped<IJsonTypeMappingStrategy, PickupTaskEventJsonMappingStrategy>();
-        services.AddScoped<JsonBuilderService>();
         services.AddScoped<MyEmployeeService>();
-        services.AddScoped<VehicleStatusService>();
-        services.AddScoped<ApiRequestHistoryService>();
-        services.AddScoped<ApiRequestBodyFormatterService>();
-        services.AddScoped<ApiRequestSwaggerService>();
-        services.AddScoped<ManifestOrderService>();
-        services.AddScoped<DeliveryManifestService>();
         services.AddScoped<LogQueryService>();
         services.AddScoped<OrderStep1TraceLogStorageService>();
         services.AddScoped<RouteStopLogQueryService>();
@@ -112,8 +32,6 @@ public static class ExternalApiServiceExtensions
         services.AddScoped<PickupTaskTraceLogStorageService>();
 
         services.AddSingleton<EventService>();
-        services.AddSingleton<JwtTokenService>();
-        services.AddSingleton<DepartmentChangedNotifier>();
         services.AddSingleton<LogApiTokenProvider>();
 
         return services;

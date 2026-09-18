@@ -1,25 +1,12 @@
-﻿using Newtonsoft.Json;
-using RabbitMQ.Client;
+﻿using RabbitMQ.Client;
 using System.Text;
-using TMS.DeveloperTool.Blazor.Features.Simulation.Models;
+using TMS.DeveloperTool.Blazor.Infrastructure.Constants;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Messaging;
 
-public sealed class EventService(RabbitMqConfig config, ILogger<EventService> logger)
+public sealed class EventService(RabbitMqConfig config, ILogger<EventService> logger, IWebHostEnvironment webHostEnvironment)
 {
     private IConnection? _connection;
-
-    public Task PublishTrackingEvent(VehicleTrackingEvent trackingEvent, CancellationToken cancellationToken = default)
-    {
-        string message = JsonConvert.SerializeObject(trackingEvent, new JsonSerializerSettings
-        {
-            TypeNameHandling = TypeNameHandling.None,
-            Formatting = Formatting.None
-        });
-
-        ExchangeConfig vehiclesExchange = config.GetVehicleEventsExchange();
-        return PublishAsync(vehiclesExchange, vehiclesExchange.GetVehicleQueue(), message, cancellationToken);
-    }
 
     public Task PublishPickupTaskEvent(string message, CancellationToken cancellationToken = default)
     {
@@ -35,6 +22,12 @@ public sealed class EventService(RabbitMqConfig config, ILogger<EventService> lo
 
     private async Task PublishAsync(ExchangeConfig exchange, QueueConfig queue, string message, CancellationToken cancellationToken)
     {
+        if (!webHostEnvironment.IsEnvironment(ApplicationConstants.EnvironmentNames.Local))
+        {
+            logger.LogWarning("Blocked queue publish outside Local environment (current: {Environment}).", webHostEnvironment.EnvironmentName);
+            throw new InvalidOperationException("Chỉ được bắn queue trên môi trường Local.");
+        }
+
         if (_connection == null || !_connection.IsOpen)
         {
             await CreateConnectionAsync();
