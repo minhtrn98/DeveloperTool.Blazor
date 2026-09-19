@@ -27,6 +27,18 @@ public static class DatabaseServiceExtensions
             });
         });
 
+        // Same physical database as ApplicationDbContext, but mapped to the "pro" schema —
+        // keeps trace/token data ingested from Production (e.g. via LogApi) isolated from the
+        // "public" schema data owned by this deployment's own environment.
+        services.AddDbContextFactory<ProApplicationDbContext>((provider, options) =>
+        {
+            ConnectionStringsOptions connectionStrings = provider.GetRequiredService<ConnectionStringsOptions>();
+            options.UseNpgsql(connectionStrings.DeveloperDb, npgsqlOptions =>
+            {
+                npgsqlOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(5L), null);
+            });
+        });
+
         return services;
     }
 

@@ -89,6 +89,7 @@ CREATE TABLE pro.route_stop_trace_logs (
     event_id TEXT NOT NULL,
     vehicle_id TEXT NOT NULL,
     assignment_id TEXT NOT NULL,
+    action_object_id TEXT NOT NULL DEFAULT '',
     message_detail TEXT NOT NULL,
     env TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -123,6 +124,7 @@ CREATE INDEX IF NOT EXISTS idx_pro_order_step1_trace_logs_order_id ON pro.order_
 CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_route_stop_trace_logs_log_id ON pro.route_stop_trace_logs (log_id);
 CREATE INDEX IF NOT EXISTS idx_pro_route_stop_trace_logs_vehicle_id ON pro.route_stop_trace_logs (vehicle_id, log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_pro_route_stop_trace_logs_assignment_id ON pro.route_stop_trace_logs (assignment_id, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_route_stop_trace_logs_action_object_id ON pro.route_stop_trace_logs (action_object_id, log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_pro_route_stop_trace_logs_log_timestamp ON pro.route_stop_trace_logs (log_timestamp DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_pickup_task_trace_logs_log_id ON pro.pickup_task_trace_logs (log_id);
 CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_trace_logs_pickup_task_id ON pro.pickup_task_trace_logs (pickup_task_id, log_timestamp DESC);

@@ -1,13 +1,13 @@
-@page "/order-step1-timeline"
+@page "/pro/order-step1-timeline"
 @using TMS.DeveloperTool.Blazor.Features.OrderStep1.Models
 @using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services
-@inject OrderStep1TraceLogStorageService StorageService
+@inject OrderStep1ProTraceLogStorageService StorageService
 
-<AppPageTitle MenuName="Order Step 1 - Timeline" />
+<AppPageTitle MenuName="Pro - Order Step 1 - Timeline" />
 
 <MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
     <MudPaper Elevation="2" Class="pa-4 mb-4">
-        <MudText Typo="Typo.h4" Class="mb-4">Order Step 1 - Timeline trạng thái</MudText>
+        <MudText Typo="Typo.h4" Class="mb-4">Pro - Order Step 1 - Timeline trạng thái</MudText>
 
         <MudAutocomplete T="OrderIdOption" Value="selectedOrder" ValueChanged="OnOrderChangedAsync"
                           SearchFunc="SearchOrderIds" Label="Order Id" Variant="Variant.Outlined"

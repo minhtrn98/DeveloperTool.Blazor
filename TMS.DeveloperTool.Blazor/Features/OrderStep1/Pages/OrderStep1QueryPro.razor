@@ -1,0 +1,74 @@
+@page "/pro/order-step1-query"
+@using TMS.DeveloperTool.Blazor.Features.OrderStep1.Models
+@using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services
+@inject OrderStep1ProTraceLogStorageService StorageService
+
+<AppPageTitle MenuName="Pro - Order Step 1" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Pro - Order Step 1 - Tra cứu log</MudText>
+
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudAutocomplete T="OrderIdOption" Value="selectedOrder" ValueChanged="OnOrderSelectedAsync"
+                                 SearchFunc="SearchOrderIds" Label="Order Id" Variant="Variant.Outlined"
+                                 Clearable="true" MaxItems="20"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<OrderIdOption>" />
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudPaper Elevation="2" Class="pa-4">
+        <TraceLogTable TItem="OrderStep1TraceLog" @ref="traceTable" LoadDataAsync="LoadDataAsync">
+            <TableHeader>
+                <MudTh>STT</MudTh>
+                <MudTh>Thời gian</MudTh>
+                <MudTh>Order Id</MudTh>
+                <MudTh>Trace Id</MudTh>
+                <MudTh>Message Detail</MudTh>
+            </TableHeader>
+            <TableRow Context="row">
+                <MudTd DataLabel="STT">@row.Index</MudTd>
+                <MudTd DataLabel="Thời gian">@row.Item.LogTimestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
+                <MudTd DataLabel="Order Id">@row.Item.OrderId</MudTd>
+                <MudTd DataLabel="Trace Id">@row.Item.TraceId</MudTd>
+                <MudTd DataLabel="Message Detail">
+                    <CopyMessageDetailButton MessageDetail="@row.Item.MessageDetail" />
+                </MudTd>
+            </TableRow>
+        </TraceLogTable>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<OrderIdOption> orderIdOptions = [];
+    private OrderIdOption? selectedOrder;
+    private TraceLogTable<OrderStep1TraceLog>? traceTable;
+
+    protected override async Task OnInitializedAsync()
+    {
+        List<string> ids = await StorageService.GetDistinctOrderIdsAsync(CancellationToken.None);
+        orderIdOptions = ids.Select(id => new OrderIdOption(id)).ToList();
+    }
+
+    private Task<IEnumerable<OrderIdOption>> SearchOrderIds(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(orderIdOptions, searchTerm));
+
+    private async Task OnOrderSelectedAsync(OrderIdOption? value)
+    {
+        selectedOrder = value;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (traceTable is not null)
+        {
+            await traceTable.ReloadAsync();
+        }
+    }
+
+    private Task<(List<OrderStep1TraceLog> Items, int TotalCount)> LoadDataAsync(int page, int pageSize, CancellationToken cancellationToken)
+        => StorageService.QueryAsync(selectedOrder?.OrderId, page, pageSize, cancellationToken);
+}

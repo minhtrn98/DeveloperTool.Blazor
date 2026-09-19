@@ -1,13 +1,14 @@
-@page "/route-stop-query"
+@page "/pro/route-stop-query"
+@using TMS.DeveloperTool.Blazor.Features.RouteStop.Models
 @using TMS.DeveloperTool.Blazor.Features.RouteStop.Services
-@inject RouteStopTraceLogStorageService StorageService
+@inject RouteStopProTraceLogStorageService StorageService
 @inject FleetRepository FleetRepository
 
-<AppPageTitle MenuName="Route Stop" />
+<AppPageTitle MenuName="Pro - Route Stop" />
 
 <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
     <MudPaper Elevation="2" Class="pa-4 mb-4">
-        <MudText Typo="Typo.h4" Class="mb-4">Route Stop - Tra cứu log</MudText>
+        <MudText Typo="Typo.h4" Class="mb-4">Pro - Route Stop - Tra cứu log</MudText>
 
         <MudGrid>
             <MudItem xs="12" md="6">
@@ -21,14 +22,10 @@
                 }
             </MudItem>
             <MudItem xs="12" md="6">
-                <MudAutocomplete T="AssignmentLookupDto" Value="selectedAssignment" ValueChanged="OnAssignmentSelectedAsync"
-                                 SearchFunc="SearchAssignments" Label="Mã Assignment (Code)" Variant="Variant.Outlined"
+                <MudAutocomplete T="ActionObjectIdOption" Value="selectedActionObject" ValueChanged="OnActionObjectSelectedAsync"
+                                 SearchFunc="SearchActionObjectIds" Label="Action Object Id" Variant="Variant.Outlined"
                                  Clearable="true" MaxItems="20"
-                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<AssignmentLookupDto>" />
-                @if (selectedAssignment is not null)
-                {
-                    <MudText Typo="Typo.caption" Class="mt-1">Assignment Id: @selectedAssignment.Id</MudText>
-                }
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<ActionObjectIdOption>" />
             </MudItem>
         </MudGrid>
     </MudPaper>
@@ -38,7 +35,6 @@
             <TableHeader>
                 <MudTh>STT</MudTh>
                 <MudTh>Thời gian</MudTh>
-                <MudTh>Env</MudTh>
                 <MudTh>Action</MudTh>
                 <MudTh>Driver</MudTh>
                 <MudTh>License Plate</MudTh>
@@ -55,7 +51,6 @@
                 @{ RouteStopMessageFields fields = RouteStopMessageFieldsParser.Parse(row.Item.MessageDetail); }
                 <MudTd DataLabel="STT">@row.Index</MudTd>
                 <MudTd DataLabel="Thời gian">@row.Item.LogTimestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
-                <MudTd DataLabel="Env">@row.Item.Env</MudTd>
                 <MudTd DataLabel="Action">@row.Item.Action</MudTd>
                 <MudTd DataLabel="Driver">
                     @fields.DriverName
@@ -66,7 +61,7 @@
                 <MudTd DataLabel="Assignment Code">@GetAssignmentCode(row.Item.AssignmentId)</MudTd>
                 <MudTd DataLabel="Item Count">@fields.ItemCount</MudTd>
                 <MudTd DataLabel="Weight">@fields.Weight</MudTd>
-                <MudTd DataLabel="Action Object Id">@fields.ActionObjectId</MudTd>
+                <MudTd DataLabel="Action Object Id">@row.Item.ActionObjectId</MudTd>
                 <MudTd DataLabel="Full Pending">@fields.IsFullPending</MudTd>
                 <MudTd DataLabel="Mark Completed">@fields.MarkStopCompleted</MudTd>
                 <MudTd DataLabel="Trace Id">@row.Item.TraceId</MudTd>
@@ -80,10 +75,10 @@
 
 @code {
     private List<VehicleLookupDto> vehicleOptions = [];
-    private List<AssignmentLookupDto> assignmentOptions = [];
+    private List<ActionObjectIdOption> actionObjectIdOptions = [];
     private Dictionary<Guid, string> assignmentCodeById = [];
     private VehicleLookupDto? selectedVehicle;
-    private AssignmentLookupDto? selectedAssignment;
+    private ActionObjectIdOption? selectedActionObject;
     private TraceLogTable<RouteStopTraceLog>? traceTable;
 
     protected override async Task OnInitializedAsync()
@@ -94,11 +89,16 @@
             vehicleOptions = await FleetRepository.GetVehiclesByIdsAsync(vehicleIds);
         }
 
+        List<string> actionObjectIds = await StorageService.GetDistinctActionObjectIdsAsync(CancellationToken.None);
+        actionObjectIdOptions = actionObjectIds.Select(id => new ActionObjectIdOption(id)).ToList();
+
+        // Assignment Code is still shown as a column, so Assignment Ids are still looked up —
+        // just no longer exposed as a filter (see task that removed the Assignment filter).
         List<Guid> assignmentIds = await StorageService.GetDistinctAssignmentIdsAsync(CancellationToken.None);
         if (assignmentIds.Count > 0)
         {
-            assignmentOptions = await FleetRepository.GetAssignmentsByIdsAsync(assignmentIds);
-            assignmentCodeById = assignmentOptions.ToDictionary(a => a.Id, a => a.Code);
+            List<AssignmentLookupDto> assignments = await FleetRepository.GetAssignmentsByIdsAsync(assignmentIds);
+            assignmentCodeById = assignments.ToDictionary(a => a.Id, a => a.Code);
         }
     }
 
@@ -112,8 +112,8 @@
     private Task<IEnumerable<VehicleLookupDto>> SearchVehicles(string searchTerm, CancellationToken cancellationToken)
         => Task.FromResult(AutocompleteSearchHelper.SearchByLike(vehicleOptions, searchTerm));
 
-    private Task<IEnumerable<AssignmentLookupDto>> SearchAssignments(string searchTerm, CancellationToken cancellationToken)
-        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(assignmentOptions, searchTerm));
+    private Task<IEnumerable<ActionObjectIdOption>> SearchActionObjectIds(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(actionObjectIdOptions, searchTerm));
 
     private async Task OnVehicleSelectedAsync(VehicleLookupDto? value)
     {
@@ -121,9 +121,9 @@
         await ReloadAsync();
     }
 
-    private async Task OnAssignmentSelectedAsync(AssignmentLookupDto? value)
+    private async Task OnActionObjectSelectedAsync(ActionObjectIdOption? value)
     {
-        selectedAssignment = value;
+        selectedActionObject = value;
         await ReloadAsync();
     }
 
@@ -136,5 +136,5 @@
     }
 
     private Task<(List<RouteStopTraceLog> Items, int TotalCount)> LoadDataAsync(int page, int pageSize, CancellationToken cancellationToken)
-        => StorageService.QueryAsync(selectedVehicle?.Id.ToString(), selectedAssignment?.Id.ToString(), page, pageSize, cancellationToken);
+        => StorageService.QueryAsync(selectedVehicle?.Id.ToString(), selectedActionObject?.ActionObjectId, page, pageSize, cancellationToken);
 }

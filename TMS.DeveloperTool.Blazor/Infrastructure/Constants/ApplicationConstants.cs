@@ -17,6 +17,11 @@ public static class ApplicationConstants
         public const string RouteStopQuery = "/route-stop-query";
         public const string PickupTaskTrace = "/pickup-task-trace";
         public const string PickupTaskTraceQuery = "/pickup-task-trace-query";
+        public const string OrderStep1TracePro = "/pro/order-step1-trace";
+        public const string OrderStep1TimelinePro = "/pro/order-step1-timeline";
+        public const string OrderStep1QueryPro = "/pro/order-step1-query";
+        public const string RouteStopQueryPro = "/pro/route-stop-query";
+        public const string PickupTaskTraceQueryPro = "/pro/pickup-task-trace-query";
     }
 
     public static class EnvironmentNames

@@ -1,0 +1,23 @@
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Color="Color.Secondary" Size="Size.Small"
+               OnClick="CopyAsync" />
+
+@code {
+    [Parameter, EditorRequired]
+    public string MessageDetail { get; set; } = string.Empty;
+
+    private async Task CopyAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", MessageDetail);
+            Snackbar.Add("Đã copy Message Detail.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể copy: {ex.Message}", Severity.Error);
+        }
+    }
+}

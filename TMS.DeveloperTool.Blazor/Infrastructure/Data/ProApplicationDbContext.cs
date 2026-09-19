@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Data;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
+public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> options) : DbContext(options)
 {
     public DbSet<OrderStep1TraceLog> OrderStep1TraceLogs { get; set; }
     public DbSet<RouteStopTraceLog> RouteStopTraceLogs { get; set; }
@@ -12,6 +12,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.HasDefaultSchema("pro");
 
         // Configure table names to match PostgreSQL schema (lowercase with underscores)
         modelBuilder.Entity<OrderStep1TraceLog>()
@@ -54,10 +56,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.EventId).HasColumnName("event_id");
             entity.Property(e => e.VehicleId).HasColumnName("vehicle_id");
             entity.Property(e => e.AssignmentId).HasColumnName("assignment_id");
+            entity.Property(e => e.ActionObjectId).HasColumnName("action_object_id");
             entity.Property(e => e.MessageDetail).HasColumnName("message_detail");
             entity.Property(e => e.Env).HasColumnName("env");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-            entity.Ignore(e => e.ActionObjectId);
             entity.HasIndex(e => e.LogId).IsUnique();
         });
 

@@ -1,13 +1,13 @@
-@page "/pickup-task-trace-query"
+@page "/pro/pickup-task-trace-query"
 @using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Models
 @using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Services
-@inject PickupTaskTraceLogStorageService StorageService
+@inject PickupTaskProTraceLogStorageService StorageService
 
-<AppPageTitle MenuName="Điều tin" />
+<AppPageTitle MenuName="Pro - Điều tin" />
 
 <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
     <MudPaper Elevation="2" Class="pa-4 mb-4">
-        <MudText Typo="Typo.h4" Class="mb-4">Điều tin - Tra cứu log</MudText>
+        <MudText Typo="Typo.h4" Class="mb-4">Pro - Điều tin - Tra cứu log</MudText>
 
         <MudGrid>
             <MudItem xs="12" md="6">
@@ -30,7 +30,6 @@
             <TableHeader>
                 <MudTh>STT</MudTh>
                 <MudTh>Thời gian</MudTh>
-                <MudTh>Env</MudTh>
                 <MudTh>Mã điều tin</MudTh>
                 <MudTh>Dispatch Type</MudTh>
                 <MudTh>Dispatch Method</MudTh>
@@ -46,7 +45,6 @@
                 @{ PickupTaskMessageFields fields = PickupTaskMessageFieldsParser.Parse(row.Item.MessageDetail); }
                 <MudTd DataLabel="STT">@row.Index</MudTd>
                 <MudTd DataLabel="Thời gian">@row.Item.LogTimestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
-                <MudTd DataLabel="Env">@row.Item.Env</MudTd>
                 <MudTd DataLabel="Mã điều tin">@row.Item.PickupTaskId</MudTd>
                 <MudTd DataLabel="Dispatch Type">@fields.DispatchType</MudTd>
                 <MudTd DataLabel="Dispatch Method">@fields.DispatchMethod</MudTd>

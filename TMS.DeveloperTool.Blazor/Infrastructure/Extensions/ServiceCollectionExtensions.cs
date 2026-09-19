@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
         services.AddSettingsAndValidate<ConnectionStringsOptions>(config);
         services.AddSettingsAndValidate<RabbitMqConfig>(config);
         services.AddSettingsAndValidate<LogApiOptions>(config);
+        services.AddSettingsAndValidate<SignozProOptions>(config);
         return services;
     }
 

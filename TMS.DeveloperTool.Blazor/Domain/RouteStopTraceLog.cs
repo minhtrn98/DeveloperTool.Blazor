@@ -13,6 +13,14 @@ public sealed class RouteStopTraceLog
     public string EventId { get; set; } = string.Empty;
     public string VehicleId { get; set; } = string.Empty;
     public string AssignmentId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Parsed out of <see cref="MessageDetail"/> at ingestion time (see
+    /// <c>RouteStopMessageFieldsParser</c>). Only persisted in the "pro" schema — the public
+    /// schema's table has no such column, so <c>ApplicationDbContext</c> ignores this property.
+    /// </summary>
+    public string ActionObjectId { get; set; } = string.Empty;
+
     public string MessageDetail { get; set; } = string.Empty;
     public string Env { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

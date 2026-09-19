@@ -237,9 +237,10 @@ public static class OrderTimelineBuilder
                 index++;
             }
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
             // ignore malformed message detail
+            Console.WriteLine(ex.Message);
         }
 
         return items;

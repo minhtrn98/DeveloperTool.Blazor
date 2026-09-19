@@ -1,0 +1,78 @@
+@typeparam TItem
+
+<MudTable @ref="tableRef" T="TItem" ServerData="LoadServerDataAsync" Loading="@isLoading"
+          Hover="true" Dense="true" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        @TableHeader
+    </HeaderContent>
+    <RowTemplate Context="item">
+        @TableRow((item, GetRowIndex(item)))
+    </RowTemplate>
+    <LoadingContent>
+        <MudText Class="pa-4">Đang tải dữ liệu...</MudText>
+    </LoadingContent>
+    <NoRecordsContent>
+        <MudText Class="pa-4">Không có dữ liệu.</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new int[] { 10, 20, 50 }" />
+    </PagerContent>
+</MudTable>
+
+@code {
+    [Parameter, EditorRequired]
+    public RenderFragment TableHeader { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public RenderFragment<(TItem Item, int Index)> TableRow { get; set; } = default!;
+
+    /// <summary>
+    /// Loads one page of rows. Receives a 1-based page index, matching the existing
+    /// per-feature storage services' QueryAsync(..., page, pageSize, ...) signature.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public Func<int, int, CancellationToken, Task<(List<TItem> Items, int TotalCount)>> LoadDataAsync { get; set; } = default!;
+
+    private MudTable<TItem>? tableRef;
+    private bool isLoading;
+    private int currentPageIndex = 1;
+    private int currentPageSize = 10;
+    private List<TItem> currentRows = [];
+
+    /// <summary>Re-runs the current page's query from the start — call after a filter changes.</summary>
+    public async Task ReloadAsync()
+    {
+        if (tableRef is null)
+        {
+            return;
+        }
+
+        tableRef.NavigateTo(0);
+        await tableRef.ReloadServerData();
+    }
+
+    private async Task<TableData<TItem>> LoadServerDataAsync(TableState state, CancellationToken cancellationToken)
+    {
+        isLoading = true;
+        try
+        {
+            currentPageIndex = state.Page + 1;
+            currentPageSize = state.PageSize;
+
+            (List<TItem> items, int totalCount) = await LoadDataAsync(currentPageIndex, currentPageSize, cancellationToken);
+            currentRows = items;
+
+            return new TableData<TItem> { TotalItems = totalCount, Items = items };
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private int GetRowIndex(TItem item)
+    {
+        int indexInPage = currentRows.IndexOf(item);
+        return ((currentPageIndex - 1) * currentPageSize) + indexInPage + 1;
+    }
+}
