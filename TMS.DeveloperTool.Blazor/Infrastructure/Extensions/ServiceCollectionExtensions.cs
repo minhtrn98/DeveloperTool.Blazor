@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Hosting;
 using MudBlazor.Services;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Extensions;
@@ -17,6 +18,16 @@ public static class ServiceCollectionExtensions
         services.AddSettingsAndValidate<RabbitMqConfig>(config);
         services.AddSettingsAndValidate<LogApiOptions>(config);
         services.AddSettingsAndValidate<SignozProOptions>(config);
+
+        // Default BackgroundServiceExceptionBehavior is StopHost — an unhandled exception in
+        // any single BackgroundService (e.g. SignozProSyncJob) would otherwise crash this
+        // entire Blazor Server app for every connected user. Each hosted service is expected to
+        // catch and log its own transient failures; this is only a second line of defense.
+        services.Configure<HostOptions>(options =>
+        {
+            options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+        });
+
         return services;
     }
 

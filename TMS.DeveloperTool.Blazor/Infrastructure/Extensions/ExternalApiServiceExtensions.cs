@@ -15,6 +15,11 @@ public static class ExternalApiServiceExtensions
     {
         services.AddHttpClient();
 
+        // Short timeout so a stuck/slow SigNoz Pro request fails fast — callers retry with a
+        // short sleep on timeout (see SignozProQueryService/SignozProTokenProvider) instead of
+        // blocking a BackgroundService tick for the default 100s.
+        services.AddHttpClient(SignozProOptions.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(10));
+
         return services;
     }
 

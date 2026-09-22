@@ -6,6 +6,13 @@ public sealed class SignozProOptions
 {
     public const string SectionName = "SignozPro";
 
+    /// <summary>
+    /// Name of the named HTTP client registered for SigNoz Pro calls, configured with a short
+    /// timeout (see <c>ExternalApiServiceExtensions.AddExternalApis</c>) so a stuck request
+    /// fails fast and can be retried instead of blocking for minutes.
+    /// </summary>
+    public const string HttpClientName = "SignozPro";
+
     [Required]
     public required string BaseUrl { get; init; }
 

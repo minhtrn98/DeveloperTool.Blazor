@@ -13,11 +13,15 @@ namespace TMS.DeveloperTool.Blazor.Infrastructure.Http;
 public sealed class SignozProTokenProvider(
     IDbContextFactory<ProApplicationDbContext> dbContextFactory,
     IHttpClientFactory httpClientFactory,
-    SignozProOptions signozProOptions)
+    SignozProOptions signozProOptions,
+    ILogger<SignozProTokenProvider> logger)
 {
     private const string RotatePath = "/api/v2/sessions/rotate";
     private const string TokenEnv = "Production";
     private static readonly TimeSpan ExpiryBuffer = TimeSpan.FromMinutes(1);
+
+    private const int MaxTimeoutRetries = 3;
+    private static readonly TimeSpan TimeoutRetryDelay = TimeSpan.FromSeconds(3);
 
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
@@ -93,31 +97,47 @@ public sealed class SignozProTokenProvider(
     private async Task<SignozProRotateResponse> RotateAsync(string? previousAccessToken, string refreshToken, CancellationToken cancellationToken)
     {
         string baseUrl = signozProOptions.BaseUrl.Trim().TrimEnd('/');
-        using HttpClient client = httpClientFactory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, $"{baseUrl}{RotatePath}")
-        {
-            Content = JsonContent.Create(new SignozProRotateRequest { RefreshToken = refreshToken })
-        };
-        if (!string.IsNullOrWhiteSpace(previousAccessToken))
-        {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", previousAccessToken);
-        }
 
-        using HttpResponseMessage response = await client.SendAsync(request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
+        for (int attempt = 1; ; attempt++)
         {
-            string error = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new HttpRequestException(
-                $"SigNoz Pro rotate thất bại: {(int)response.StatusCode} {response.ReasonPhrase}. {error}");
-        }
+            using HttpClient client = httpClientFactory.CreateClient(SignozProOptions.HttpClientName);
+            using HttpRequestMessage request = new(HttpMethod.Post, $"{baseUrl}{RotatePath}")
+            {
+                Content = JsonContent.Create(new SignozProRotateRequest { RefreshToken = refreshToken })
+            };
+            if (!string.IsNullOrWhiteSpace(previousAccessToken))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", previousAccessToken);
+            }
 
-        SignozProRotateEnvelope? envelope = await response.Content.ReadFromJsonAsync<SignozProRotateEnvelope>(cancellationToken);
-        if (envelope?.Data is null || string.IsNullOrWhiteSpace(envelope.Data.AccessToken))
-        {
-            throw new InvalidOperationException("SigNoz Pro rotate response không hợp lệ.");
-        }
+            try
+            {
+                using HttpResponseMessage response = await client.SendAsync(request, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    string error = await response.Content.ReadAsStringAsync(cancellationToken);
+                    throw new HttpRequestException(
+                        $"SigNoz Pro rotate thất bại: {(int)response.StatusCode} {response.ReasonPhrase}. {error}");
+                }
 
-        return envelope.Data;
+                SignozProRotateEnvelope? envelope = await response.Content.ReadFromJsonAsync<SignozProRotateEnvelope>(cancellationToken);
+                if (envelope?.Data is null || string.IsNullOrWhiteSpace(envelope.Data.AccessToken))
+                {
+                    throw new InvalidOperationException("SigNoz Pro rotate response không hợp lệ.");
+                }
+
+                return envelope.Data;
+            }
+            catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested && attempt < MaxTimeoutRetries)
+            {
+                // The client's own timeout fired (not the caller's cancellationToken) — sleep
+                // briefly and retry instead of failing token refresh on one blip.
+                logger.LogWarning(
+                    "SigNoz Pro rotate request timed out (attempt {Attempt}/{MaxAttempts}). Retrying in {Delay}.",
+                    attempt, MaxTimeoutRetries, TimeoutRetryDelay);
+                await Task.Delay(TimeoutRetryDelay, cancellationToken);
+            }
+        }
     }
 }
 

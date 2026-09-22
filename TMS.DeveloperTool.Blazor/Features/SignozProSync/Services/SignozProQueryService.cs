@@ -18,10 +18,17 @@ namespace TMS.DeveloperTool.Blazor.Features.SignozProSync.Services;
 /// <see cref="LogQueryService.QueryAsync"/> — SigNoz has too many OrderStep1 events to poll in
 /// bulk without an id filter.
 /// </summary>
-public sealed class SignozProQueryService(IHttpClientFactory httpClientFactory, SignozProOptions signozProOptions, SignozProTokenProvider tokenProvider)
+public sealed class SignozProQueryService(
+    IHttpClientFactory httpClientFactory,
+    SignozProOptions signozProOptions,
+    SignozProTokenProvider tokenProvider,
+    ILogger<SignozProQueryService> logger)
 {
     private const string QueryRangePath = "/api/v5/query_range";
     private const int PageSize = 100;
+
+    private const int MaxTimeoutRetries = 3;
+    private static readonly TimeSpan TimeoutRetryDelay = TimeSpan.FromSeconds(30);
 
     private const string OrderStep1MessageTemplateText =
         "{AGG} Step (ORD): {At}, order Id: {OrderId}, items: {ItemCount}, serializeMs: {SerializeMs}, messageDetail: {MessageDetail}";
@@ -115,21 +122,37 @@ public sealed class SignozProQueryService(IHttpClientFactory httpClientFactory, 
     private async Task<LogQueryRangeResponse?> SendAsync(LogQueryRangeRequest request, string bearerToken, CancellationToken cancellationToken)
     {
         string baseUrl = signozProOptions.BaseUrl.Trim().TrimEnd('/');
-        using HttpClient client = httpClientFactory.CreateClient();
-        using HttpRequestMessage httpRequest = new(HttpMethod.Post, $"{baseUrl}{QueryRangePath}")
-        {
-            Content = JsonContent.Create(request)
-        };
-        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
 
-        using HttpResponseMessage response = await client.SendAsync(httpRequest, cancellationToken);
-        if (!response.IsSuccessStatusCode)
+        for (int attempt = 1; ; attempt++)
         {
-            string error = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new HttpRequestException($"SigNoz Pro request thất bại: {(int)response.StatusCode} {response.ReasonPhrase}. {error}");
+            using HttpClient client = httpClientFactory.CreateClient(SignozProOptions.HttpClientName);
+            using HttpRequestMessage httpRequest = new(HttpMethod.Post, $"{baseUrl}{QueryRangePath}")
+            {
+                Content = JsonContent.Create(request)
+            };
+            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+
+            try
+            {
+                using HttpResponseMessage response = await client.SendAsync(httpRequest, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    string error = await response.Content.ReadAsStringAsync(cancellationToken);
+                    throw new HttpRequestException($"SigNoz Pro request thất bại: {(int)response.StatusCode} {response.ReasonPhrase}. {error}");
+                }
+
+                return await response.Content.ReadFromJsonAsync<LogQueryRangeResponse>(cancellationToken);
+            }
+            catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested && attempt < MaxTimeoutRetries)
+            {
+                // The client's own timeout fired (not the caller's cancellationToken) — sleep
+                // briefly and retry instead of failing the whole sync/trace on one blip.
+                logger.LogWarning(
+                    "SigNoz Pro request timed out (attempt {Attempt}/{MaxAttempts}). Retrying in {Delay}.",
+                    attempt, MaxTimeoutRetries, TimeoutRetryDelay);
+                await Task.Delay(TimeoutRetryDelay, cancellationToken);
+            }
         }
-
-        return await response.Content.ReadFromJsonAsync<LogQueryRangeResponse>(cancellationToken);
     }
 
     private static LogQueryRangeRequest BuildRequest(string filterExpression, DateTimeOffset start, DateTimeOffset end, int offset)

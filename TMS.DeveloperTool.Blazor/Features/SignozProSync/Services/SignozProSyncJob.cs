@@ -38,7 +38,15 @@ public sealed class SignozProSyncJob(
             {
                 await SyncOnceAsync(stoppingToken);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            // Only let the exception propagate (and stop this BackgroundService) when
+            // stoppingToken itself caused it, i.e. the host is actually shutting down. A plain
+            // `ex is not OperationCanceledException` filter looks equivalent but isn't: an
+            // HttpClient request timeout throws a TaskCanceledException — a subtype of
+            // OperationCanceledException — which that filter would let through uncaught,
+            // crashing the whole app (HostOptions.BackgroundServiceExceptionBehavior defaults to
+            // StopHost). Checking stoppingToken directly catches timeouts/transient failures
+            // here and keeps retrying on the next tick instead.
+            catch (Exception ex) when (!stoppingToken.IsCancellationRequested)
             {
                 logger.LogError(ex, "SigNoz Pro trace sync failed.");
             }
