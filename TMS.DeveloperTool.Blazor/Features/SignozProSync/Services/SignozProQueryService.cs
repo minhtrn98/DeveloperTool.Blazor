@@ -80,12 +80,11 @@ public sealed class SignozProQueryService(
     {
         int offset = 0;
         int totalCount = 0;
-        string bearerToken = await tokenProvider.GetAccessTokenAsync(cancellationToken);
 
         while (true)
         {
             LogQueryRangeRequest request = BuildRequest(filterExpression, start, end, offset);
-            LogQueryRangeResponse? response = await SendAsync(request, bearerToken, cancellationToken);
+            LogQueryRangeResponse? response = await SendAsync(request, cancellationToken);
             List<LogRow> rows = response?.Data?.Data?.Results.FirstOrDefault()?.Rows ?? [];
             if (rows.Count == 0)
             {
@@ -119,9 +118,11 @@ public sealed class SignozProQueryService(
         return totalCount;
     }
 
-    private async Task<LogQueryRangeResponse?> SendAsync(LogQueryRangeRequest request, string bearerToken, CancellationToken cancellationToken)
+    private async Task<LogQueryRangeResponse?> SendAsync(LogQueryRangeRequest request, CancellationToken cancellationToken)
     {
         string baseUrl = signozProOptions.BaseUrl.Trim().TrimEnd('/');
+        string bearerToken = await tokenProvider.GetAccessTokenAsync(cancellationToken);
+        bool hasForcedRotation = false;
 
         for (int attempt = 1; ; attempt++)
         {
@@ -151,6 +152,18 @@ public sealed class SignozProQueryService(
                     "SigNoz Pro request timed out (attempt {Attempt}/{MaxAttempts}). Retrying in {Delay}.",
                     attempt, MaxTimeoutRetries, TimeoutRetryDelay);
                 await Task.Delay(TimeoutRetryDelay, cancellationToken);
+            }
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested && attempt >= MaxTimeoutRetries && !hasForcedRotation)
+            {
+                // Ran out of retries and it's still failing (timeout again, or a non-2xx like
+                // 401) — the token might have been revoked/rotated server-side without our
+                // local expiry tracking noticing. Force a fresh token and try once more before
+                // finally giving up.
+                logger.LogWarning(ex,
+                    "SigNoz Pro request still failing after {MaxAttempts} attempts. Forcing a token rotation and retrying once more.",
+                    MaxTimeoutRetries);
+                hasForcedRotation = true;
+                bearerToken = await tokenProvider.GetAccessTokenAsync(forceRefresh: true, cancellationToken);
             }
         }
     }

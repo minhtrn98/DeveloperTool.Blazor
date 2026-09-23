@@ -25,26 +25,37 @@ public sealed class SignozProTokenProvider(
 
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
-    public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
-    {
-        await using ProApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        LogApiToken? token = await dbContext.LogApiTokens
-            .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Env == TokenEnv, cancellationToken);
+    public Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
+        => GetAccessTokenAsync(forceRefresh: false, cancellationToken);
 
-        if (IsAccessTokenValid(token))
+    /// <summary>
+    /// Hands out a valid access token. With <paramref name="forceRefresh"/>, skips the local
+    /// expiry check and always rotates — used as a last resort when requests keep failing even
+    /// though the token looks valid locally, e.g. it was revoked server-side.
+    /// </summary>
+    public async Task<string> GetAccessTokenAsync(bool forceRefresh, CancellationToken cancellationToken)
+    {
+        if (!forceRefresh)
         {
-            return token!.AccessToken;
+            await using ProApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            LogApiToken? cachedToken = await dbContext.LogApiTokens
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Env == TokenEnv, cancellationToken);
+
+            if (IsAccessTokenValid(cachedToken))
+            {
+                return cachedToken!.AccessToken;
+            }
         }
 
         await _refreshLock.WaitAsync(cancellationToken);
         try
         {
             await using ProApplicationDbContext lockedDbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            token = await lockedDbContext.LogApiTokens
+            LogApiToken? token = await lockedDbContext.LogApiTokens
                 .FirstOrDefaultAsync(t => t.Env == TokenEnv, cancellationToken);
 
-            if (IsAccessTokenValid(token))
+            if (!forceRefresh && IsAccessTokenValid(token))
             {
                 return token!.AccessToken;
             }
