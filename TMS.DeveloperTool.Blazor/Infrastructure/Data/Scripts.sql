@@ -130,3 +130,39 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_pickup_task_trace_logs_log_id ON pro.pi
 CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_trace_logs_pickup_task_id ON pro.pickup_task_trace_logs (pickup_task_id, log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_trace_logs_delivery_line_id ON pro.pickup_task_trace_logs (delivery_line_id, log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_trace_logs_log_timestamp ON pro.pickup_task_trace_logs (log_timestamp DESC);
+
+CREATE TABLE pro.pickup_task_orders (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    trace_id VARCHAR(64) NOT NULL DEFAULT '',
+    pickup_task_id VARCHAR(50) NOT NULL,
+    order_id VARCHAR(50) NOT NULL,
+    extra_services VARCHAR(50) NOT NULL DEFAULT '',
+    weight NUMERIC(18, 3) NOT NULL DEFAULT 0,
+    real_weight NUMERIC(18, 3) NOT NULL DEFAULT 0,
+    status VARCHAR(50) NOT NULL DEFAULT 'Khởi tạo',
+    is_process_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE pro.pickup_task_order_items (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    trace_id VARCHAR(64) NOT NULL DEFAULT '',
+    pickup_task_id VARCHAR(50) NOT NULL,
+    order_id VARCHAR(50) NOT NULL,
+    order_item_id VARCHAR(50) NOT NULL,
+    weight NUMERIC(18, 3) NOT NULL DEFAULT 0,
+    real_weight NUMERIC(18, 3) NOT NULL DEFAULT 0,
+    status VARCHAR(50) NOT NULL DEFAULT 'Khởi tạo',
+    is_process_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_orders_pickup_task_id_order_id ON pro.pickup_task_orders (pickup_task_id, order_id);
+CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_orders_order_id ON pro.pickup_task_orders (order_id);
+CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_order_items_pickup_task_id_order_item_id ON pro.pickup_task_order_items (pickup_task_id, order_item_id);
+CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_order_items_order_id ON pro.pickup_task_order_items (order_id);
+CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_orders_trace_id ON pro.pickup_task_orders (trace_id);
+CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_order_items_trace_id ON pro.pickup_task_order_items (trace_id);
+
+ALTER TABLE pro.pickup_task_trace_logs ADD COLUMN IF NOT EXISTS is_processed BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_trace_logs_unprocessed ON pro.pickup_task_trace_logs (log_timestamp, id) WHERE NOT is_processed;

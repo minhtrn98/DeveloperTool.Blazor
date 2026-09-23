@@ -1,4 +1,5 @@
 using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services;
+using TMS.DeveloperTool.Blazor.Features.PickupTaskOrderSync.Services;
 using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Services;
 using TMS.DeveloperTool.Blazor.Features.RouteStop.Services;
 using TMS.DeveloperTool.Blazor.Features.SignozProSync.Services;
@@ -46,6 +47,7 @@ public static class ExternalApiServiceExtensions
         services.AddScoped<SignozProQueryService>();
         services.AddScoped<SignozProTraceIngestionService>();
         services.AddHostedService<SignozProSyncJob>();
+        services.AddHostedService<PickupTaskOrderSyncJob>();
 
         return services;
     }

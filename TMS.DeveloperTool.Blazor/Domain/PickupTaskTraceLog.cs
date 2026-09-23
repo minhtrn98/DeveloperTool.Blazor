@@ -13,4 +13,7 @@ public sealed class PickupTaskTraceLog
     public string MessageDetail { get; set; } = string.Empty;
     public string Env { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    /// <summary>Set once <c>PickupTaskOrderSyncJob</c> has parsed this log (pro schema only).</summary>
+    public bool IsProcessed { get; set; }
 }

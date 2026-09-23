@@ -74,6 +74,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.MessageDetail).HasColumnName("message_detail");
             entity.Property(e => e.Env).HasColumnName("env");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Ignore(e => e.IsProcessed);
             entity.HasIndex(e => e.LogId).IsUnique();
         });
 

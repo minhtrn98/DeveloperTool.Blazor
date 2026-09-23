@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TMS.DeveloperTool.Blazor.Domain.Enums;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Data;
 
@@ -8,6 +9,8 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
     public DbSet<RouteStopTraceLog> RouteStopTraceLogs { get; set; }
     public DbSet<PickupTaskTraceLog> PickupTaskTraceLogs { get; set; }
     public DbSet<LogApiToken> LogApiTokens { get; set; }
+    public DbSet<PickupTaskOrder> PickupTaskOrders { get; set; }
+    public DbSet<PickupTaskOrderItem> PickupTaskOrderItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,6 +30,12 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
 
         modelBuilder.Entity<LogApiToken>()
             .ToTable("log_api_tokens");
+
+        modelBuilder.Entity<PickupTaskOrder>()
+            .ToTable("pickup_task_orders");
+
+        modelBuilder.Entity<PickupTaskOrderItem>()
+            .ToTable("pickup_task_order_items");
 
         // Configure column names to match PostgreSQL schema
         modelBuilder.Entity<OrderStep1TraceLog>(entity =>
@@ -76,6 +85,7 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
             entity.Property(e => e.MessageDetail).HasColumnName("message_detail");
             entity.Property(e => e.Env).HasColumnName("env");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.IsProcessed).HasColumnName("is_processed");
             entity.HasIndex(e => e.LogId).IsUnique();
         });
 
@@ -88,6 +98,36 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
             entity.Property(e => e.RefreshToken).HasColumnName("refresh_token");
             entity.Property(e => e.RefreshTokenExpiredAt).HasColumnName("refresh_token_expired_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+        });
+
+        modelBuilder.Entity<PickupTaskOrder>(entity =>
+        {
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.TraceId).HasColumnName("trace_id").HasMaxLength(64);
+            entity.Property(e => e.PickupTaskId).HasColumnName("pickup_task_id").HasMaxLength(20);
+            entity.Property(e => e.OrderId).HasColumnName("order_id").HasMaxLength(20);
+            entity.Property(e => e.ExtraServices).HasColumnName("extra_services").HasMaxLength(20);
+            entity.Property(e => e.Weight).HasColumnName("weight");
+            entity.Property(e => e.RealWeight).HasColumnName("real_weight");
+            entity.Property(e => e.Status).HasColumnName("status").HasConversion(status => status.Description, description => OrderStatus.FromDescription(description)).HasMaxLength(50);
+            entity.Property(e => e.IsProcessCompleted).HasColumnName("is_process_completed");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(e => new { e.PickupTaskId, e.OrderId });
+        });
+
+        modelBuilder.Entity<PickupTaskOrderItem>(entity =>
+        {
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.TraceId).HasColumnName("trace_id").HasMaxLength(64);
+            entity.Property(e => e.PickupTaskId).HasColumnName("pickup_task_id").HasMaxLength(20);
+            entity.Property(e => e.OrderId).HasColumnName("order_id").HasMaxLength(20);
+            entity.Property(e => e.OrderItemId).HasColumnName("order_item_id").HasMaxLength(20);
+            entity.Property(e => e.Weight).HasColumnName("weight");
+            entity.Property(e => e.RealWeight).HasColumnName("real_weight");
+            entity.Property(e => e.Status).HasColumnName("status").HasConversion(status => status.Description, description => OrderStatus.FromDescription(description)).HasMaxLength(50);
+            entity.Property(e => e.IsProcessCompleted).HasColumnName("is_process_completed");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(e => new { e.PickupTaskId, e.OrderItemId });
         });
     }
 }
