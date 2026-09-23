@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Hosting;
 using MudBlazor.Services;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Extensions;
