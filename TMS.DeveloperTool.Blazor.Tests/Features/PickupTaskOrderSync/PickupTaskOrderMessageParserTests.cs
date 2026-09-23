@@ -22,7 +22,7 @@ public class PickupTaskOrderMessageParserTests
               "Weight": 16.0,
               "RealWeight": 15.5,
               "DeclaredValue": 5000000.000,
-              "Status": 6,
+              "Status": 1,
               "Items": [
                 { "OrderId": "SOCAC1497198", "OrderItemId": "SOCAC1497198-1", "Weight": 4.0, "RealWeight": 3.5, "Note": null },
                 { "OrderId": "SOCAC1497198", "OrderItemId": "SOCAC1497198-2", "Weight": 12.0, "RealWeight": 12.0, "Note": null }
@@ -55,7 +55,7 @@ public class PickupTaskOrderMessageParserTests
         order.ExtraServices.Should().Be("TKKH,PHST");
         order.Weight.Should().Be(16.0m);
         order.RealWeight.Should().Be(15.5m);
-        order.Status.Should().Be(OrderStatus.Delivered);
+        order.Status.Should().Be(PickupTaskOrderStatus.Picked);
         order.IsProcessCompleted.Should().BeTrue();
         order.CreatedAt.Should().Be(LogTimestamp);
     }
@@ -72,7 +72,7 @@ public class PickupTaskOrderMessageParserTests
         result.Items[0].OrderId.Should().Be("SOCAC1497198");
         result.Items[0].Weight.Should().Be(4.0m);
         result.Items[0].RealWeight.Should().Be(3.5m);
-        result.Items.Should().OnlyContain(item => item.Status == OrderStatus.Delivered && item.IsProcessCompleted && item.CreatedAt == LogTimestamp);
+        result.Items.Should().OnlyContain(item => item.Status == PickupTaskOrderStatus.Picked && item.IsProcessCompleted && item.CreatedAt == LogTimestamp);
     }
 
     [Theory]

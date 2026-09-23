@@ -1,0 +1,179 @@
+@page "/pro/pickup-task-order-timeline"
+@using System.Globalization
+@using TMS.DeveloperTool.Blazor.Features.PickupTaskOrderTimeline.Services
+@inject PickupTaskOrderProStorageService StorageService
+
+<AppPageTitle MenuName="Pro - Điều tin - Order timeline" />
+
+<MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Pro - Điều tin - Order timeline</MudText>
+
+        <div class="d-flex align-center ga-2">
+            <MudTextField T="string" @bind-Value="searchText" Label="Order Id" Variant="Variant.Outlined" Margin="Margin.Dense"
+                          Clearable="true" Immediate="true" OnKeyUp="OnSearchKeyUpAsync" Class="flex-grow-0" Style="width: 360px; max-width: 100%;" />
+            <MudButton OnClick="SearchAsync" Variant="Variant.Filled" Color="Color.Primary"
+                       Disabled="@(string.IsNullOrWhiteSpace(searchText) || isLoading)">Tìm kiếm</MudButton>
+        </div>
+    </MudPaper>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </div>
+    }
+    else if (searchedId is null)
+    {
+        <MudAlert Severity="Severity.Info">Nhập Order Id để xem timeline.</MudAlert>
+    }
+    else if (orders.Count == 0 && items.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">Không có dữ liệu điều tin nào được ghi nhận cho order này.</MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.caption" Class="mb-2 d-block">Giá trị khác với lần ghi nhận trước được tô màu.</MudText>
+
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h5" Class="mb-2">Order</MudText>
+            <MudTable Items="orders" Dense="true" Hover="true" HorizontalScrollbar="true">
+                <HeaderContent>
+                    <MudTh>STT</MudTh>
+                    <MudTh>Thời gian</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>IsProcessCompleted</MudTh>
+                    <MudTh>Weight</MudTh>
+                    <MudTh>RealWeight</MudTh>
+                    <MudTh>ExtraServices</MudTh>
+                    <MudTh>Pickup Task Id</MudTh>
+                    <MudTh>Trace Id</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    @{ PickupTaskOrder? previous = previousOrders.GetValueOrDefault(context.Id); }
+                    <MudTd DataLabel="STT">@(orders.IndexOf(context) + 1)</MudTd>
+                    <MudTd DataLabel="Thời gian">@FormatTime(context.CreatedAt)</MudTd>
+                    <MudTd DataLabel="Status">@Cell(context.Status.Description, previous?.Status.Description)</MudTd>
+                    <MudTd DataLabel="IsProcessCompleted">@Cell(FormatBool(context.IsProcessCompleted), previous is null ? null : FormatBool(previous.IsProcessCompleted))</MudTd>
+                    <MudTd DataLabel="Weight">@Cell(FormatDecimal(context.Weight), previous is null ? null : FormatDecimal(previous.Weight))</MudTd>
+                    <MudTd DataLabel="RealWeight">@Cell(FormatDecimal(context.RealWeight), previous is null ? null : FormatDecimal(previous.RealWeight))</MudTd>
+                    <MudTd DataLabel="ExtraServices">@Cell(context.ExtraServices, previous?.ExtraServices)</MudTd>
+                    <MudTd DataLabel="Pickup Task Id">@Cell(context.PickupTaskId, previous?.PickupTaskId)</MudTd>
+                    <MudTd DataLabel="Trace Id">@context.TraceId</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h5" Class="mb-2">Order Items</MudText>
+            <MudTable Items="items" Dense="true" Hover="true" HorizontalScrollbar="true">
+                <HeaderContent>
+                    <MudTh>STT</MudTh>
+                    <MudTh>Thời gian</MudTh>
+                    <MudTh>Order Item Id</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>IsProcessCompleted</MudTh>
+                    <MudTh>Weight</MudTh>
+                    <MudTh>RealWeight</MudTh>
+                    <MudTh>Pickup Task Id</MudTh>
+                    <MudTh>Trace Id</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    @{ PickupTaskOrderItem? previous = previousItems.GetValueOrDefault(context.Id); }
+                    <MudTd DataLabel="STT">@(items.IndexOf(context) + 1)</MudTd>
+                    <MudTd DataLabel="Thời gian">@FormatTime(context.CreatedAt)</MudTd>
+                    <MudTd DataLabel="Order Item Id">@context.OrderItemId</MudTd>
+                    <MudTd DataLabel="Status">@Cell(context.Status.Description, previous?.Status.Description)</MudTd>
+                    <MudTd DataLabel="IsProcessCompleted">@Cell(FormatBool(context.IsProcessCompleted), previous is null ? null : FormatBool(previous.IsProcessCompleted))</MudTd>
+                    <MudTd DataLabel="Weight">@Cell(FormatDecimal(context.Weight), previous is null ? null : FormatDecimal(previous.Weight))</MudTd>
+                    <MudTd DataLabel="RealWeight">@Cell(FormatDecimal(context.RealWeight), previous is null ? null : FormatDecimal(previous.RealWeight))</MudTd>
+                    <MudTd DataLabel="Pickup Task Id">@Cell(context.PickupTaskId, previous?.PickupTaskId)</MudTd>
+                    <MudTd DataLabel="Trace Id">@context.TraceId</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    private string? searchText;
+    private string? searchedId;
+    private List<PickupTaskOrder> orders = [];
+    private List<PickupTaskOrderItem> items = [];
+
+    // Row id -> the previous row to compare against (previous order row; previous row of the same item).
+    private Dictionary<long, PickupTaskOrder> previousOrders = [];
+    private Dictionary<long, PickupTaskOrderItem> previousItems = [];
+    private bool isLoading;
+
+    private async Task OnSearchKeyUpAsync(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await SearchAsync();
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        string? id = searchText?.Trim();
+        if (string.IsNullOrEmpty(id))
+        {
+            return;
+        }
+
+        searchedId = id;
+        orders = [];
+        items = [];
+        previousOrders = [];
+        previousItems = [];
+
+        isLoading = true;
+        try
+        {
+            orders = await StorageService.GetOrdersByOrderIdAsync(searchedId, CancellationToken.None);
+            items = await StorageService.GetItemsByOrderIdAsync(searchedId, CancellationToken.None);
+
+            for (int i = 1; i < orders.Count; i++)
+            {
+                previousOrders[orders[i].Id] = orders[i - 1];
+            }
+
+            Dictionary<string, PickupTaskOrderItem> lastByItemId = new(StringComparer.Ordinal);
+            foreach (PickupTaskOrderItem item in items)
+            {
+                if (lastByItemId.TryGetValue(item.OrderItemId, out PickupTaskOrderItem? previous))
+                {
+                    previousItems[item.Id] = previous;
+                }
+
+                lastByItemId[item.OrderItemId] = item;
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static RenderFragment Cell(string value, string? previousValue) => __builder =>
+    {
+        bool changed = previousValue is not null && value != previousValue;
+        <MudText Typo="Typo.body2" Color="@(changed ? Color.Primary : Color.Default)">
+            @if (changed)
+            {
+                <b>@value</b>
+            }
+            else
+            {
+                @value
+            }
+        </MudText>
+    };
+
+    private static string FormatTime(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
+
+    private static string FormatDecimal(decimal value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+
+    private static string FormatBool(bool value) => value ? "true" : "false";
+}

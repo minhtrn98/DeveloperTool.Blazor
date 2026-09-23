@@ -109,7 +109,7 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
             entity.Property(e => e.ExtraServices).HasColumnName("extra_services").HasMaxLength(20);
             entity.Property(e => e.Weight).HasColumnName("weight");
             entity.Property(e => e.RealWeight).HasColumnName("real_weight");
-            entity.Property(e => e.Status).HasColumnName("status").HasConversion(status => status.Description, description => OrderStatus.FromDescription(description)).HasMaxLength(50);
+            entity.Property(e => e.Status).HasColumnName("status").HasConversion(status => status.Description, description => PickupTaskOrderStatus.FromDescription(description)).HasMaxLength(50);
             entity.Property(e => e.IsProcessCompleted).HasColumnName("is_process_completed");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => new { e.PickupTaskId, e.OrderId });
@@ -124,7 +124,7 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
             entity.Property(e => e.OrderItemId).HasColumnName("order_item_id").HasMaxLength(20);
             entity.Property(e => e.Weight).HasColumnName("weight");
             entity.Property(e => e.RealWeight).HasColumnName("real_weight");
-            entity.Property(e => e.Status).HasColumnName("status").HasConversion(status => status.Description, description => OrderStatus.FromDescription(description)).HasMaxLength(50);
+            entity.Property(e => e.Status).HasColumnName("status").HasConversion(status => status.Description, description => PickupTaskOrderStatus.FromDescription(description)).HasMaxLength(50);
             entity.Property(e => e.IsProcessCompleted).HasColumnName("is_process_completed");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => new { e.PickupTaskId, e.OrderItemId });

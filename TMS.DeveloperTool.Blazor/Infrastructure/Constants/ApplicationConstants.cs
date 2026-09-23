@@ -22,6 +22,8 @@ public static class ApplicationConstants
         public const string OrderStep1QueryPro = "/pro/order-step1-query";
         public const string RouteStopQueryPro = "/pro/route-stop-query";
         public const string PickupTaskTraceQueryPro = "/pro/pickup-task-trace-query";
+        public const string PickupTaskOrderTimelinePro = "/pro/pickup-task-order-timeline";
+        public const string PickupTaskOrderItemTimelinePro = "/pro/pickup-task-order-item-timeline";
     }
 
     public static class EnvironmentNames

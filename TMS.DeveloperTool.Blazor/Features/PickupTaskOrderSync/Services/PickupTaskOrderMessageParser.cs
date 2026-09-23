@@ -41,7 +41,7 @@ public static class PickupTaskOrderMessageParser
         List<PickupTaskOrderItem> items = [];
         foreach (OrderMessage order in message.Orders)
         {
-            OrderStatus status = OrderStatus.FromValue(order.Status ?? OrderStatus.Initialized.Value);
+            PickupTaskOrderStatus status = PickupTaskOrderStatus.FromValue(order.Status ?? PickupTaskOrderStatus.New.Value);
             bool isProcessCompleted = order.IsProcessCompleted ?? false;
 
             orders.Add(new PickupTaskOrder

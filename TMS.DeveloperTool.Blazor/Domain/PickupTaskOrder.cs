@@ -11,7 +11,7 @@ public sealed class PickupTaskOrder
     public string ExtraServices { get; set; } = string.Empty;
     public decimal Weight { get; set; }
     public decimal RealWeight { get; set; }
-    public OrderStatus Status { get; set; } = OrderStatus.Initialized;
+    public PickupTaskOrderStatus Status { get; set; } = PickupTaskOrderStatus.New;
     public bool IsProcessCompleted { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
