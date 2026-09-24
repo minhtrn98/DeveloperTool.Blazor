@@ -166,3 +166,21 @@ CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_order_items_trace_id ON pro.picku
 
 ALTER TABLE pro.pickup_task_trace_logs ADD COLUMN IF NOT EXISTS is_processed BOOLEAN NOT NULL DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_trace_logs_unprocessed ON pro.pickup_task_trace_logs (log_timestamp, id) WHERE NOT is_processed;
+
+CREATE TABLE IF NOT EXISTS pro.delivery_manifest_commit_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    delivery_manifest_code TEXT NOT NULL DEFAULT '',
+    cod_manifest_code TEXT NOT NULL DEFAULT '',
+    actor TEXT NOT NULL DEFAULT '',
+    env TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_delivery_manifest_commit_logs_log_id ON pro.delivery_manifest_commit_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_manifest_commit_logs_delivery_manifest_code ON pro.delivery_manifest_commit_logs (delivery_manifest_code);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_manifest_commit_logs_cod_manifest_code ON pro.delivery_manifest_commit_logs (cod_manifest_code);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_manifest_commit_logs_actor ON pro.delivery_manifest_commit_logs (actor, log_timestamp DESC);

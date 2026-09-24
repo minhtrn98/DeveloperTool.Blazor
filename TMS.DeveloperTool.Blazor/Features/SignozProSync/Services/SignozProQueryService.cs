@@ -6,6 +6,7 @@ using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Models;
 using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Services;
 using TMS.DeveloperTool.Blazor.Features.RouteStop.Models;
 using TMS.DeveloperTool.Blazor.Features.RouteStop.Services;
+using TMS.DeveloperTool.Blazor.Features.SignozProSync.Models;
 using TMS.DeveloperTool.Blazor.Infrastructure.Http;
 
 namespace TMS.DeveloperTool.Blazor.Features.SignozProSync.Services;
@@ -38,6 +39,13 @@ public sealed class SignozProQueryService(
 
     private const string PickupTaskMessageTemplateText =
         "{FL} {PT} - Received event, EventId: {EventId}\n{Message}";
+
+    private const string DeliveryManifestCommitMessageTemplateText =
+        "{FL} {DE}|{CodCode} - [CommitDeliveryManifest] committed by {Actor}";
+
+    public Task<int> QueryDeliveryManifestCommitAsync(
+        DateTimeOffset start, DateTimeOffset end, Func<List<DeliveryManifestCommitLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
+        => QueryAsync($"message_template.text = '{DeliveryManifestCommitMessageTemplateText}'", ToDeliveryManifestCommitEntry, start, end, onPageAsync, cancellationToken);
 
     public Task<int> QueryRouteStopAsync(
         DateTimeOffset start, DateTimeOffset end, Func<List<RouteStopTraceLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
@@ -166,6 +174,24 @@ public sealed class SignozProQueryService(
                 bearerToken = await tokenProvider.GetAccessTokenAsync(forceRefresh: true, cancellationToken);
             }
         }
+    }
+
+    // {FL} is deliberately ignored — only the manifest codes and the actor are kept.
+    internal static DeliveryManifestCommitLogEntry? ToDeliveryManifestCommitEntry(LogRow row)
+    {
+        if (row.Data is null)
+        {
+            return null;
+        }
+
+        return new DeliveryManifestCommitLogEntry(
+            row.Data.Id,
+            row.Data.TraceId,
+            row.Data.SpanId,
+            row.Timestamp,
+            row.Data.AttributesString.GetValueOrDefault("DE", string.Empty),
+            row.Data.AttributesString.GetValueOrDefault("CodCode", string.Empty),
+            row.Data.AttributesString.GetValueOrDefault("Actor", string.Empty));
     }
 
     private static LogQueryRangeRequest BuildRequest(string filterExpression, DateTimeOffset start, DateTimeOffset end, int offset)

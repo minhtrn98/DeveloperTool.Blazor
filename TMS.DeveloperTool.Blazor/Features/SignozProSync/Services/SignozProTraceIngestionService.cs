@@ -3,6 +3,7 @@ using TMS.DeveloperTool.Blazor.Features.OrderStep1.Models;
 using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Models;
 using TMS.DeveloperTool.Blazor.Features.RouteStop.Models;
 using TMS.DeveloperTool.Blazor.Features.RouteStop.Services;
+using TMS.DeveloperTool.Blazor.Features.SignozProSync.Models;
 
 namespace TMS.DeveloperTool.Blazor.Features.SignozProSync.Services;
 
@@ -67,6 +68,26 @@ public sealed class SignozProTraceIngestionService(IDbContextFactory<ProApplicat
             int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
                 INSERT INTO pro.route_stop_trace_logs (log_id, trace_id, span_id, log_timestamp, action, driver, office, event_id, vehicle_id, assignment_id, action_object_id, message_detail, env, created_at)
                 VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.Action}, {entry.Driver}, {entry.Office}, {entry.EventId}, {entry.VehicleId}, {entry.AssignmentId}, {actionObjectId}, {entry.MessageDetail}, {Env}, {DateTimeOffset.UtcNow})
+                ON CONFLICT (log_id) DO NOTHING;
+                """, cancellationToken);
+
+            if (rowsAffected > 0)
+            {
+                savedCount++;
+            }
+        }
+
+        return savedCount;
+    }
+
+    public async Task<int> SaveIfNewAsync(ProApplicationDbContext dbContext, IReadOnlyList<DeliveryManifestCommitLogEntry> entries, CancellationToken cancellationToken)
+    {
+        int savedCount = 0;
+        foreach (DeliveryManifestCommitLogEntry entry in entries)
+        {
+            int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO pro.delivery_manifest_commit_logs (log_id, trace_id, span_id, log_timestamp, delivery_manifest_code, cod_manifest_code, actor, env, created_at)
+                VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.DeliveryManifestCode}, {entry.CodManifestCode}, {entry.Actor}, {Env}, {DateTimeOffset.UtcNow})
                 ON CONFLICT (log_id) DO NOTHING;
                 """, cancellationToken);
 

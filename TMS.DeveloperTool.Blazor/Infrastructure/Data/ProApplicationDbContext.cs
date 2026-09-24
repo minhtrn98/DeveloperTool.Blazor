@@ -11,6 +11,7 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
     public DbSet<LogApiToken> LogApiTokens { get; set; }
     public DbSet<PickupTaskOrder> PickupTaskOrders { get; set; }
     public DbSet<PickupTaskOrderItem> PickupTaskOrderItems { get; set; }
+    public DbSet<DeliveryManifestCommitLog> DeliveryManifestCommitLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -36,6 +37,9 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
 
         modelBuilder.Entity<PickupTaskOrderItem>()
             .ToTable("pickup_task_order_items");
+
+        modelBuilder.Entity<DeliveryManifestCommitLog>()
+            .ToTable("delivery_manifest_commit_logs");
 
         // Configure column names to match PostgreSQL schema
         modelBuilder.Entity<OrderStep1TraceLog>(entity =>
@@ -128,6 +132,21 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
             entity.Property(e => e.IsProcessCompleted).HasColumnName("is_process_completed");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => new { e.PickupTaskId, e.OrderItemId });
+        });
+
+        modelBuilder.Entity<DeliveryManifestCommitLog>(entity =>
+        {
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.LogId).HasColumnName("log_id");
+            entity.Property(e => e.TraceId).HasColumnName("trace_id");
+            entity.Property(e => e.SpanId).HasColumnName("span_id");
+            entity.Property(e => e.LogTimestamp).HasColumnName("log_timestamp");
+            entity.Property(e => e.DeliveryManifestCode).HasColumnName("delivery_manifest_code");
+            entity.Property(e => e.CodManifestCode).HasColumnName("cod_manifest_code");
+            entity.Property(e => e.Actor).HasColumnName("actor");
+            entity.Property(e => e.Env).HasColumnName("env");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(e => e.LogId).IsUnique();
         });
     }
 }

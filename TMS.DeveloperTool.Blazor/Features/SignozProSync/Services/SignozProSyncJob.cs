@@ -1,7 +1,7 @@
 namespace TMS.DeveloperTool.Blazor.Features.SignozProSync.Services;
 
 /// <summary>
-/// Every 5 minutes, pulls the last window of RouteStop/PickupTask trace logs from SigNoz Pro
+/// Every 5 minutes, pulls the last window of RouteStop/PickupTask/CommitDeliveryManifest trace logs from SigNoz Pro
 /// (the Production monitor) and stores any new rows into the "pro" schema. Each page returned
 /// by SigNoz is saved as soon as it arrives (instead of buffering the whole window in memory),
 /// and the shared DbContext's change tracker is cleared right after — keeps a long backfill
@@ -86,6 +86,13 @@ public sealed class SignozProSyncJob(
             SignozProTraceIngestionService.ClearTracking(dbContext);
         }, cancellationToken);
 
+        int manifestCommitSaved = 0;
+        int manifestCommitFetched = await queryService.QueryDeliveryManifestCommitAsync(start, end, async (page, ct) =>
+        {
+            manifestCommitSaved += await ingestionService.SaveIfNewAsync(dbContext, page, ct);
+            SignozProTraceIngestionService.ClearTracking(dbContext);
+        }, cancellationToken);
+
         DateTimeOffset newCheckpoint = end - CheckpointSafetyBuffer;
         if (newCheckpoint > start)
         {
@@ -94,9 +101,11 @@ public sealed class SignozProSyncJob(
 
         logger.LogInformation(
             "SigNoz Pro trace sync [{Start} - {End}]: {RouteStopCount} route-stop ({RouteStopSaved} new), " +
-            "{PickupTaskCount} pickup-task ({PickupTaskSaved} new).",
+            "{PickupTaskCount} pickup-task ({PickupTaskSaved} new), " +
+            "{ManifestCommitCount} delivery-manifest-commit ({ManifestCommitSaved} new).",
             start, end,
             routeStopFetched, routeStopSaved,
-            pickupTaskFetched, pickupTaskSaved);
+            pickupTaskFetched, pickupTaskSaved,
+            manifestCommitFetched, manifestCommitSaved);
     }
 }
