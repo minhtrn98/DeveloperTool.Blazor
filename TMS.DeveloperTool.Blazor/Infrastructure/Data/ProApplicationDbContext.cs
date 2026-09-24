@@ -165,6 +165,7 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
             entity.Property(e => e.ManifestCount).HasColumnName("manifest_count");
             entity.Property(e => e.DeliveredCount).HasColumnName("delivered_count");
             entity.Property(e => e.CollectedCod).HasColumnName("collected_cod").HasPrecision(18, 2);
+            entity.Property(e => e.Actor).HasColumnName("actor");
             entity.Property(e => e.Env).HasColumnName("env");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.LogId).IsUnique();

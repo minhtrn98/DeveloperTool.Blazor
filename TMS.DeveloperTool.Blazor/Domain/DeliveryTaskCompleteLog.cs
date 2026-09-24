@@ -24,6 +24,9 @@ public sealed class DeliveryTaskCompleteLog
     /// <summary>Số tiền COD đã thu ({Cod}).</summary>
     public decimal CollectedCod { get; set; }
 
+    /// <summary>Người xác nhận phát hàng (attributes_string.User).</summary>
+    public string Actor { get; set; } = string.Empty;
+
     public string Env { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

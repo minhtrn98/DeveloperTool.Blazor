@@ -15,7 +15,7 @@ public sealed class DeliveryManifestCommitLog
     /// <summary>Mã sổ phát COD ({CodCode}).</summary>
     public string CodManifestCode { get; set; } = string.Empty;
 
-    /// <summary>Người tạo sổ phát ({Actor}).</summary>
+    /// <summary>Người tạo sổ phát (attributes_string.User, fallback {Actor}).</summary>
     public string Actor { get; set; } = string.Empty;
 
     public string Env { get; set; } = string.Empty;

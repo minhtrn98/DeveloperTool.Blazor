@@ -106,8 +106,8 @@ public sealed class SignozProTraceIngestionService(IDbContextFactory<ProApplicat
         foreach (DeliveryTaskCompleteLogEntry entry in entries)
         {
             int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
-                INSERT INTO pro.delivery_task_complete_logs (log_id, trace_id, span_id, log_timestamp, delivery_manifest_code, task_count, manifest_count, delivered_count, collected_cod, env, created_at)
-                VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.DeliveryManifestCode}, {entry.TaskCount}, {entry.ManifestCount}, {entry.DeliveredCount}, {entry.CollectedCod}, {Env}, {DateTimeOffset.UtcNow})
+                INSERT INTO pro.delivery_task_complete_logs (log_id, trace_id, span_id, log_timestamp, delivery_manifest_code, task_count, manifest_count, delivered_count, collected_cod, actor, env, created_at)
+                VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.DeliveryManifestCode}, {entry.TaskCount}, {entry.ManifestCount}, {entry.DeliveredCount}, {entry.CollectedCod}, {entry.Actor}, {Env}, {DateTimeOffset.UtcNow})
                 ON CONFLICT (log_id) DO NOTHING;
                 """, cancellationToken);
 

@@ -4,7 +4,8 @@ namespace TMS.DeveloperTool.Blazor.Features.SignozProSync.Models;
 /// One "[CompleteDeliveryTask]" log row — the "xác nhận phát hàng" action.
 /// <see cref="DeliveryManifestCode"/> is the manifest code ({DE}), <see cref="TaskCount"/> the
 /// number of tasks, <see cref="ManifestCount"/> the number of manifests, <see cref="DeliveredCount"/>
-/// the number of parcels delivered and <see cref="CollectedCod"/> the COD amount collected ({Cod}).
+/// the number of parcels delivered and <see cref="CollectedCod"/> the COD amount collected ({Cod}),
+/// <see cref="Actor"/> the user who confirmed it (attributes_string.User).
 /// </summary>
 public sealed record DeliveryTaskCompleteLogEntry(
     string LogId,
@@ -15,4 +16,5 @@ public sealed record DeliveryTaskCompleteLogEntry(
     int TaskCount,
     int ManifestCount,
     int DeliveredCount,
-    decimal CollectedCod);
+    decimal CollectedCod,
+    string Actor);

@@ -184,7 +184,7 @@ public sealed class SignozProQueryService(
         }
     }
 
-    // {FL} is deliberately ignored — only the manifest codes and the actor are kept.
+    // {FL} is deliberately ignored — only the manifest codes and the actor (see GetActor) are kept.
     internal static DeliveryManifestCommitLogEntry? ToDeliveryManifestCommitEntry(LogRow row)
     {
         if (row.Data is null)
@@ -199,7 +199,7 @@ public sealed class SignozProQueryService(
             row.Timestamp,
             row.Data.AttributesString.GetValueOrDefault("DE", string.Empty),
             row.Data.AttributesString.GetValueOrDefault("CodCode", string.Empty),
-            row.Data.AttributesString.GetValueOrDefault("Actor", string.Empty));
+            GetActor(row.Data));
     }
 
     // {FL} is deliberately ignored.
@@ -219,8 +219,15 @@ public sealed class SignozProQueryService(
             (int)GetNumberAttribute(row.Data, "TaskCount"),
             (int)GetNumberAttribute(row.Data, "ManifestCount"),
             (int)GetNumberAttribute(row.Data, "Delivered"),
-            GetNumberAttribute(row.Data, "Cod"));
+            GetNumberAttribute(row.Data, "Cod"),
+            GetActor(row.Data));
     }
+
+    // The logged-in user is enriched onto every log as attributes_string.User; the commit
+    // template's own {Actor} argument is only a fallback for rows missing that attribute.
+    private static string GetActor(LogRowData data)
+        => data.AttributesString.GetValueOrDefault("User")
+            ?? data.AttributesString.GetValueOrDefault("Actor", string.Empty);
 
     // Numeric template arguments usually land in attributes_number, but fall back to
     // attributes_string in case the exporter stringified them.

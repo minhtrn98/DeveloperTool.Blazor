@@ -196,6 +196,7 @@ CREATE TABLE IF NOT EXISTS pro.delivery_task_complete_logs (
     manifest_count INT NOT NULL DEFAULT 0,
     delivered_count INT NOT NULL DEFAULT 0,
     collected_cod NUMERIC(18, 2) NOT NULL DEFAULT 0,
+    actor TEXT NOT NULL DEFAULT '',
     env TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
