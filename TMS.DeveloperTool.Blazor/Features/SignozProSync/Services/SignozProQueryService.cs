@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using TMS.DeveloperTool.Blazor.Features.OrderStep1.Contracts;
 using TMS.DeveloperTool.Blazor.Features.OrderStep1.Models;
@@ -46,6 +47,13 @@ public sealed class SignozProQueryService(
     public Task<int> QueryDeliveryManifestCommitAsync(
         DateTimeOffset start, DateTimeOffset end, Func<List<DeliveryManifestCommitLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
         => QueryAsync($"message_template.text = '{DeliveryManifestCommitMessageTemplateText}'", ToDeliveryManifestCommitEntry, start, end, onPageAsync, cancellationToken);
+
+    private const string DeliveryTaskCompleteMessageTemplateText =
+        "{FL} {DE} - [CompleteDeliveryTask] tasks={TaskCount} manifests={ManifestCount} delivered={Delivered} collected={Cod}";
+
+    public Task<int> QueryDeliveryTaskCompleteAsync(
+        DateTimeOffset start, DateTimeOffset end, Func<List<DeliveryTaskCompleteLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
+        => QueryAsync($"message_template.text = '{DeliveryTaskCompleteMessageTemplateText}'", ToDeliveryTaskCompleteEntry, start, end, onPageAsync, cancellationToken);
 
     public Task<int> QueryRouteStopAsync(
         DateTimeOffset start, DateTimeOffset end, Func<List<RouteStopTraceLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
@@ -192,6 +200,41 @@ public sealed class SignozProQueryService(
             row.Data.AttributesString.GetValueOrDefault("DE", string.Empty),
             row.Data.AttributesString.GetValueOrDefault("CodCode", string.Empty),
             row.Data.AttributesString.GetValueOrDefault("Actor", string.Empty));
+    }
+
+    // {FL} is deliberately ignored.
+    internal static DeliveryTaskCompleteLogEntry? ToDeliveryTaskCompleteEntry(LogRow row)
+    {
+        if (row.Data is null)
+        {
+            return null;
+        }
+
+        return new DeliveryTaskCompleteLogEntry(
+            row.Data.Id,
+            row.Data.TraceId,
+            row.Data.SpanId,
+            row.Timestamp,
+            row.Data.AttributesString.GetValueOrDefault("DE", string.Empty),
+            (int)GetNumberAttribute(row.Data, "TaskCount"),
+            (int)GetNumberAttribute(row.Data, "ManifestCount"),
+            (int)GetNumberAttribute(row.Data, "Delivered"),
+            GetNumberAttribute(row.Data, "Cod"));
+    }
+
+    // Numeric template arguments usually land in attributes_number, but fall back to
+    // attributes_string in case the exporter stringified them.
+    private static decimal GetNumberAttribute(LogRowData data, string key)
+    {
+        if (data.AttributesNumber.TryGetValue(key, out double number))
+        {
+            return (decimal)number;
+        }
+
+        return data.AttributesString.TryGetValue(key, out string? text)
+            && decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsed)
+            ? parsed
+            : 0m;
     }
 
     private static LogQueryRangeRequest BuildRequest(string filterExpression, DateTimeOffset start, DateTimeOffset end, int offset)

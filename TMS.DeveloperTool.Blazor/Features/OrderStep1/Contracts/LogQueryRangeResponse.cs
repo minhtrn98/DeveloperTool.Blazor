@@ -51,4 +51,8 @@ public sealed class LogRowData
 
     [JsonPropertyName("attributes_string")]
     public Dictionary<string, string> AttributesString { get; set; } = [];
+
+    // Numeric message-template arguments (e.g. counts, amounts) are indexed here instead of attributes_string.
+    [JsonPropertyName("attributes_number")]
+    public Dictionary<string, double> AttributesNumber { get; set; } = [];
 }

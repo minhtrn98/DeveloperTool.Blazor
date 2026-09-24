@@ -12,6 +12,7 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
     public DbSet<PickupTaskOrder> PickupTaskOrders { get; set; }
     public DbSet<PickupTaskOrderItem> PickupTaskOrderItems { get; set; }
     public DbSet<DeliveryManifestCommitLog> DeliveryManifestCommitLogs { get; set; }
+    public DbSet<DeliveryTaskCompleteLog> DeliveryTaskCompleteLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,6 +41,9 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
 
         modelBuilder.Entity<DeliveryManifestCommitLog>()
             .ToTable("delivery_manifest_commit_logs");
+
+        modelBuilder.Entity<DeliveryTaskCompleteLog>()
+            .ToTable("delivery_task_complete_logs");
 
         // Configure column names to match PostgreSQL schema
         modelBuilder.Entity<OrderStep1TraceLog>(entity =>
@@ -144,6 +148,23 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
             entity.Property(e => e.DeliveryManifestCode).HasColumnName("delivery_manifest_code");
             entity.Property(e => e.CodManifestCode).HasColumnName("cod_manifest_code");
             entity.Property(e => e.Actor).HasColumnName("actor");
+            entity.Property(e => e.Env).HasColumnName("env");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(e => e.LogId).IsUnique();
+        });
+
+        modelBuilder.Entity<DeliveryTaskCompleteLog>(entity =>
+        {
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.LogId).HasColumnName("log_id");
+            entity.Property(e => e.TraceId).HasColumnName("trace_id");
+            entity.Property(e => e.SpanId).HasColumnName("span_id");
+            entity.Property(e => e.LogTimestamp).HasColumnName("log_timestamp");
+            entity.Property(e => e.DeliveryManifestCode).HasColumnName("delivery_manifest_code");
+            entity.Property(e => e.TaskCount).HasColumnName("task_count");
+            entity.Property(e => e.ManifestCount).HasColumnName("manifest_count");
+            entity.Property(e => e.DeliveredCount).HasColumnName("delivered_count");
+            entity.Property(e => e.CollectedCod).HasColumnName("collected_cod").HasPrecision(18, 2);
             entity.Property(e => e.Env).HasColumnName("env");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.LogId).IsUnique();

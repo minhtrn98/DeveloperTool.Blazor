@@ -184,3 +184,22 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_delivery_manifest_commit_logs_log_id ON
 CREATE INDEX IF NOT EXISTS idx_pro_delivery_manifest_commit_logs_delivery_manifest_code ON pro.delivery_manifest_commit_logs (delivery_manifest_code);
 CREATE INDEX IF NOT EXISTS idx_pro_delivery_manifest_commit_logs_cod_manifest_code ON pro.delivery_manifest_commit_logs (cod_manifest_code);
 CREATE INDEX IF NOT EXISTS idx_pro_delivery_manifest_commit_logs_actor ON pro.delivery_manifest_commit_logs (actor, log_timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS pro.delivery_task_complete_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    delivery_manifest_code TEXT NOT NULL DEFAULT '',
+    task_count INT NOT NULL DEFAULT 0,
+    manifest_count INT NOT NULL DEFAULT 0,
+    delivered_count INT NOT NULL DEFAULT 0,
+    collected_cod NUMERIC(18, 2) NOT NULL DEFAULT 0,
+    env TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_delivery_task_complete_logs_log_id ON pro.delivery_task_complete_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_task_complete_logs_delivery_manifest_code ON pro.delivery_task_complete_logs (delivery_manifest_code, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_task_complete_logs_log_timestamp ON pro.delivery_task_complete_logs (log_timestamp DESC);
