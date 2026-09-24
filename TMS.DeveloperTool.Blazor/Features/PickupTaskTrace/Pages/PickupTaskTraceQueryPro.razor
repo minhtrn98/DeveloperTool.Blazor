@@ -44,7 +44,7 @@
             <TableRow Context="row">
                 @{ PickupTaskMessageFields fields = PickupTaskMessageFieldsParser.Parse(row.Item.MessageDetail); }
                 <MudTd DataLabel="STT">@row.Index</MudTd>
-                <MudTd DataLabel="Thời gian">@row.Item.LogTimestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
+                <MudTd DataLabel="Thời gian">@VietnamTimeHelper.Format(row.Item.LogTimestamp)</MudTd>
                 <MudTd DataLabel="Mã điều tin">@row.Item.PickupTaskId</MudTd>
                 <MudTd DataLabel="Dispatch Type">@fields.DispatchType</MudTd>
                 <MudTd DataLabel="Dispatch Method">@fields.DispatchMethod</MudTd>

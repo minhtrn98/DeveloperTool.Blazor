@@ -77,7 +77,7 @@
                 <RowTemplate>
                     @{ RouteStopMessageFields fields = RouteStopMessageFieldsParser.Parse(context.MessageDetail); }
                     <MudTd DataLabel="STT">@(rows.IndexOf(context) + 1)</MudTd>
-                    <MudTd DataLabel="Thời gian">@context.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
+                    <MudTd DataLabel="Thời gian">@VietnamTimeHelper.Format(context.Timestamp)</MudTd>
                     <MudTd DataLabel="Action">@context.Action</MudTd>
                     <MudTd DataLabel="Driver">
                         @fields.DriverName
@@ -104,8 +104,8 @@
 @code {
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(10);
 
-    private DateTime? startDate = DateTime.Today;
-    private TimeSpan? startTimeOfDay = DateTime.Now.TimeOfDay;
+    private DateTime? startDate = VietnamTimeHelper.Now.Date;
+    private TimeSpan? startTimeOfDay = VietnamTimeHelper.Now.TimeOfDay;
     private bool isTracing;
     private string? lastError;
 
@@ -124,7 +124,7 @@
         }
 
         DateTime combined = startDate.Value.Date + startTimeOfDay.Value;
-        DateTimeOffset traceStart = new(combined, TimeZoneInfo.Local.GetUtcOffset(combined));
+        DateTimeOffset traceStart = VietnamTimeHelper.FromVietnamLocal(combined);
         if (traceStart >= DateTimeOffset.Now)
         {
             Snackbar.Add("Thời gian bắt đầu phải trước thời điểm hiện tại.", Severity.Warning);

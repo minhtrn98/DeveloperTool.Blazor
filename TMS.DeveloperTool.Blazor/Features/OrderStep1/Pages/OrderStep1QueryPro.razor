@@ -30,7 +30,7 @@
             </TableHeader>
             <TableRow Context="row">
                 <MudTd DataLabel="STT">@row.Index</MudTd>
-                <MudTd DataLabel="Thời gian">@row.Item.LogTimestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
+                <MudTd DataLabel="Thời gian">@VietnamTimeHelper.Format(row.Item.LogTimestamp)</MudTd>
                 <MudTd DataLabel="Order Id">@row.Item.OrderId</MudTd>
                 <MudTd DataLabel="Trace Id">@row.Item.TraceId</MudTd>
                 <MudTd DataLabel="Message Detail">

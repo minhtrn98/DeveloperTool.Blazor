@@ -120,7 +120,7 @@
         </MudText>
     };
 
-    private static string FormatTime(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
+    private static string FormatTime(DateTimeOffset value) => VietnamTimeHelper.Format(value);
 
     private static string FormatDecimal(decimal value) => value.ToString("0.###", CultureInfo.InvariantCulture);
 

@@ -50,7 +50,7 @@
             <TableRow Context="row">
                 @{ RouteStopMessageFields fields = RouteStopMessageFieldsParser.Parse(row.Item.MessageDetail); }
                 <MudTd DataLabel="STT">@row.Index</MudTd>
-                <MudTd DataLabel="Thời gian">@row.Item.LogTimestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
+                <MudTd DataLabel="Thời gian">@VietnamTimeHelper.Format(row.Item.LogTimestamp)</MudTd>
                 <MudTd DataLabel="Action">@row.Item.Action</MudTd>
                 <MudTd DataLabel="Driver">
                     @fields.DriverName

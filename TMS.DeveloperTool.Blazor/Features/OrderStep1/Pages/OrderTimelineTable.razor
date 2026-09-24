@@ -13,7 +13,7 @@ else
                     <th style="position: sticky; left: 0; z-index: 1; background: var(--mud-palette-surface);">@HeaderLabel</th>
                     @foreach (DateTimeOffset timestamp in Timestamps)
                     {
-                        <th style="white-space: nowrap;">@timestamp.ToString("dd/MM/yyyy HH:mm:ss")</th>
+                        <th style="white-space: nowrap;">@VietnamTimeHelper.Format(timestamp)</th>
                     }
                 </tr>
             </thead>

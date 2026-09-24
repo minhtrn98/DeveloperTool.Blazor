@@ -92,7 +92,7 @@
                 <RowTemplate>
                     <MudTd DataLabel="STT">@(rows.IndexOf(context) + 1)</MudTd>
                     <MudTd DataLabel="Order Id">@context.OrderId</MudTd>
-                    <MudTd DataLabel="Thời gian">@context.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
+                    <MudTd DataLabel="Thời gian">@VietnamTimeHelper.Format(context.Timestamp)</MudTd>
                     <MudTd DataLabel="Trace Id">@context.TraceId</MudTd>
                     <MudTd DataLabel="Span Id">@context.SpanId</MudTd>
                     <MudTd DataLabel="Message Detail">
@@ -118,8 +118,8 @@
     private const string OrderIdsStorageKey = "orderStep1Trace.orderIds";
 
     private string orderIdsInput = string.Empty;
-    private DateTime? startDate = DateTime.Today;
-    private TimeSpan? startTimeOfDay = DateTime.Now.TimeOfDay;
+    private DateTime? startDate = VietnamTimeHelper.Now.Date;
+    private TimeSpan? startTimeOfDay = VietnamTimeHelper.Now.TimeOfDay;
     private bool isTracing;
     private bool autoSendToQueue;
     private string? lastError;
@@ -170,7 +170,7 @@
         }
 
         DateTime combined = startDate.Value.Date + startTimeOfDay.Value;
-        DateTimeOffset traceStart = new(combined, TimeZoneInfo.Local.GetUtcOffset(combined));
+        DateTimeOffset traceStart = VietnamTimeHelper.FromVietnamLocal(combined);
         if (traceStart >= DateTimeOffset.Now)
         {
             Snackbar.Add("Thời gian bắt đầu phải trước thời điểm hiện tại.", Severity.Warning);
