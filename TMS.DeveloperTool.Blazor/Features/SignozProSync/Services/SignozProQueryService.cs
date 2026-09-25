@@ -94,6 +94,27 @@ public sealed class SignozProQueryService(
         DateTimeOffset start, DateTimeOffset end, Func<List<DeliverySessionCommitLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
         => QueryAsync($"message_template.text = '{DeliverySessionCommitMessageTemplateText}'", ToDeliverySessionCommitEntry, start, end, onPageAsync, cancellationToken);
 
+    private const string UnloadingHandoverMessageTemplateText =
+        "{FL} {HO} - [CreateUnloadingHandover] created (id={Id}) by driver {DriverId} with {ItemCount} items";
+
+    public Task<int> QueryUnloadingHandoverAsync(
+        DateTimeOffset start, DateTimeOffset end, Func<List<UnloadingHandoverLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
+        => QueryAsync($"message_template.text = '{UnloadingHandoverMessageTemplateText}'", ToUnloadingHandoverEntry, start, end, onPageAsync, cancellationToken);
+
+    private const string UnloadingHandoverReceiveMessageTemplateText =
+        "{FL} {HO} - [ReceiveUnloadingHandover] NVKT received (id={Id})";
+
+    public Task<int> QueryUnloadingHandoverReceiveAsync(
+        DateTimeOffset start, DateTimeOffset end, Func<List<UnloadingHandoverEventLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
+        => QueryAsync($"message_template.text = '{UnloadingHandoverReceiveMessageTemplateText}'", ToUnloadingHandoverEventEntry, start, end, onPageAsync, cancellationToken);
+
+    private const string UnloadingHandoverConfirmMessageTemplateText =
+        "{FL} {HO} - [ConfirmUnloadingHandover] NVKT received with item commit (id={Id})";
+
+    public Task<int> QueryUnloadingHandoverConfirmAsync(
+        DateTimeOffset start, DateTimeOffset end, Func<List<UnloadingHandoverEventLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
+        => QueryAsync($"message_template.text = '{UnloadingHandoverConfirmMessageTemplateText}'", ToUnloadingHandoverEventEntry, start, end, onPageAsync, cancellationToken);
+
     public Task<int> QueryRouteStopAsync(
         DateTimeOffset start, DateTimeOffset end, Func<List<RouteStopTraceLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
         => QueryAsync($"message_template.text = '{RouteStopMessageTemplateText}'", RouteStopLogQueryService.ToEntry, start, end, onPageAsync, cancellationToken);
@@ -372,6 +393,43 @@ public sealed class SignozProQueryService(
             ParseIdList(GetTextAttribute(row.Data, "Codes")),
             (int)GetNumberAttribute(row.Data, "Count"),
             GetActor(row.Data));
+    }
+
+    // {FL} is deliberately ignored.
+    internal static UnloadingHandoverLogEntry? ToUnloadingHandoverEntry(LogRow row)
+    {
+        if (row.Data is null)
+        {
+            return null;
+        }
+
+        return new UnloadingHandoverLogEntry(
+            row.Data.Id,
+            row.Data.TraceId,
+            row.Data.SpanId,
+            row.Timestamp,
+            GetTextAttribute(row.Data, "HO"),
+            GetTextAttribute(row.Data, "Id"),
+            GetTextAttribute(row.Data, "DriverId"),
+            (int)GetNumberAttribute(row.Data, "ItemCount"),
+            GetActor(row.Data));
+    }
+
+    // {FL} is deliberately ignored.
+    internal static UnloadingHandoverEventLogEntry? ToUnloadingHandoverEventEntry(LogRow row)
+    {
+        if (row.Data is null)
+        {
+            return null;
+        }
+
+        return new UnloadingHandoverEventLogEntry(
+            row.Data.Id,
+            row.Data.TraceId,
+            row.Data.SpanId,
+            row.Timestamp,
+            GetTextAttribute(row.Data, "HO"),
+            GetTextAttribute(row.Data, "Id"));
     }
 
     // Bools land in attributes_bool, but may also come through as "True"/"false" strings or 0/1

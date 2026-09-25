@@ -202,6 +202,70 @@ public sealed class SignozProTraceIngestionService(IDbContextFactory<ProApplicat
         return savedCount;
     }
 
+    public async Task<int> SaveIfNewAsync(ProApplicationDbContext dbContext, IReadOnlyList<UnloadingHandoverLogEntry> entries, CancellationToken cancellationToken)
+    {
+        int savedCount = 0;
+        foreach (UnloadingHandoverLogEntry entry in entries)
+        {
+            int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO pro.unloading_handover_logs (log_id, trace_id, span_id, log_timestamp, handover_code, handover_id, driver_id, item_count, actor, env, created_at)
+                VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.HandoverCode}, {entry.HandoverId}, {entry.DriverId}, {entry.ItemCount}, {entry.Actor}, {Env}, {DateTimeOffset.UtcNow})
+                ON CONFLICT (log_id) DO NOTHING;
+                """, cancellationToken);
+
+            if (rowsAffected > 0)
+            {
+                savedCount++;
+            }
+        }
+
+        return savedCount;
+    }
+
+    /// <summary>
+    /// Marks the <c>unloading_handover_logs</c> row with the same handover code as received
+    /// ([ReceiveUnloadingHandover]). Returns how many rows were marked.
+    /// </summary>
+    public Task<int> MarkUnloadingHandoverReceivedAsync(ProApplicationDbContext dbContext, IReadOnlyList<UnloadingHandoverEventLogEntry> entries, CancellationToken cancellationToken)
+        => MarkUnloadingHandoverAsync(dbContext, entries, entry => $"""
+            UPDATE pro.unloading_handover_logs
+            SET is_received = TRUE, received_at = {entry.Timestamp.ToUniversalTime()}, received_trace_id = {entry.TraceId}
+            WHERE handover_code = {entry.HandoverCode} AND NOT is_received;
+            """, cancellationToken);
+
+    /// <summary>
+    /// Marks the <c>unloading_handover_logs</c> row with the same handover code as confirmed
+    /// ([ConfirmUnloadingHandover] — received with item commit). Returns how many rows were marked.
+    /// </summary>
+    public Task<int> MarkUnloadingHandoverConfirmedAsync(ProApplicationDbContext dbContext, IReadOnlyList<UnloadingHandoverEventLogEntry> entries, CancellationToken cancellationToken)
+        => MarkUnloadingHandoverAsync(dbContext, entries, entry => $"""
+            UPDATE pro.unloading_handover_logs
+            SET is_confirm = TRUE, confirm_at = {entry.Timestamp.ToUniversalTime()}, confirm_trace_id = {entry.TraceId}
+            WHERE handover_code = {entry.HandoverCode} AND NOT is_confirm;
+            """, cancellationToken);
+
+    // Only rows not yet marked are touched (see the "AND NOT is_..." in each UPDATE), so the first
+    // event wins and the sync job's overlap window re-applying the same log is a no-op.
+    private static async Task<int> MarkUnloadingHandoverAsync(
+        ProApplicationDbContext dbContext,
+        IReadOnlyList<UnloadingHandoverEventLogEntry> entries,
+        Func<UnloadingHandoverEventLogEntry, FormattableString> buildUpdate,
+        CancellationToken cancellationToken)
+    {
+        int markedCount = 0;
+        foreach (UnloadingHandoverEventLogEntry entry in entries)
+        {
+            if (string.IsNullOrEmpty(entry.HandoverCode))
+            {
+                continue;
+            }
+
+            markedCount += await dbContext.Database.ExecuteSqlInterpolatedAsync(buildUpdate(entry), cancellationToken);
+        }
+
+        return markedCount;
+    }
+
     public async Task<int> SaveIfNewAsync(ProApplicationDbContext dbContext, IReadOnlyList<PickupTaskTraceLogEntry> entries, CancellationToken cancellationToken)
     {
         int savedCount = 0;

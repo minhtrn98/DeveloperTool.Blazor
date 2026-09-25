@@ -17,6 +17,7 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
     public DbSet<DeliveryTransferLog> DeliveryTransferLogs { get; set; }
     public DbSet<DeliveryArrivalLog> DeliveryArrivalLogs { get; set; }
     public DbSet<DeliverySessionCommitLog> DeliverySessionCommitLogs { get; set; }
+    public DbSet<UnloadingHandoverLog> UnloadingHandoverLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,6 +61,9 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
 
         modelBuilder.Entity<DeliverySessionCommitLog>()
             .ToTable("delivery_session_commit_logs");
+
+        modelBuilder.Entity<UnloadingHandoverLog>()
+            .ToTable("unloading_handover_logs");
 
         // Configure column names to match PostgreSQL schema
         modelBuilder.Entity<OrderStep1TraceLog>(entity =>
@@ -259,6 +263,29 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
             entity.Property(e => e.ManifestCodes).HasColumnName("manifest_codes");
             entity.Property(e => e.ItemCount).HasColumnName("item_count");
             entity.Property(e => e.Actor).HasColumnName("actor");
+            entity.Property(e => e.Env).HasColumnName("env");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(e => e.LogId).IsUnique();
+        });
+
+        modelBuilder.Entity<UnloadingHandoverLog>(entity =>
+        {
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.LogId).HasColumnName("log_id");
+            entity.Property(e => e.TraceId).HasColumnName("trace_id");
+            entity.Property(e => e.SpanId).HasColumnName("span_id");
+            entity.Property(e => e.LogTimestamp).HasColumnName("log_timestamp");
+            entity.Property(e => e.HandoverCode).HasColumnName("handover_code");
+            entity.Property(e => e.HandoverId).HasColumnName("handover_id");
+            entity.Property(e => e.DriverId).HasColumnName("driver_id");
+            entity.Property(e => e.ItemCount).HasColumnName("item_count");
+            entity.Property(e => e.Actor).HasColumnName("actor");
+            entity.Property(e => e.IsReceived).HasColumnName("is_received");
+            entity.Property(e => e.ReceivedAt).HasColumnName("received_at");
+            entity.Property(e => e.ReceivedTraceId).HasColumnName("received_trace_id");
+            entity.Property(e => e.IsConfirm).HasColumnName("is_confirm");
+            entity.Property(e => e.ConfirmAt).HasColumnName("confirm_at");
+            entity.Property(e => e.ConfirmTraceId).HasColumnName("confirm_trace_id");
             entity.Property(e => e.Env).HasColumnName("env");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.LogId).IsUnique();

@@ -297,3 +297,33 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_delivery_session_commit_logs_log_id ON 
 CREATE INDEX IF NOT EXISTS idx_pro_delivery_session_commit_logs_log_timestamp ON pro.delivery_session_commit_logs (log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_pro_delivery_session_commit_logs_actor ON pro.delivery_session_commit_logs (actor, log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_pro_delivery_session_commit_logs_manifest_codes ON pro.delivery_session_commit_logs USING GIN (manifest_codes);
+
+CREATE TABLE IF NOT EXISTS pro.unloading_handover_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    handover_code TEXT NOT NULL DEFAULT '',
+    handover_id TEXT NOT NULL DEFAULT '',
+    driver_id TEXT NOT NULL DEFAULT '',
+    item_count INT NOT NULL DEFAULT 0,
+    actor TEXT NOT NULL DEFAULT '',
+    is_confirm BOOLEAN NOT NULL DEFAULT FALSE,
+    confirm_at TIMESTAMPTZ NULL,
+    confirm_trace_id TEXT NULL,
+    is_received BOOLEAN NOT NULL DEFAULT FALSE,
+    received_at TIMESTAMPTZ NULL,
+    received_trace_id TEXT NULL,
+    env TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_unloading_handover_logs_log_id ON pro.unloading_handover_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_pro_unloading_handover_logs_handover_code ON pro.unloading_handover_logs (handover_code);
+CREATE INDEX IF NOT EXISTS idx_pro_unloading_handover_logs_driver_id ON pro.unloading_handover_logs (driver_id, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_unloading_handover_logs_log_timestamp ON pro.unloading_handover_logs (log_timestamp DESC);
+
+CREATE INDEX IF NOT EXISTS idx_pro_unloading_handover_logs_not_received ON pro.unloading_handover_logs (log_timestamp) WHERE NOT is_received;
+
+CREATE INDEX IF NOT EXISTS idx_pro_unloading_handover_logs_not_confirm ON pro.unloading_handover_logs (log_timestamp) WHERE NOT is_confirm;

@@ -3,7 +3,7 @@ using TMS.DeveloperTool.Blazor.Features.SignozProSync.Models;
 namespace TMS.DeveloperTool.Blazor.Features.SignozProSync.Services;
 
 /// <summary>
-/// Every 5 minutes, pulls the last window of RouteStop/PickupTask/CommitDeliveryManifest/CompleteDeliveryTask/RecordDeliveryFailure/(External)CreateDeliveryTransfer/RecordDeliveryArrival/CommitCreateDeliverySession trace logs from SigNoz Pro
+/// Every 5 minutes, pulls the last window of RouteStop/PickupTask/CommitDeliveryManifest/CompleteDeliveryTask/RecordDeliveryFailure/(External)CreateDeliveryTransfer/RecordDeliveryArrival/CommitCreateDeliverySession/CreateUnloadingHandover/ReceiveUnloadingHandover/ConfirmUnloadingHandover trace logs from SigNoz Pro
 /// (the Production monitor) and stores any new rows into the "pro" schema. Each page returned
 /// by SigNoz is saved as soon as it arrives (instead of buffering the whole window in memory),
 /// and the shared DbContext's change tracker is cleared right after — keeps a long backfill
@@ -134,6 +134,29 @@ public sealed class SignozProSyncJob(
             SignozProTraceIngestionService.ClearTracking(dbContext);
         }, cancellationToken);
 
+        int unloadingHandoverSaved = 0;
+        int unloadingHandoverFetched = await queryService.QueryUnloadingHandoverAsync(start, end, async (page, ct) =>
+        {
+            unloadingHandoverSaved += await ingestionService.SaveIfNewAsync(dbContext, page, ct);
+            SignozProTraceIngestionService.ClearTracking(dbContext);
+        }, cancellationToken);
+
+        // Must run after QueryUnloadingHandoverAsync: it updates the rows that query inserts.
+        int unloadingHandoverReceivedMarked = 0;
+        int unloadingHandoverReceiveFetched = await queryService.QueryUnloadingHandoverReceiveAsync(start, end, async (page, ct) =>
+        {
+            unloadingHandoverReceivedMarked += await ingestionService.MarkUnloadingHandoverReceivedAsync(dbContext, page, ct);
+            SignozProTraceIngestionService.ClearTracking(dbContext);
+        }, cancellationToken);
+
+        // Same ordering constraint as receive above.
+        int unloadingHandoverConfirmedMarked = 0;
+        int unloadingHandoverConfirmFetched = await queryService.QueryUnloadingHandoverConfirmAsync(start, end, async (page, ct) =>
+        {
+            unloadingHandoverConfirmedMarked += await ingestionService.MarkUnloadingHandoverConfirmedAsync(dbContext, page, ct);
+            SignozProTraceIngestionService.ClearTracking(dbContext);
+        }, cancellationToken);
+
         DateTimeOffset newCheckpoint = end - CheckpointSafetyBuffer;
         if (newCheckpoint > start)
         {
@@ -148,7 +171,10 @@ public sealed class SignozProSyncJob(
             "{DeliveryFailureCount} delivery-failure ({DeliveryFailureSaved} new), " +
             "{DeliveryTransferCount} delivery-transfer ({DeliveryTransferSaved} new), " +
             "{DeliveryArrivalCount} delivery-arrival ({DeliveryArrivalSaved} new), " +
-            "{DeliverySessionCommitCount} delivery-session-commit ({DeliverySessionCommitSaved} new).",
+            "{DeliverySessionCommitCount} delivery-session-commit ({DeliverySessionCommitSaved} new), " +
+            "{UnloadingHandoverCount} unloading-handover ({UnloadingHandoverSaved} new), " +
+            "{UnloadingHandoverReceiveCount} unloading-handover-receive ({UnloadingHandoverReceivedMarked} marked), " +
+            "{UnloadingHandoverConfirmCount} unloading-handover-confirm ({UnloadingHandoverConfirmedMarked} marked).",
             start, end,
             routeStopFetched, routeStopSaved,
             pickupTaskFetched, pickupTaskSaved,
@@ -157,6 +183,9 @@ public sealed class SignozProSyncJob(
             deliveryFailureFetched, deliveryFailureSaved,
             deliveryTransferFetched, deliveryTransferSaved,
             deliveryArrivalFetched, deliveryArrivalSaved,
-            deliverySessionCommitFetched, deliverySessionCommitSaved);
+            deliverySessionCommitFetched, deliverySessionCommitSaved,
+            unloadingHandoverFetched, unloadingHandoverSaved,
+            unloadingHandoverReceiveFetched, unloadingHandoverReceivedMarked,
+            unloadingHandoverConfirmFetched, unloadingHandoverConfirmedMarked);
     }
 }
