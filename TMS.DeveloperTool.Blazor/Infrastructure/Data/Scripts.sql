@@ -204,3 +204,96 @@ CREATE TABLE IF NOT EXISTS pro.delivery_task_complete_logs (
 CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_delivery_task_complete_logs_log_id ON pro.delivery_task_complete_logs (log_id);
 CREATE INDEX IF NOT EXISTS idx_pro_delivery_task_complete_logs_delivery_manifest_code ON pro.delivery_task_complete_logs (delivery_manifest_code, log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_pro_delivery_task_complete_logs_log_timestamp ON pro.delivery_task_complete_logs (log_timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS pro.delivery_failure_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    delivery_manifest_code TEXT NOT NULL DEFAULT '',
+    record_id TEXT NOT NULL DEFAULT '',
+    failure_type TEXT NOT NULL DEFAULT '',
+    task_count INT NOT NULL DEFAULT 0,
+    manifest_count INT NOT NULL DEFAULT 0,
+    item_count INT NOT NULL DEFAULT 0,
+    driver_id TEXT NOT NULL DEFAULT '',
+    actor TEXT NOT NULL DEFAULT '',
+    env TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_delivery_failure_logs_log_id ON pro.delivery_failure_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_failure_logs_failure_type ON pro.delivery_failure_logs (failure_type, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_failure_logs_driver_id ON pro.delivery_failure_logs (driver_id, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_failure_logs_delivery_manifest_code ON pro.delivery_failure_logs (delivery_manifest_code);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_failure_logs_log_timestamp ON pro.delivery_failure_logs (log_timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS pro.delivery_transfer_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    transfer_code TEXT NOT NULL DEFAULT '',
+    source_type TEXT NOT NULL DEFAULT '',          -- 'Driver' (tài xế → tài xế) | 'Employee' (nhân viên bưu cục → tài xế)
+    source_code TEXT NOT NULL DEFAULT '',
+    target_driver_code TEXT NOT NULL DEFAULT '',
+    order_ids TEXT[] NOT NULL DEFAULT '{}',
+    order_count INT NOT NULL DEFAULT 0,
+    transferred_at TIMESTAMPTZ NULL,
+    actor TEXT NOT NULL DEFAULT '',
+    env TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_delivery_transfer_logs_log_id ON pro.delivery_transfer_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_transfer_logs_source ON pro.delivery_transfer_logs (source_type, source_code, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_transfer_logs_target_driver_code ON pro.delivery_transfer_logs (target_driver_code, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_transfer_logs_transfer_code ON pro.delivery_transfer_logs (transfer_code);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_transfer_logs_order_ids ON pro.delivery_transfer_logs USING GIN (order_ids);
+
+CREATE TABLE IF NOT EXISTS pro.delivery_arrival_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    delivery_manifest_code TEXT NOT NULL DEFAULT '',
+    arrival_id TEXT NOT NULL DEFAULT '',
+    task_id TEXT NOT NULL DEFAULT '',
+    order_id TEXT NOT NULL DEFAULT '',
+    vehicle_id TEXT NOT NULL DEFAULT '',
+    distance_meters NUMERIC(12, 2) NULL,
+    is_gps_valid BOOLEAN NULL,
+    superseded INT NOT NULL DEFAULT 0,
+    actor TEXT NOT NULL DEFAULT '',
+    env TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_delivery_arrival_logs_log_id ON pro.delivery_arrival_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_arrival_logs_log_timestamp ON pro.delivery_arrival_logs (log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_arrival_logs_order_id ON pro.delivery_arrival_logs (order_id, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_arrival_logs_task_id ON pro.delivery_arrival_logs (task_id);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_arrival_logs_vehicle_id ON pro.delivery_arrival_logs (vehicle_id, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_arrival_logs_actor ON pro.delivery_arrival_logs (actor, log_timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS pro.delivery_session_commit_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    manifest_count INT NOT NULL DEFAULT 0,
+    manifest_codes TEXT[] NOT NULL DEFAULT '{}',
+    item_count INT NOT NULL DEFAULT 0,
+    actor TEXT NOT NULL DEFAULT '',
+    env TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_delivery_session_commit_logs_log_id ON pro.delivery_session_commit_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_session_commit_logs_log_timestamp ON pro.delivery_session_commit_logs (log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_session_commit_logs_actor ON pro.delivery_session_commit_logs (actor, log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_session_commit_logs_manifest_codes ON pro.delivery_session_commit_logs USING GIN (manifest_codes);

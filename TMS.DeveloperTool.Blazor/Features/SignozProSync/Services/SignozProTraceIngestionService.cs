@@ -120,6 +120,88 @@ public sealed class SignozProTraceIngestionService(IDbContextFactory<ProApplicat
         return savedCount;
     }
 
+    public async Task<int> SaveIfNewAsync(ProApplicationDbContext dbContext, IReadOnlyList<DeliveryFailureLogEntry> entries, CancellationToken cancellationToken)
+    {
+        int savedCount = 0;
+        foreach (DeliveryFailureLogEntry entry in entries)
+        {
+            int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO pro.delivery_failure_logs (log_id, trace_id, span_id, log_timestamp, delivery_manifest_code, record_id, failure_type, task_count, manifest_count, item_count, driver_id, actor, env, created_at)
+                VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.DeliveryManifestCode}, {entry.RecordId}, {entry.FailureType}, {entry.TaskCount}, {entry.ManifestCount}, {entry.ItemCount}, {entry.DriverId}, {entry.Actor}, {Env}, {DateTimeOffset.UtcNow})
+                ON CONFLICT (log_id) DO NOTHING;
+                """, cancellationToken);
+
+            if (rowsAffected > 0)
+            {
+                savedCount++;
+            }
+        }
+
+        return savedCount;
+    }
+
+    public async Task<int> SaveIfNewAsync(ProApplicationDbContext dbContext, IReadOnlyList<DeliveryTransferLogEntry> entries, CancellationToken cancellationToken)
+    {
+        int savedCount = 0;
+        foreach (DeliveryTransferLogEntry entry in entries)
+        {
+            DateTimeOffset? transferredAt = entry.TransferredAt?.ToUniversalTime();
+
+            int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO pro.delivery_transfer_logs (log_id, trace_id, span_id, log_timestamp, transfer_code, source_type, source_code, target_driver_code, order_ids, order_count, transferred_at, actor, env, created_at)
+                VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.TransferCode}, {entry.SourceType}, {entry.SourceCode}, {entry.TargetDriverCode}, {entry.OrderIds}, {entry.OrderIds.Length}, {transferredAt}, {entry.Actor}, {Env}, {DateTimeOffset.UtcNow})
+                ON CONFLICT (log_id) DO NOTHING;
+                """, cancellationToken);
+
+            if (rowsAffected > 0)
+            {
+                savedCount++;
+            }
+        }
+
+        return savedCount;
+    }
+
+    public async Task<int> SaveIfNewAsync(ProApplicationDbContext dbContext, IReadOnlyList<DeliveryArrivalLogEntry> entries, CancellationToken cancellationToken)
+    {
+        int savedCount = 0;
+        foreach (DeliveryArrivalLogEntry entry in entries)
+        {
+            int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO pro.delivery_arrival_logs (log_id, trace_id, span_id, log_timestamp, delivery_manifest_code, arrival_id, task_id, order_id, vehicle_id, distance_meters, is_gps_valid, superseded, actor, env, created_at)
+                VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.DeliveryManifestCode}, {entry.ArrivalId}, {entry.TaskId}, {entry.OrderId}, {entry.VehicleId}, {entry.DistanceMeters}, {entry.IsGpsValid}, {entry.Superseded}, {entry.Actor}, {Env}, {DateTimeOffset.UtcNow})
+                ON CONFLICT (log_id) DO NOTHING;
+                """, cancellationToken);
+
+            if (rowsAffected > 0)
+            {
+                savedCount++;
+            }
+        }
+
+        return savedCount;
+    }
+
+    public async Task<int> SaveIfNewAsync(ProApplicationDbContext dbContext, IReadOnlyList<DeliverySessionCommitLogEntry> entries, CancellationToken cancellationToken)
+    {
+        int savedCount = 0;
+        foreach (DeliverySessionCommitLogEntry entry in entries)
+        {
+            int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO pro.delivery_session_commit_logs (log_id, trace_id, span_id, log_timestamp, manifest_count, manifest_codes, item_count, actor, env, created_at)
+                VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.ManifestCount}, {entry.ManifestCodes}, {entry.ItemCount}, {entry.Actor}, {Env}, {DateTimeOffset.UtcNow})
+                ON CONFLICT (log_id) DO NOTHING;
+                """, cancellationToken);
+
+            if (rowsAffected > 0)
+            {
+                savedCount++;
+            }
+        }
+
+        return savedCount;
+    }
+
     public async Task<int> SaveIfNewAsync(ProApplicationDbContext dbContext, IReadOnlyList<PickupTaskTraceLogEntry> entries, CancellationToken cancellationToken)
     {
         int savedCount = 0;

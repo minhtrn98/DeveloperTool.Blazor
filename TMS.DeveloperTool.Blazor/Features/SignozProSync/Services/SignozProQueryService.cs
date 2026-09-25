@@ -55,6 +55,45 @@ public sealed class SignozProQueryService(
         DateTimeOffset start, DateTimeOffset end, Func<List<DeliveryTaskCompleteLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
         => QueryAsync($"message_template.text = '{DeliveryTaskCompleteMessageTemplateText}'", ToDeliveryTaskCompleteEntry, start, end, onPageAsync, cancellationToken);
 
+    private const string DeliveryFailureMessageTemplateText =
+        "{FL} {DE} - [RecordDeliveryFailure] record={RecordId} type={Type} tasks={TaskCount} manifests={ManifestCount} items={Count} driver={DriverId}";
+
+    public Task<int> QueryDeliveryFailureAsync(
+        DateTimeOffset start, DateTimeOffset end, Func<List<DeliveryFailureLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
+        => QueryAsync($"message_template.text = '{DeliveryFailureMessageTemplateText}'", ToDeliveryFailureEntry, start, end, onPageAsync, cancellationToken);
+
+    private const string DriverDeliveryTransferMessageTemplateText =
+        "{FL} - [CreateDeliveryTransfer] code={Code} driver {SourceDriverCode} → {TargetDriverCode}, orders=[{OrderIds}], at {CreatedAt:o}";
+
+    private const string EmployeeDeliveryTransferMessageTemplateText =
+        "{FL} - [ExternalCreateDeliveryTransfer] code={Code} employee {EmployeeCode} → {TargetDriverCode}, orders=[{OrderIds}], at {CreatedAt:o}";
+
+    /// <summary>Driver → driver transfers; mapped with <see cref="DeliveryTransferSourceType.Driver"/>.</summary>
+    public Task<int> QueryDriverDeliveryTransferAsync(
+        DateTimeOffset start, DateTimeOffset end, Func<List<DeliveryTransferLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
+        => QueryAsync($"message_template.text = '{DriverDeliveryTransferMessageTemplateText}'",
+            row => ToDeliveryTransferEntry(row, DeliveryTransferSourceType.Driver, "SourceDriverCode"), start, end, onPageAsync, cancellationToken);
+
+    /// <summary>Post-office employee → driver transfers; mapped with <see cref="DeliveryTransferSourceType.Employee"/>.</summary>
+    public Task<int> QueryEmployeeDeliveryTransferAsync(
+        DateTimeOffset start, DateTimeOffset end, Func<List<DeliveryTransferLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
+        => QueryAsync($"message_template.text = '{EmployeeDeliveryTransferMessageTemplateText}'",
+            row => ToDeliveryTransferEntry(row, DeliveryTransferSourceType.Employee, "EmployeeCode"), start, end, onPageAsync, cancellationToken);
+
+    private const string DeliveryArrivalMessageTemplateText =
+        "{FL} {DE} - [RecordDeliveryArrival] arrival={ArrivalId} task={TaskId} order={OrderId} vehicle={VehicleId} distance={Distance}m gpsValid={IsGpsValid} superseded={Superseded}";
+
+    public Task<int> QueryDeliveryArrivalAsync(
+        DateTimeOffset start, DateTimeOffset end, Func<List<DeliveryArrivalLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
+        => QueryAsync($"message_template.text = '{DeliveryArrivalMessageTemplateText}'", ToDeliveryArrivalEntry, start, end, onPageAsync, cancellationToken);
+
+    private const string DeliverySessionCommitMessageTemplateText =
+        "{FL} - [CommitCreateDeliverySession] created {ManifestCount} manifest(s) [{Codes}] from pre-created handover; items={Count}, actor={Actor}";
+
+    public Task<int> QueryDeliverySessionCommitAsync(
+        DateTimeOffset start, DateTimeOffset end, Func<List<DeliverySessionCommitLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
+        => QueryAsync($"message_template.text = '{DeliverySessionCommitMessageTemplateText}'", ToDeliverySessionCommitEntry, start, end, onPageAsync, cancellationToken);
+
     public Task<int> QueryRouteStopAsync(
         DateTimeOffset start, DateTimeOffset end, Func<List<RouteStopTraceLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
         => QueryAsync($"message_template.text = '{RouteStopMessageTemplateText}'", RouteStopLogQueryService.ToEntry, start, end, onPageAsync, cancellationToken);
@@ -221,6 +260,150 @@ public sealed class SignozProQueryService(
             (int)GetNumberAttribute(row.Data, "Delivered"),
             GetNumberAttribute(row.Data, "Cod"),
             GetActor(row.Data));
+    }
+
+    // {FL} is deliberately ignored.
+    internal static DeliveryFailureLogEntry? ToDeliveryFailureEntry(LogRow row)
+    {
+        if (row.Data is null)
+        {
+            return null;
+        }
+
+        return new DeliveryFailureLogEntry(
+            row.Data.Id,
+            row.Data.TraceId,
+            row.Data.SpanId,
+            row.Timestamp,
+            row.Data.AttributesString.GetValueOrDefault("DE", string.Empty),
+            GetTextAttribute(row.Data, "RecordId"),
+            GetTextAttribute(row.Data, "Type"),
+            (int)GetNumberAttribute(row.Data, "TaskCount"),
+            (int)GetNumberAttribute(row.Data, "ManifestCount"),
+            (int)GetNumberAttribute(row.Data, "Count"),
+            GetTextAttribute(row.Data, "DriverId"),
+            GetActor(row.Data));
+    }
+
+    // {FL} is deliberately ignored. Both transfer templates share this mapper; only the source
+    // attribute ({SourceDriverCode} vs {EmployeeCode}) and the stored source_type differ.
+    internal static DeliveryTransferLogEntry? ToDeliveryTransferEntry(LogRow row, string sourceType, string sourceCodeKey)
+    {
+        if (row.Data is null)
+        {
+            return null;
+        }
+
+        string createdAtText = GetTextAttribute(row.Data, "CreatedAt");
+        DateTimeOffset? transferredAt = DateTimeOffset.TryParse(createdAtText, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset parsed)
+            ? parsed
+            : null;
+
+        return new DeliveryTransferLogEntry(
+            row.Data.Id,
+            row.Data.TraceId,
+            row.Data.SpanId,
+            row.Timestamp,
+            GetTextAttribute(row.Data, "Code"),
+            sourceType,
+            GetTextAttribute(row.Data, sourceCodeKey),
+            GetTextAttribute(row.Data, "TargetDriverCode"),
+            ParseIdList(GetTextAttribute(row.Data, "OrderIds")),
+            transferredAt,
+            GetActor(row.Data));
+    }
+
+    // List arguments ({OrderIds}, {Codes}) arrive as a single attribute — either "a, b, c" or a
+    // serialized array like ["a","b"] depending on how the collection was destructured — so strip
+    // brackets/quotes and split.
+    private static string[] ParseIdList(string raw)
+        => raw.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(id => id.Trim('[', ']', '"', '\'', ' '))
+            .Where(id => id.Length > 0)
+            .Distinct()
+            .ToArray();
+
+    // {FL} is deliberately ignored.
+    internal static DeliveryArrivalLogEntry? ToDeliveryArrivalEntry(LogRow row)
+    {
+        if (row.Data is null)
+        {
+            return null;
+        }
+
+        bool hasDistance = row.Data.AttributesNumber.ContainsKey("Distance") || row.Data.AttributesString.ContainsKey("Distance");
+        bool? superseded = GetBoolAttribute(row.Data, "Superseded");
+
+        return new DeliveryArrivalLogEntry(
+            row.Data.Id,
+            row.Data.TraceId,
+            row.Data.SpanId,
+            row.Timestamp,
+            row.Data.AttributesString.GetValueOrDefault("DE", string.Empty),
+            GetTextAttribute(row.Data, "ArrivalId"),
+            GetTextAttribute(row.Data, "TaskId"),
+            GetTextAttribute(row.Data, "OrderId"),
+            GetTextAttribute(row.Data, "VehicleId"),
+            hasDistance ? GetNumberAttribute(row.Data, "Distance") : null,
+            GetBoolAttribute(row.Data, "IsGpsValid"),
+            superseded switch
+            {
+                true => 1,
+                false => 0,
+                null => (int)GetNumberAttribute(row.Data, "Superseded")
+            },
+            GetActor(row.Data));
+    }
+
+    // {FL} is deliberately ignored.
+    internal static DeliverySessionCommitLogEntry? ToDeliverySessionCommitEntry(LogRow row)
+    {
+        if (row.Data is null)
+        {
+            return null;
+        }
+
+        return new DeliverySessionCommitLogEntry(
+            row.Data.Id,
+            row.Data.TraceId,
+            row.Data.SpanId,
+            row.Timestamp,
+            (int)GetNumberAttribute(row.Data, "ManifestCount"),
+            ParseIdList(GetTextAttribute(row.Data, "Codes")),
+            (int)GetNumberAttribute(row.Data, "Count"),
+            GetActor(row.Data));
+    }
+
+    // Bools land in attributes_bool, but may also come through as "True"/"false" strings or 0/1
+    // numbers depending on the exporter. Null means the attribute is absent (or not a bool), so a
+    // missing flag isn't silently counted as false.
+    private static bool? GetBoolAttribute(LogRowData data, string key)
+    {
+        if (data.AttributesBool.TryGetValue(key, out bool value))
+        {
+            return value;
+        }
+
+        if (data.AttributesString.TryGetValue(key, out string? text) && bool.TryParse(text, out bool parsed))
+        {
+            return parsed;
+        }
+
+        return null;
+    }
+
+    // Ids/enums may be logged as numbers, which SigNoz indexes under attributes_number instead
+    // of attributes_string — read either so the stored value isn't silently empty.
+    private static string GetTextAttribute(LogRowData data, string key)
+    {
+        if (data.AttributesString.TryGetValue(key, out string? text))
+        {
+            return text;
+        }
+
+        return data.AttributesNumber.TryGetValue(key, out double number)
+            ? number.ToString(CultureInfo.InvariantCulture)
+            : string.Empty;
     }
 
     // The logged-in user is enriched onto every log as attributes_string.User; the commit
