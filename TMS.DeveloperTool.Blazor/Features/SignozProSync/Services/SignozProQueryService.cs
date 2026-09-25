@@ -167,7 +167,7 @@ public sealed class SignozProQueryService(
                 break;
             }
 
-            List<T> page = [.. rows.Select(toEntry).Where(entry => entry is not null)!];
+            List<T> page = [.. rows.Select(toEntry).Where(entry => entry is not null).OfType<T>()];
             totalCount += page.Count;
 
             await onPageAsync(page, cancellationToken);
