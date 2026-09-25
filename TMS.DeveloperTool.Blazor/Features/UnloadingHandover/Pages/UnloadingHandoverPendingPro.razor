@@ -1,0 +1,144 @@
+@page "/pro/unloading-handover-pending"
+@using TMS.DeveloperTool.Blazor.Features.UnloadingHandover.Models
+@using TMS.DeveloperTool.Blazor.Features.UnloadingHandover.Services
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+@inject UnloadingHandoverProStorageService StorageService
+
+<AppPageTitle MenuName="Pro - Bàn giao xuống hàng chưa xử lý" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Pro - Bàn giao xuống hàng chưa nhận / chưa xác nhận</MudText>
+
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudAutocomplete T="EnumOption" Value="selectedStatus" ValueChanged="OnStatusSelectedAsync"
+                                 SearchFunc="SearchStatuses" Label="Trạng thái" Variant="Variant.Outlined"
+                                 Clearable="true" MaxItems="20"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<EnumOption>" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudAutocomplete T="DriverIdOption" Value="selectedDriver" ValueChanged="OnDriverSelectedAsync"
+                                 SearchFunc="SearchDrivers" Label="Tài xế (Driver Id)" Variant="Variant.Outlined"
+                                 Clearable="true" MaxItems="20"
+                                 ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<DriverIdOption>" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudTextField T="string" Value="handoverCode" ValueChanged="OnHandoverCodeChangedAsync"
+                              Label="Mã bàn giao" Variant="Variant.Outlined" Clearable="true"
+                              Immediate="true" DebounceInterval="400" />
+            </MudItem>
+        </MudGrid>
+
+        <div class="d-flex justify-end mt-4">
+            <MudButton OnClick="RefreshAsync" Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Refresh">Làm mới</MudButton>
+        </div>
+    </MudPaper>
+
+    <MudPaper Elevation="2" Class="pa-4">
+        <MudText Typo="Typo.caption" Class="mb-2 d-block">Sắp xếp: bàn giao chờ lâu nhất lên đầu. Giờ hiển thị theo giờ Việt Nam.</MudText>
+
+        <TraceLogTable TItem="UnloadingHandoverLog" @ref="traceTable" LoadDataAsync="LoadDataAsync">
+            <TableHeader>
+                <MudTh>STT</MudTh>
+                <MudTh>Tạo lúc</MudTh>
+                <MudTh>Mã bàn giao</MudTh>
+                <MudTh>Handover Id</MudTh>
+                <MudTh>Số kiện</MudTh>
+                <MudTh>Người tạo</MudTh>
+                <MudTh>Đã nhận</MudTh>
+                <MudTh>Đã xác nhận</MudTh>
+                <MudTh>Trace Id</MudTh>
+            </TableHeader>
+            <TableRow Context="row">
+                <MudTd DataLabel="STT">@row.Index</MudTd>
+                <MudTd DataLabel="Tạo lúc">@VietnamTimeHelper.Format(row.Item.LogTimestamp)</MudTd>
+                <MudTd DataLabel="Mã bàn giao">@row.Item.HandoverCode</MudTd>
+                <MudTd DataLabel="Handover Id">@row.Item.HandoverId</MudTd>
+                <MudTd DataLabel="Số kiện">@row.Item.ItemCount</MudTd>
+                <MudTd DataLabel="Người tạo">@row.Item.Actor</MudTd>
+                <MudTd DataLabel="Đã nhận">
+                    @if (row.Item.IsReceived)
+                    {
+                        <MudChip T="string" Color="Color.Success" Size="Size.Small">Đã nhận</MudChip>
+                        <MudText Typo="Typo.caption" Class="d-block">@VietnamTimeHelper.Format(row.Item.ReceivedAt)</MudText>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Info" Size="Size.Small">Chưa nhận</MudChip>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Đã xác nhận">
+                    @if (row.Item.IsConfirm)
+                    {
+                        <MudChip T="string" Color="Color.Success" Size="Size.Small">Đã xác nhận</MudChip>
+                        <MudText Typo="Typo.caption" Class="d-block">@VietnamTimeHelper.Format(row.Item.ConfirmAt)</MudText>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Info" Size="Size.Small">Chưa xác nhận</MudChip>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Trace Id">@row.Item.TraceId</MudTd>
+            </TableRow>
+        </TraceLogTable>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<DriverIdOption> driverOptions = [];
+    private EnumOption? selectedStatus = UnloadingHandoverPendingStatus.Options[0];
+    private DriverIdOption? selectedDriver;
+    private string? handoverCode;
+    private TraceLogTable<UnloadingHandoverLog>? traceTable;
+
+    protected override Task OnInitializedAsync() => LoadDriverOptionsAsync();
+
+    private async Task LoadDriverOptionsAsync()
+    {
+        List<string> driverIds = await StorageService.GetDistinctPendingDriverIdsAsync(CancellationToken.None);
+        driverOptions = driverIds.Select(id => new DriverIdOption(id)).ToList();
+    }
+
+    private Task<IEnumerable<EnumOption>> SearchStatuses(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(UnloadingHandoverPendingStatus.Options, searchTerm));
+
+    private Task<IEnumerable<DriverIdOption>> SearchDrivers(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(driverOptions, searchTerm));
+
+    private async Task OnStatusSelectedAsync(EnumOption? value)
+    {
+        selectedStatus = value;
+        await ReloadAsync();
+    }
+
+    private async Task OnDriverSelectedAsync(DriverIdOption? value)
+    {
+        selectedDriver = value;
+        await ReloadAsync();
+    }
+
+    private async Task OnHandoverCodeChangedAsync(string? value)
+    {
+        handoverCode = value;
+        await ReloadAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        await LoadDriverOptionsAsync();
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (traceTable is not null)
+        {
+            await traceTable.ReloadAsync();
+        }
+    }
+
+    private Task<(List<UnloadingHandoverLog> Items, int TotalCount)> LoadDataAsync(int page, int pageSize, CancellationToken cancellationToken)
+        => StorageService.QueryPendingAsync(selectedStatus?.Value, selectedDriver?.DriverId, handoverCode, page, pageSize, cancellationToken);
+}

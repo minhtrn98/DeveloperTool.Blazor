@@ -4,6 +4,7 @@ using TMS.DeveloperTool.Blazor.Features.PickupTaskOrderTimeline.Services;
 using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Services;
 using TMS.DeveloperTool.Blazor.Features.RouteStop.Services;
 using TMS.DeveloperTool.Blazor.Features.SignozProSync.Services;
+using TMS.DeveloperTool.Blazor.Features.UnloadingHandover.Services;
 using TMS.DeveloperTool.Blazor.Infrastructure.Http;
 
 namespace TMS.DeveloperTool.Blazor.Infrastructure.Extensions;
@@ -40,6 +41,7 @@ public static class ExternalApiServiceExtensions
         services.AddScoped<PickupTaskTraceLogStorageService>();
         services.AddScoped<PickupTaskProTraceLogStorageService>();
         services.AddScoped<PickupTaskOrderProStorageService>();
+        services.AddScoped<UnloadingHandoverProStorageService>();
 
         services.AddSingleton<EventService>();
         services.AddSingleton<LogApiTokenProvider>();
