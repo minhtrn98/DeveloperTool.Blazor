@@ -25,6 +25,7 @@ public static class ApplicationConstants
         public const string PickupTaskOrderTimelinePro = "/pro/pickup-task-order-timeline";
         public const string PickupTaskOrderItemTimelinePro = "/pro/pickup-task-order-item-timeline";
         public const string UnloadingHandoverPendingPro = "/pro/unloading-handover-pending";
+        public const string DashboardPro = "/pro/dashboard";
     }
 
     public static class EnvironmentNames

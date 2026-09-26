@@ -1,5 +1,3 @@
-using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos;
-
 namespace TMS.DeveloperTool.Blazor.Features.UnloadingHandover.Models;
 
 /// <summary>Status filter values for the pending unloading handover page.</summary>

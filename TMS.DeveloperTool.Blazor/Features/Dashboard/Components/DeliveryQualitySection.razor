@@ -1,0 +1,106 @@
+@using TMS.DeveloperTool.Blazor.Features.Dashboard.Models
+@using TMS.DeveloperTool.Blazor.Features.Dashboard.Services
+
+<MudGrid Class="mb-4">
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+            <MudText Typo="Typo.h6">Chất lượng check-in điểm giao</MudText>
+            <MudText Typo="Typo.caption" Class="mb-3 d-block">Khoảng cách từ vị trí check-in tới địa chỉ giao, và GPS có hợp lệ không.</MudText>
+
+            <MudGrid Spacing="2" Class="mb-2">
+                <MudItem xs="4">
+                    <DashboardStatTile Title="GPS hợp lệ" Value="@DashboardAggregator.FormatPercent(gpsValid, gpsKnown)" Caption="@($"{gpsInvalid:N0} không hợp lệ")"
+                                       ValueColor="Color.Success" />
+                </MudItem>
+                <MudItem xs="4">
+                    <DashboardStatTile Title="Check-in lại" Value="@DashboardAggregator.FormatPercent(superseded, Arrivals.Count)" Caption="@($"{superseded:N0} lần")" />
+                </MudItem>
+                <MudItem xs="4">
+                    <DashboardStatTile Title="Cách xa ≥ 500m" Value="@DashboardAggregator.FormatPercent(farAway, withDistance)" Caption="@($"{farAway:N0} lần")"
+                                       ValueColor="@(farAway > 0 ? Color.Warning : Color.Default)" />
+                </MudItem>
+            </MudGrid>
+
+            <MudText Typo="Typo.subtitle2">Phân bố khoảng cách (số check-in)</MudText>
+            <MudChart ChartType="ChartType.Bar" ChartSeries="@distanceSeries" XAxisLabels="@distanceLabels" Width="100%" Height="260px" />
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="3">
+        <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+            <MudText Typo="Typo.h6">Giao thất bại theo loại</MudText>
+            @if (FailureTypes.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Class="mt-4">Không có dữ liệu.</MudText>
+            }
+            else
+            {
+                <MudChart ChartType="ChartType.Donut" InputData="@FailureTypes.Select(x => (double)x.Count).ToArray()"
+                          InputLabels="@FailureTypes.Select(x => $"{x.Label} ({x.Count:N0})").ToArray()"
+                          Width="100%" Height="260px" LegendPosition="Position.Bottom" />
+            }
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="3">
+        <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+            <MudText Typo="Typo.h6">Chuyển đơn theo nguồn</MudText>
+            <MudText Typo="Typo.caption" Class="d-block">Driver: tài xế → tài xế. Employee: nhân viên bưu cục → tài xế.</MudText>
+            @if (TransferSources.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Class="mt-4">Không có dữ liệu.</MudText>
+            }
+            else
+            {
+                <MudChart ChartType="ChartType.Donut" InputData="@TransferSources.Select(x => (double)x.Count).ToArray()"
+                          InputLabels="@TransferSources.Select(x => $"{x.Label} ({x.Count:N0})").ToArray()"
+                          Width="100%" Height="260px" LegendPosition="Position.Bottom" />
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private static readonly double[] MeterEdges = [50, 100, 200, 500, 1000, 5000];
+
+    [Parameter, EditorRequired]
+    public List<ArrivalRecord> Arrivals { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public List<LabelCount> FailureTypes { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public List<LabelCount> TransferSources { get; set; } = [];
+
+    private List<ArrivalRecord>? lastArrivals;
+    private int gpsValid;
+    private int gpsInvalid;
+    private int gpsKnown;
+    private int superseded;
+    private int withDistance;
+    private int farAway;
+    private List<ChartSeries> distanceSeries = [];
+    private string[] distanceLabels = [];
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(lastArrivals, Arrivals))
+        {
+            return;
+        }
+
+        lastArrivals = Arrivals;
+        gpsValid = Arrivals.Count(x => x.IsGpsValid == true);
+        gpsInvalid = Arrivals.Count(x => x.IsGpsValid == false);
+        gpsKnown = gpsValid + gpsInvalid;
+        superseded = Arrivals.Count(x => x.Superseded);
+
+        List<double> distances = Arrivals.Where(x => x.DistanceMeters.HasValue).Select(x => (double)x.DistanceMeters!.Value).ToList();
+        withDistance = distances.Count;
+        farAway = distances.Count(d => d >= 500);
+
+        BucketedCounts buckets = DashboardAggregator.BuildBuckets(distances, MeterEdges, m => m < 1000 ? $"{m}m" : $"{m / 1000}km");
+        distanceLabels = buckets.Labels;
+        distanceSeries = [new ChartSeries { Name = "Số check-in", Data = buckets.Counts }];
+    }
+}

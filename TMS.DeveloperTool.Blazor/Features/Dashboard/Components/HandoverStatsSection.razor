@@ -1,0 +1,116 @@
+@using TMS.DeveloperTool.Blazor.Features.Dashboard.Models
+@using TMS.DeveloperTool.Blazor.Features.Dashboard.Services
+
+<MudPaper Elevation="2" Class="pa-4 mb-4">
+    <MudText Typo="Typo.h6">Bàn giao xuống hàng: thời gian NVKT nhận</MudText>
+    <MudText Typo="Typo.caption" Class="mb-3 d-block">
+        Chỉ tính mã bàn giao được tạo trong khoảng đã chọn. NVKT nhận theo 2 cách: [ReceiveUnloadingHandover] (nhận) hoặc [ConfirmUnloadingHandover] (nhận kèm commit kiện), nên cả hai đều đo từ lúc tạo. "Chờ quá 4h" là mã chưa được nhận theo cách nào dù đã tạo hơn 4 giờ.
+    </MudText>
+
+    <MudGrid Spacing="2" Class="mb-2">
+        <MudItem xs="6" md="2">
+            <DashboardStatTile Title="Mã bàn giao đã tạo" Value="@created.ToString("N0")" Caption="@($"{items:N0} kiện")" />
+        </MudItem>
+        <MudItem xs="6" md="2">
+            <DashboardStatTile Title="Đã nhận" Value="@DashboardAggregator.FormatPercent(received, created)" Caption="@($"{received:N0} mã")" ValueColor="Color.Success" />
+        </MudItem>
+        <MudItem xs="6" md="2">
+            <DashboardStatTile Title="Đã xác nhận" Value="@DashboardAggregator.FormatPercent(confirmed, created)" Caption="@($"{confirmed:N0} mã")" ValueColor="Color.Success" />
+        </MudItem>
+        <MudItem xs="6" md="2">
+            <DashboardStatTile Title="Chưa xử lý, chờ quá 4h" Value="@staleNotReceived.ToString("N0")" ValueColor="@(staleNotReceived > 0 ? Color.Error : Color.Default)" />
+        </MudItem>
+        <MudItem xs="6" md="2">
+            <DashboardStatTile Title="Trung vị tạo → nhận" Value="@DashboardAggregator.FormatDuration(toReceive.Median)" Caption="@($"P90 {DashboardAggregator.FormatDuration(toReceive.P90)}")" />
+        </MudItem>
+        <MudItem xs="6" md="2">
+            <DashboardStatTile Title="Trung vị tạo → xác nhận" Value="@DashboardAggregator.FormatDuration(toConfirm.Median)" Caption="@($"P90 {DashboardAggregator.FormatDuration(toConfirm.P90)}")" />
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid>
+        <MudItem xs="12" md="7">
+            <MudText Typo="Typo.subtitle2">Phân bố thời gian chờ (số mã bàn giao)</MudText>
+            <MudChart ChartType="ChartType.Bar" ChartSeries="@durationSeries" XAxisLabels="@durationLabels"
+                      Width="100%" Height="300px" />
+        </MudItem>
+        <MudItem xs="12" md="5">
+            <MudText Typo="Typo.subtitle2">Thống kê thời gian</MudText>
+            <MudSimpleTable Dense="true" Hover="true">
+                <thead>
+                    <tr><th>Giai đoạn</th><th>Số mã</th><th>TB</th><th>Trung vị</th><th>P90</th><th>Max</th></tr>
+                </thead>
+                <tbody>
+                    @foreach ((string name, DurationStats stats) in new[] { ("Tạo → nhận", toReceive), ("Tạo → xác nhận", toConfirm), ("Tạo → xử lý đầu tiên", toFirstHandled) })
+                    {
+                        <tr>
+                            <td>@name</td>
+                            <td>@stats.Count.ToString("N0")</td>
+                            <td>@DashboardAggregator.FormatDuration(stats.Average)</td>
+                            <td>@DashboardAggregator.FormatDuration(stats.Median)</td>
+                            <td>@DashboardAggregator.FormatDuration(stats.P90)</td>
+                            <td>@DashboardAggregator.FormatDuration(stats.Max)</td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+    private static readonly double[] MinuteEdges = [15, 30, 60, 120, 240, 480];
+
+    [Parameter, EditorRequired]
+    public List<HandoverRecord> Handovers { get; set; } = [];
+
+    private List<HandoverRecord>? lastHandovers;
+    private int created;
+    private int items;
+    private int received;
+    private int confirmed;
+    private int staleNotReceived;
+    private DurationStats toReceive = new(0, null, null, null, null);
+    private DurationStats toConfirm = new(0, null, null, null, null);
+    private DurationStats toFirstHandled = new(0, null, null, null, null);
+    private List<ChartSeries> durationSeries = [];
+    private string[] durationLabels = [];
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(lastHandovers, Handovers))
+        {
+            return;
+        }
+
+        lastHandovers = Handovers;
+        DateTimeOffset staleBefore = DateTimeOffset.UtcNow.AddHours(-4);
+
+        created = Handovers.Count;
+        items = Handovers.Sum(x => x.ItemCount);
+        received = Handovers.Count(x => x.ReceivedAt.HasValue);
+        confirmed = Handovers.Count(x => x.ConfirmAt.HasValue);
+        staleNotReceived = Handovers.Count(x => !x.ReceivedAt.HasValue && !x.ConfirmAt.HasValue && x.CreatedAt < staleBefore);
+
+        List<TimeSpan> receiveDurations = Handovers.Where(x => x.ReceivedAt.HasValue).Select(x => x.ReceivedAt!.Value - x.CreatedAt).ToList();
+        List<TimeSpan> confirmDurations = Handovers.Where(x => x.ConfirmAt.HasValue).Select(x => x.ConfirmAt!.Value - x.CreatedAt).ToList();
+        toReceive = DashboardAggregator.BuildDurationStats(receiveDurations);
+        toConfirm = DashboardAggregator.BuildDurationStats(confirmDurations);
+        toFirstHandled = DashboardAggregator.BuildDurationStats(Handovers
+            .Where(x => x.ReceivedAt.HasValue || x.ConfirmAt.HasValue)
+            .Select(x => (x.ReceivedAt ?? DateTimeOffset.MaxValue) < (x.ConfirmAt ?? DateTimeOffset.MaxValue)
+                ? x.ReceivedAt!.Value - x.CreatedAt
+                : x.ConfirmAt!.Value - x.CreatedAt));
+
+        BucketedCounts receiveBuckets = DashboardAggregator.BuildBuckets(receiveDurations.Select(d => d.TotalMinutes), MinuteEdges, FormatMinutes);
+        BucketedCounts confirmBuckets = DashboardAggregator.BuildBuckets(confirmDurations.Select(d => d.TotalMinutes), MinuteEdges, FormatMinutes);
+        durationLabels = receiveBuckets.Labels;
+        durationSeries =
+        [
+            new ChartSeries { Name = "Tạo → nhận", Data = receiveBuckets.Counts },
+            new ChartSeries { Name = "Tạo → xác nhận", Data = confirmBuckets.Counts }
+        ];
+    }
+
+    private static string FormatMinutes(double minutes) => minutes < 60 ? $"{minutes}p" : $"{minutes / 60}h";
+}

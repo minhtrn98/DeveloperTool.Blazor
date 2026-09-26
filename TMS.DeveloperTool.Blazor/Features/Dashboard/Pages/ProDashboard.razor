@@ -1,0 +1,348 @@
+@page "/pro/dashboard"
+@using TMS.DeveloperTool.Blazor.Features.Dashboard.Components
+@using TMS.DeveloperTool.Blazor.Features.Dashboard.Models
+@using TMS.DeveloperTool.Blazor.Features.Dashboard.Services
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+@inject DashboardProStorageService StorageService
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<AppPageTitle MenuName="Pro - Dashboard thống kê" />
+
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Pro - Dashboard thống kê</MudText>
+
+        <MudGrid>
+            <MudItem xs="12" md="3">
+                <MudAutocomplete T="EnumOption" Value="selectedPreset" ValueChanged="OnPresetChangedAsync"
+                                 SearchFunc="SearchPresets" Label="Khoảng thời gian" Variant="Variant.Outlined"
+                                 MaxItems="20" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<EnumOption>" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudDateRangePicker DateRange="dateRange" DateRangeChanged="OnDateRangeChangedAsync" Label="Từ ngày – đến ngày"
+                                    Variant="Variant.Outlined" DateFormat="dd/MM/yyyy" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudAutocomplete T="EnumOption" Value="selectedGranularity" ValueChanged="OnGranularityChanged"
+                                 SearchFunc="SearchGranularities" Label="Gom nhóm" Variant="Variant.Outlined"
+                                 MaxItems="20" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<EnumOption>" />
+            </MudItem>
+            <MudItem xs="12" md="2" Class="d-flex align-center justify-end">
+                <MudButton OnClick="LoadAsync" Variant="Variant.Filled" Color="Color.Primary" Disabled="isLoading"
+                           StartIcon="@Icons.Material.Filled.Refresh">Làm mới</MudButton>
+            </MudItem>
+        </MudGrid>
+
+        <MudText Typo="Typo.caption" Class="mt-2 d-block">
+            Dữ liệu từ các bảng log pro.* đồng bộ từ SigNoz Pro. Ngày/giờ tính theo giờ Việt Nam; tuần bắt đầu từ thứ Hai.
+        </MudText>
+        @if (isLoading)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mt-2" />
+        }
+    </MudPaper>
+
+    @if (snapshot is not null)
+    {
+        <MudGrid Spacing="2" Class="mb-4">
+            @foreach (EnumOption type in DashboardEventType.Options)
+            {
+                (int count, int quantity) = totals.GetValueOrDefault(type.Value);
+                string? quantityLabel = DashboardEventType.QuantityLabel(type.Value);
+                <MudItem xs="6" sm="4" md="3" lg="3">
+                    <DashboardStatTile Title="@type.Description" Value="@count.ToString("N0")"
+                                       Caption="@(quantityLabel is null ? null : $"{quantityLabel}: {quantity:N0}")" />
+                </MudItem>
+            }
+            <MudItem xs="6" sm="4" md="3" lg="3">
+                <DashboardStatTile Title="Tỉ lệ kiện phát thành công" Value="@DashboardAggregator.FormatPercent(deliveredItems, deliveredItems + failedItems)"
+                                   Caption="@($"COD đã thu: {collectedCod:N0} · {distinctActors:N0} người thao tác")" ValueColor="Color.Success" />
+            </MudItem>
+        </MudGrid>
+
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <div class="d-flex flex-wrap align-center gap-4 mb-2">
+                <MudText Typo="Typo.h6">Số lượng @selectedGranularity?.Description.ToLowerInvariant()</MudText>
+                <MudSpacer />
+                <div style="min-width: 320px">
+                    <MudAutocomplete T="EnumOption" Value="trendType" ValueChanged="OnTrendTypeChanged"
+                                     SearchFunc="SearchTrendTypes" Label="Loại sự kiện" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                     MaxItems="20" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<EnumOption>" />
+                </div>
+            </div>
+            <MudChart ChartType="@(trendType?.Value == AllTypes ? ChartType.Line : ChartType.Bar)" ChartSeries="@trendSeries"
+                      XAxisLabels="@trendLabels" Width="100%" Height="360px" AxisChartOptions="axisOptions" />
+        </MudPaper>
+
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6">Kiện phát thành công và thất bại @selectedGranularity?.Description.ToLowerInvariant()</MudText>
+            <MudText Typo="Typo.caption" Class="d-block">
+                Thành công = tổng delivered của xác nhận phát hàng; thất bại = tổng số kiện của giao thất bại.
+            </MudText>
+            <MudChart ChartType="ChartType.StackedBar" ChartSeries="@outcomeSeries" XAxisLabels="@trendLabels"
+                      Width="100%" Height="320px" AxisChartOptions="axisOptions" />
+        </MudPaper>
+
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6">Thao tác theo giờ trong ngày</MudText>
+            <MudText Typo="Typo.caption" Class="d-block">
+                Tỉ lệ % số thao tác mỗi giờ trên tổng của từng loại, để so sánh các loại có số lượng khác nhau.
+            </MudText>
+            <MudChart ChartType="ChartType.Line" ChartSeries="@hourSeries" XAxisLabels="@DashboardAggregator.HourLabels"
+                      Width="100%" Height="340px" ChartOptions="percentOptions" />
+
+            <MudText Typo="Typo.subtitle2" Class="mt-4">Khung giờ hoạt động (80% thao tác nằm giữa P10 và P90)</MudText>
+            <MudSimpleTable Dense="true" Hover="true">
+                <thead>
+                    <tr><th>Loại sự kiện</th><th>Số lượt</th><th>P10</th><th>Trung vị</th><th>P90</th><th>Giờ cao điểm</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (TimeOfDayStats row in timeOfDayStats)
+                    {
+                        <tr>
+                            <td>@DashboardEventType.Describe(row.EventType)</td>
+                            <td>@row.Count.ToString("N0")</td>
+                            <td>@DashboardAggregator.FormatTimeOfDay(row.P10)</td>
+                            <td>@DashboardAggregator.FormatTimeOfDay(row.Median)</td>
+                            <td>@DashboardAggregator.FormatTimeOfDay(row.P90)</td>
+                            <td>@(row.PeakHour is { } peak ? $"{peak:00}:00–{peak:00}:59" : "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </MudPaper>
+
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <div class="d-flex flex-wrap align-center gap-4 mb-2">
+                <MudText Typo="Typo.h6">Bản đồ nhiệt: thứ × giờ</MudText>
+                <MudSpacer />
+                <div style="min-width: 320px">
+                    <MudAutocomplete T="EnumOption" Value="heatmapType" ValueChanged="OnHeatmapTypeChanged"
+                                     SearchFunc="SearchEventTypes" Label="Loại sự kiện" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                     MaxItems="20" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<EnumOption>" />
+                </div>
+            </div>
+            <MudChart ChartType="ChartType.HeatMap" ChartSeries="@heatmapSeries" XAxisLabels="@DashboardAggregator.HourLabels"
+                      Width="100%" Height="320px" />
+        </MudPaper>
+
+        <ManifestLifecycleSection Manifests="snapshot.Manifests" />
+
+        <HandoverStatsSection Handovers="snapshot.Handovers" />
+
+        <DeliveryQualitySection Arrivals="snapshot.Arrivals" FailureTypes="snapshot.FailureTypes" TransferSources="snapshot.TransferSources" />
+
+        <ActorStatsSection Events="snapshot.Events" />
+    }
+</MudContainer>
+
+@code {
+    private const string AllTypes = "";
+
+    /// <summary>The four event types the hour-of-day chart compares.</summary>
+    private static readonly string[] HourProfileTypes =
+    [
+        DashboardEventType.ManifestCommit,
+        DashboardEventType.Arrival,
+        DashboardEventType.TaskComplete,
+        DashboardEventType.UnloadingHandover
+    ];
+
+    private static readonly IReadOnlyList<EnumOption> TrendTypeOptions = [new(AllTypes, "Tất cả loại"), .. DashboardEventType.Options];
+
+    private readonly CancellationTokenSource disposeCts = new();
+    private readonly AxisChartOptions axisOptions = new() { XAxisLabelRotation = 45 };
+    private readonly ChartOptions percentOptions = new() { YAxisFormat = "0'%'" };
+
+    private EnumOption? selectedPreset = DashboardRangePreset.Options.First(x => x.Value == DashboardRangePreset.Last30Days);
+    private EnumOption? selectedGranularity = DashboardGranularity.Options[0];
+    private EnumOption? trendType = TrendTypeOptions[0];
+    private EnumOption? heatmapType = DashboardEventType.Options[0];
+    private DateRange dateRange = new();
+    private bool isLoading;
+
+    private DashboardSnapshot? snapshot;
+    private Dictionary<string, (int Count, int Quantity)> totals = [];
+    private int deliveredItems;
+    private int failedItems;
+    private decimal collectedCod;
+    private int distinctActors;
+    private string[] trendLabels = [];
+    private List<ChartSeries> trendSeries = [];
+    private List<ChartSeries> outcomeSeries = [];
+    private List<ChartSeries> hourSeries = [];
+    private List<TimeOfDayStats> timeOfDayStats = [];
+    private List<ChartSeries> heatmapSeries = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        ApplyPreset(selectedPreset!.Value);
+        await LoadAsync();
+    }
+
+    public void Dispose()
+    {
+        disposeCts.Cancel();
+        disposeCts.Dispose();
+    }
+
+    private Task<IEnumerable<EnumOption>> SearchPresets(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(DashboardRangePreset.Options, searchTerm));
+
+    private Task<IEnumerable<EnumOption>> SearchGranularities(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(DashboardGranularity.Options, searchTerm));
+
+    private Task<IEnumerable<EnumOption>> SearchTrendTypes(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(TrendTypeOptions, searchTerm));
+
+    private Task<IEnumerable<EnumOption>> SearchEventTypes(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(DashboardEventType.Options, searchTerm));
+
+    private async Task OnPresetChangedAsync(EnumOption? value)
+    {
+        selectedPreset = value;
+        if (value is not null && ApplyPreset(value.Value))
+        {
+            await LoadAsync();
+        }
+    }
+
+    private async Task OnDateRangeChangedAsync(DateRange? value)
+    {
+        if (value?.Start is null || value.End is null)
+        {
+            return;
+        }
+
+        dateRange = value;
+        selectedPreset = DashboardRangePreset.Options.First(x => x.Value == DashboardRangePreset.Custom);
+        await LoadAsync();
+    }
+
+    private void OnGranularityChanged(EnumOption? value)
+    {
+        selectedGranularity = value ?? DashboardGranularity.Options[0];
+        BuildTrendCharts();
+    }
+
+    private void OnTrendTypeChanged(EnumOption? value)
+    {
+        trendType = value ?? TrendTypeOptions[0];
+        BuildTrendCharts();
+    }
+
+    private void OnHeatmapTypeChanged(EnumOption? value)
+    {
+        heatmapType = value ?? DashboardEventType.Options[0];
+        BuildHeatmap();
+    }
+
+    private bool ApplyPreset(string preset)
+    {
+        DateOnly today = DateOnly.FromDateTime(VietnamTimeHelper.Now.DateTime);
+        if (DashboardRangePreset.Resolve(preset, today) is not { } range)
+        {
+            return false;
+        }
+
+        dateRange = new DateRange(range.Start.ToDateTime(TimeOnly.MinValue), range.End.ToDateTime(TimeOnly.MinValue));
+        return true;
+    }
+
+    private async Task LoadAsync()
+    {
+        if (dateRange.Start is null || dateRange.End is null)
+        {
+            return;
+        }
+
+        isLoading = true;
+        try
+        {
+            snapshot = await StorageService.LoadAsync(
+                DateOnly.FromDateTime(dateRange.Start.Value),
+                DateOnly.FromDateTime(dateRange.End.Value),
+                disposeCts.Token);
+            BuildAll();
+        }
+        catch (OperationCanceledException) when (disposeCts.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Không thể tải dữ liệu dashboard: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void BuildAll()
+    {
+        List<DashboardEvent> events = snapshot!.Events;
+
+        totals = events
+            .GroupBy(x => x.EventType)
+            .ToDictionary(g => g.Key, g => (g.Count(), g.Sum(x => x.Quantity)));
+        deliveredItems = totals.GetValueOrDefault(DashboardEventType.TaskComplete).Quantity;
+        failedItems = totals.GetValueOrDefault(DashboardEventType.Failure).Quantity;
+        collectedCod = events.Where(x => x.EventType == DashboardEventType.TaskComplete).Sum(x => x.Amount);
+        distinctActors = events.Where(x => !string.IsNullOrWhiteSpace(x.Actor)).Select(x => x.Actor).Distinct().Count();
+
+        ILookup<string, DashboardEvent> byType = events.ToLookup(x => x.EventType);
+        hourSeries = HourProfileTypes
+            .Select(type => new ChartSeries { Name = DashboardEventType.Describe(type), Data = DashboardAggregator.BuildHourProfile(byType[type], asPercent: true) })
+            .ToList();
+        timeOfDayStats = DashboardEventType.Options
+            .Select(type => DashboardAggregator.BuildTimeOfDayStats(type.Value, byType[type.Value]))
+            .ToList();
+
+        BuildTrendCharts();
+        BuildHeatmap();
+    }
+
+    private void BuildTrendCharts()
+    {
+        if (snapshot is null)
+        {
+            return;
+        }
+
+        string granularity = selectedGranularity?.Value ?? DashboardGranularity.Day;
+        IEnumerable<string> types = trendType?.Value is { Length: > 0 } single
+            ? [single]
+            : DashboardEventType.Options.Select(x => x.Value);
+
+        TrendResult trend = DashboardAggregator.BuildTrend(snapshot.Events, snapshot.StartDate, snapshot.EndDate, granularity, types);
+        trendLabels = trend.Labels;
+        trendSeries = trend.Series
+            .Select(x => new ChartSeries { Name = DashboardEventType.Describe(x.Key), Data = x.Value })
+            .ToList();
+
+        TrendResult outcome = DashboardAggregator.BuildTrend(
+            snapshot.Events, snapshot.StartDate, snapshot.EndDate, granularity,
+            [DashboardEventType.TaskComplete, DashboardEventType.Failure],
+            x => x.Quantity);
+        outcomeSeries =
+        [
+            new ChartSeries { Name = "Kiện phát thành công", Data = outcome.Series[DashboardEventType.TaskComplete] },
+            new ChartSeries { Name = "Kiện thất bại", Data = outcome.Series[DashboardEventType.Failure] }
+        ];
+    }
+
+    private void BuildHeatmap()
+    {
+        if (snapshot is null)
+        {
+            return;
+        }
+
+        string eventType = heatmapType?.Value ?? DashboardEventType.ManifestCommit;
+        double[][] grid = DashboardAggregator.BuildWeekdayHourHeatmap(snapshot.Events.Where(x => x.EventType == eventType));
+        heatmapSeries = grid
+            .Select((row, index) => new ChartSeries { Name = DashboardAggregator.WeekdayLabels[index], Data = row })
+            .ToList();
+    }
+}

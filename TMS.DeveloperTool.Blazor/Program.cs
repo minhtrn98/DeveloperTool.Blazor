@@ -15,7 +15,8 @@ builder.Services
     .AddTmsDatabases()
     .AddRepositories()
     .AddFeatureServices()
-    .AddExternalApis();
+    .AddExternalApis()
+    .AddBackgroundJobs(builder.Configuration);
 
 WebApplication app = builder.Build();
 

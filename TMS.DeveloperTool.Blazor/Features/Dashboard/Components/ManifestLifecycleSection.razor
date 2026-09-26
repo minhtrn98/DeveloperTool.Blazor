@@ -1,0 +1,82 @@
+@using TMS.DeveloperTool.Blazor.Features.Dashboard.Models
+@using TMS.DeveloperTool.Blazor.Features.Dashboard.Services
+
+<MudPaper Elevation="2" Class="pa-4 mb-4">
+    <MudText Typo="Typo.h6">Vòng đời sổ phát: tạo → check-in đầu tiên → xác nhận phát cuối cùng</MudText>
+    <MudText Typo="Typo.caption" Class="mb-3 d-block">
+        Ghép theo mã sổ phát ({DE}). Tính các sổ tạo trong khoảng đã chọn, gồm cả tạo bằng quét mã bàn giao.
+        Check-in và xác nhận phát được đọc thêm 2 ngày sau khoảng.
+    </MudText>
+
+    <MudGrid Spacing="2" Class="mb-2">
+        <MudItem xs="6" md="2">
+            <DashboardStatTile Title="Sổ phát đã tạo" Value="@total.ToString("N0")" />
+        </MudItem>
+        <MudItem xs="6" md="2">
+            <DashboardStatTile Title="Có check-in" Value="@DashboardAggregator.FormatPercent(withArrival, total)" Caption="@($"{withArrival:N0} sổ")" />
+        </MudItem>
+        <MudItem xs="6" md="2">
+            <DashboardStatTile Title="Có xác nhận phát" Value="@DashboardAggregator.FormatPercent(withComplete, total)" Caption="@($"{withComplete:N0} sổ")" />
+        </MudItem>
+        <MudItem xs="6" md="2">
+            <DashboardStatTile Title="Chưa có hoạt động" Value="@idle.ToString("N0")" Caption="Không check-in, không phát"
+                               ValueColor="@(idle > 0 ? Color.Warning : Color.Default)" />
+        </MudItem>
+        <MudItem xs="6" md="2">
+            <DashboardStatTile Title="Trung vị tạo → check-in" Value="@DashboardAggregator.FormatDuration(toArrival.Median)" Caption="@($"P90 {DashboardAggregator.FormatDuration(toArrival.P90)}")" />
+        </MudItem>
+        <MudItem xs="6" md="2">
+            <DashboardStatTile Title="Trung vị tạo → phát xong" Value="@DashboardAggregator.FormatDuration(toComplete.Median)" Caption="@($"P90 {DashboardAggregator.FormatDuration(toComplete.P90)}")" />
+        </MudItem>
+    </MudGrid>
+
+    <MudText Typo="Typo.subtitle2">Phân bố thời gian (số sổ phát)</MudText>
+    <MudChart ChartType="ChartType.Bar" ChartSeries="@series" XAxisLabels="@labels" Width="100%" Height="300px" />
+</MudPaper>
+
+@code {
+    private static readonly double[] HourEdges = [0.5, 1, 2, 4, 6, 8, 12];
+
+    [Parameter, EditorRequired]
+    public List<ManifestLifecycle> Manifests { get; set; } = [];
+
+    private List<ManifestLifecycle>? lastManifests;
+    private int total;
+    private int withArrival;
+    private int withComplete;
+    private int idle;
+    private DurationStats toArrival = new(0, null, null, null, null);
+    private DurationStats toComplete = new(0, null, null, null, null);
+    private List<ChartSeries> series = [];
+    private string[] labels = [];
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(lastManifests, Manifests))
+        {
+            return;
+        }
+
+        lastManifests = Manifests;
+        total = Manifests.Count;
+        withArrival = Manifests.Count(x => x.FirstArrivalAt.HasValue);
+        withComplete = Manifests.Count(x => x.LastCompleteAt.HasValue);
+        idle = Manifests.Count(x => !x.FirstArrivalAt.HasValue && !x.LastCompleteAt.HasValue);
+
+        List<TimeSpan> arrivalDurations = Manifests.Where(x => x.FirstArrivalAt.HasValue).Select(x => x.FirstArrivalAt!.Value - x.CommittedAt).ToList();
+        List<TimeSpan> completeDurations = Manifests.Where(x => x.LastCompleteAt.HasValue).Select(x => x.LastCompleteAt!.Value - x.CommittedAt).ToList();
+        toArrival = DashboardAggregator.BuildDurationStats(arrivalDurations);
+        toComplete = DashboardAggregator.BuildDurationStats(completeDurations);
+
+        BucketedCounts arrivalBuckets = DashboardAggregator.BuildBuckets(arrivalDurations.Select(d => d.TotalHours), HourEdges, FormatHours);
+        BucketedCounts completeBuckets = DashboardAggregator.BuildBuckets(completeDurations.Select(d => d.TotalHours), HourEdges, FormatHours);
+        labels = arrivalBuckets.Labels;
+        series =
+        [
+            new ChartSeries { Name = "Tạo → check-in đầu tiên", Data = arrivalBuckets.Counts },
+            new ChartSeries { Name = "Tạo → xác nhận phát cuối cùng", Data = completeBuckets.Counts }
+        ];
+    }
+
+    private static string FormatHours(double hours) => hours < 1 ? $"{hours * 60}p" : $"{hours}h";
+}

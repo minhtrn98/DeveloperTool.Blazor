@@ -1,0 +1,143 @@
+@using TMS.DeveloperTool.Blazor.Features.Dashboard.Models
+@using TMS.DeveloperTool.Blazor.Features.Dashboard.Services
+@using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
+
+<MudPaper Elevation="2" Class="pa-4 mb-4">
+    <MudText Typo="Typo.h6">Thống kê theo người thao tác</MudText>
+    <MudText Typo="Typo.caption" Class="mb-3 d-block">
+        Người thao tác lấy từ attributes_string.User của log. "Giờ cao điểm" là giờ (VN) người đó thao tác nhiều nhất.
+    </MudText>
+
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudAutocomplete T="EnumOption" Value="selectedType" ValueChanged="OnTypeChanged"
+                             SearchFunc="SearchTypes" Label="Loại sự kiện" Variant="Variant.Outlined"
+                             MaxItems="20" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<EnumOption>" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField T="string" @bind-Value="actorFilter" Label="Tìm người thao tác" Variant="Variant.Outlined"
+                          Clearable="true" Immediate="true" DebounceInterval="300" />
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Spacing="2" Class="my-2">
+        <MudItem xs="6" md="3">
+            <DashboardStatTile Title="Số người thao tác" Value="@stats.Count.ToString("N0")" />
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <DashboardStatTile Title="TB lượt / người" Value="@(stats.Count == 0 ? "—" : (totalCount / (double)stats.Count).ToString("N1"))" />
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <DashboardStatTile Title="Top 10% người chiếm" Value="@DashboardAggregator.FormatPercent(topDecileCount, totalCount)" Caption="tổng số lượt" />
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <DashboardStatTile Title="Chỉ thao tác 1 lần" Value="@oneTimers.ToString("N0")" Caption="người" />
+        </MudItem>
+    </MudGrid>
+
+    @if (stats.Count > 0)
+    {
+        <MudText Typo="Typo.subtitle2">Top @topSeriesLabels.Length người thao tác nhiều nhất</MudText>
+        <MudChart ChartType="ChartType.Bar" ChartSeries="@topSeries" XAxisLabels="@topSeriesLabels" Width="100%" Height="320px"
+                  AxisChartOptions="axisOptions" />
+    }
+
+    <MudTable T="ActorStat" Items="FilteredStats" Dense="true" Hover="true" Striped="true" RowsPerPage="20" Class="mt-2">
+        <HeaderContent>
+            <MudTh>Hạng</MudTh>
+            <MudTh><MudTableSortLabel T="ActorStat" SortBy="x => x.Actor">Người thao tác</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="ActorStat" SortBy="x => x.Count" InitialDirection="SortDirection.Descending">Số lượt</MudTableSortLabel></MudTh>
+            @if (quantityLabel is not null)
+            {
+                <MudTh><MudTableSortLabel T="ActorStat" SortBy="x => x.Quantity">@quantityLabel</MudTableSortLabel></MudTh>
+            }
+            @if (showAmount)
+            {
+                <MudTh><MudTableSortLabel T="ActorStat" SortBy="x => x.Amount">COD đã thu</MudTableSortLabel></MudTh>
+            }
+            <MudTh><MudTableSortLabel T="ActorStat" SortBy="x => x.ActiveDays">Số ngày hoạt động</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="ActorStat" SortBy="x => x.AveragePerActiveDay">TB lượt / ngày</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="ActorStat" SortBy="x => x.PeakHour">Giờ cao điểm</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="ActorStat" SortBy="x => x.First">Lần đầu</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel T="ActorStat" SortBy="x => x.Last">Lần cuối</MudTableSortLabel></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Hạng">@(stats.IndexOf(context) + 1)</MudTd>
+            <MudTd DataLabel="Người thao tác">@context.Actor</MudTd>
+            <MudTd DataLabel="Số lượt">@context.Count.ToString("N0")</MudTd>
+            @if (quantityLabel is not null)
+            {
+                <MudTd DataLabel="@quantityLabel">@context.Quantity.ToString("N0")</MudTd>
+            }
+            @if (showAmount)
+            {
+                <MudTd DataLabel="COD đã thu">@context.Amount.ToString("N0")</MudTd>
+            }
+            <MudTd DataLabel="Số ngày hoạt động">@context.ActiveDays</MudTd>
+            <MudTd DataLabel="TB lượt / ngày">@context.AveragePerActiveDay.ToString("N1")</MudTd>
+            <MudTd DataLabel="Giờ cao điểm">@($"{context.PeakHour:00}:00")</MudTd>
+            <MudTd DataLabel="Lần đầu">@VietnamTimeHelper.Format(context.First)</MudTd>
+            <MudTd DataLabel="Lần cuối">@VietnamTimeHelper.Format(context.Last)</MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private const int TopCount = 15;
+
+    [Parameter, EditorRequired]
+    public List<DashboardEvent> Events { get; set; } = [];
+
+    private readonly AxisChartOptions axisOptions = new() { XAxisLabelRotation = 45 };
+    private List<DashboardEvent>? lastEvents;
+    private EnumOption? selectedType = DashboardEventType.Options[0];
+    private string? actorFilter;
+    private List<ActorStat> stats = [];
+    private int totalCount;
+    private int topDecileCount;
+    private int oneTimers;
+    private string? quantityLabel;
+    private bool showAmount;
+    private List<ChartSeries> topSeries = [];
+    private string[] topSeriesLabels = [];
+
+    private IEnumerable<ActorStat> FilteredStats => string.IsNullOrWhiteSpace(actorFilter)
+        ? stats
+        : stats.Where(x => x.Actor.Contains(actorFilter.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(lastEvents, Events))
+        {
+            lastEvents = Events;
+            Rebuild();
+        }
+    }
+
+    private Task<IEnumerable<EnumOption>> SearchTypes(string searchTerm, CancellationToken cancellationToken)
+        => Task.FromResult(AutocompleteSearchHelper.SearchByLike(DashboardEventType.Options, searchTerm));
+
+    private void OnTypeChanged(EnumOption? value)
+    {
+        selectedType = value ?? DashboardEventType.Options[0];
+        Rebuild();
+    }
+
+    private void Rebuild()
+    {
+        string eventType = selectedType!.Value;
+        stats = DashboardAggregator.BuildActorStats(Events.Where(x => x.EventType == eventType));
+        totalCount = stats.Sum(x => x.Count);
+        topDecileCount = stats.Take((int)Math.Ceiling(stats.Count / 10.0)).Sum(x => x.Count);
+        oneTimers = stats.Count(x => x.Count == 1);
+        quantityLabel = DashboardEventType.QuantityLabel(eventType);
+        showAmount = eventType == DashboardEventType.TaskComplete;
+
+        List<ActorStat> top = stats.Take(TopCount).ToList();
+        topSeriesLabels = top.Select(x => x.Actor).ToArray();
+        topSeries = [new ChartSeries { Name = "Số lượt", Data = top.Select(x => (double)x.Count).ToArray() }];
+    }
+}

@@ -10,6 +10,16 @@
         "ASPNETCORE_ENVIRONMENT": "Local"
       }
     },
+    "Local (no jobs)": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5001",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Local",
+        "BackgroundJobs__Enabled": "false"
+      }
+    },
     "Dev": {
       "commandName": "Project",
       "dotnetRunMessages": true,
