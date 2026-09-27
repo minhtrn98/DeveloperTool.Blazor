@@ -73,6 +73,7 @@ public static class ExternalApiServiceExtensions
         services.AddHostedService<SignozProSyncJob>();
         services.AddHostedService<PickupTaskOrderSyncJob>();
         services.AddHostedService<DailyReportJob>();
+        services.AddHostedService<RouteStopTraceLogCleanupJob>();
 
         return services;
     }
