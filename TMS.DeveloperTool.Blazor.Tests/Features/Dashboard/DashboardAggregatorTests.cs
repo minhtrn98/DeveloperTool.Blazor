@@ -1,21 +1,26 @@
 using TMS.DeveloperTool.Blazor.Features.Dashboard.Models;
 using TMS.DeveloperTool.Blazor.Features.Dashboard.Services;
+using TMS.DeveloperTool.Blazor.Features.Report.Models;
 
 namespace TMS.DeveloperTool.Blazor.Tests.Features.Dashboard;
 
 public class DashboardAggregatorTests
 {
-    private static readonly TimeSpan Vietnam = TimeSpan.FromHours(7);
+    private static readonly DateOnly Monday = new(2026, 9, 21);
 
-    private static DashboardEvent Event(string type, DateTimeOffset timestamp, string actor = "user1", int quantity = 0)
-        => new(type, timestamp, actor, quantity);
+    private static EventStatRow Stat(DateOnly date, string type, int count, long quantity = 0)
+        => new() { Date = date, EventType = type, Count = count, Quantity = quantity };
+
+    private static TimeBucketRow Bucket(DateOnly date, int minuteOfDay, int count, string type = DashboardEventType.Arrival)
+        => new() { Date = date, EventType = type, MinuteOfDay = minuteOfDay, Count = count };
+
+    private static HistogramRow Histogram(int index, double lower, int count, double sum, double max, string metric = "m")
+        => new() { Date = Monday, Metric = metric, BucketIndex = index, BucketLower = lower, Count = count, ValueSum = sum, ValueMax = max };
 
     [Fact]
     public void ToVietnamDate_ShouldRollOverToNextDay_WhenUtcEveningIsPastMidnightInVietnam()
     {
-        DateTimeOffset utcEvening = new(2026, 9, 1, 18, 30, 0, TimeSpan.Zero);
-
-        DashboardAggregator.ToVietnamDate(utcEvening).Should().Be(new DateOnly(2026, 9, 2));
+        DashboardAggregator.ToVietnamDate(new DateTimeOffset(2026, 9, 1, 18, 30, 0, TimeSpan.Zero)).Should().Be(new DateOnly(2026, 9, 2));
     }
 
     [Theory]
@@ -38,55 +43,41 @@ public class DashboardAggregatorTests
     }
 
     [Fact]
-    public void BuildTrend_ShouldCountPerBucketAndType_UsingVietnamDates()
+    public void BuildTrend_ShouldSumDailyRowsPerWeekAndSkipUnrequestedTypes()
     {
-        List<DashboardEvent> events =
+        List<EventStatRow> rows =
         [
-            Event(DashboardEventType.ManifestCommit, new DateTimeOffset(2026, 9, 1, 8, 0, 0, Vietnam)),
-            Event(DashboardEventType.ManifestCommit, new DateTimeOffset(2026, 9, 1, 23, 30, 0, Vietnam)),
-            Event(DashboardEventType.ManifestCommit, new DateTimeOffset(2026, 9, 2, 0, 15, 0, Vietnam)),
-            Event(DashboardEventType.Arrival, new DateTimeOffset(2026, 9, 2, 9, 0, 0, Vietnam)),
-            Event(DashboardEventType.Failure, new DateTimeOffset(2026, 9, 2, 9, 0, 0, Vietnam))
+            Stat(Monday, DashboardEventType.ManifestCommit, 3),
+            Stat(Monday.AddDays(6), DashboardEventType.ManifestCommit, 2),
+            Stat(Monday.AddDays(7), DashboardEventType.ManifestCommit, 4),
+            Stat(Monday, DashboardEventType.Failure, 9)
         ];
 
         TrendResult trend = DashboardAggregator.BuildTrend(
-            events, new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 3), DashboardGranularity.Day,
-            [DashboardEventType.ManifestCommit, DashboardEventType.Arrival]);
+            rows, Monday, Monday.AddDays(7), DashboardGranularity.Week, [DashboardEventType.ManifestCommit]);
 
-        trend.Labels.Should().Equal("01/09", "02/09", "03/09");
-        trend.Series[DashboardEventType.ManifestCommit].Should().Equal(2, 1, 0);
-        trend.Series[DashboardEventType.Arrival].Should().Equal(0, 1, 0);
+        trend.Labels.Should().Equal("W 21/09", "W 28/09");
+        trend.Series[DashboardEventType.ManifestCommit].Should().Equal(5, 4);
         trend.Series.Should().NotContainKey(DashboardEventType.Failure);
     }
 
     [Fact]
     public void BuildTrend_ShouldSumValueSelector_WhenProvided()
     {
-        List<DashboardEvent> events =
-        [
-            Event(DashboardEventType.TaskComplete, new DateTimeOffset(2026, 9, 1, 8, 0, 0, Vietnam), quantity: 3),
-            Event(DashboardEventType.TaskComplete, new DateTimeOffset(2026, 9, 1, 9, 0, 0, Vietnam), quantity: 4)
-        ];
+        List<EventStatRow> rows = [Stat(Monday, DashboardEventType.TaskComplete, 2, quantity: 7), Stat(Monday.AddDays(1), DashboardEventType.TaskComplete, 1, quantity: 5)];
 
         TrendResult trend = DashboardAggregator.BuildTrend(
-            events, new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 1), DashboardGranularity.Day,
-            [DashboardEventType.TaskComplete], x => x.Quantity);
+            rows, Monday, Monday.AddDays(1), DashboardGranularity.Day, [DashboardEventType.TaskComplete], x => x.Quantity);
 
-        trend.Series[DashboardEventType.TaskComplete].Should().Equal(7);
+        trend.Series[DashboardEventType.TaskComplete].Should().Equal(7, 5);
     }
 
     [Fact]
-    public void BuildHourProfile_ShouldReturnPercentShares_InVietnamHours()
+    public void BuildHourProfile_ShouldMergeTenMinuteBucketsIntoPercentPerHour()
     {
-        List<DashboardEvent> events =
-        [
-            Event(DashboardEventType.Arrival, new DateTimeOffset(2026, 9, 1, 1, 0, 0, TimeSpan.Zero)),
-            Event(DashboardEventType.Arrival, new DateTimeOffset(2026, 9, 1, 1, 30, 0, TimeSpan.Zero)),
-            Event(DashboardEventType.Arrival, new DateTimeOffset(2026, 9, 1, 3, 0, 0, TimeSpan.Zero)),
-            Event(DashboardEventType.Arrival, new DateTimeOffset(2026, 9, 1, 3, 10, 0, TimeSpan.Zero))
-        ];
+        List<TimeBucketRow> rows = [Bucket(Monday, 480, 1), Bucket(Monday, 530, 1), Bucket(Monday.AddDays(1), 600, 2)];
 
-        double[] profile = DashboardAggregator.BuildHourProfile(events, asPercent: true);
+        double[] profile = DashboardAggregator.BuildHourProfile(rows, asPercent: true);
 
         profile[8].Should().Be(50);
         profile[10].Should().Be(50);
@@ -96,123 +87,115 @@ public class DashboardAggregatorTests
     [Fact]
     public void BuildWeekdayHourHeatmap_ShouldPlaceMondayInFirstRowAndSundayInLast()
     {
-        List<DashboardEvent> events =
-        [
-            Event(DashboardEventType.Arrival, new DateTimeOffset(2026, 9, 21, 9, 0, 0, Vietnam)),
-            Event(DashboardEventType.Arrival, new DateTimeOffset(2026, 9, 27, 14, 0, 0, Vietnam))
-        ];
-
-        double[][] grid = DashboardAggregator.BuildWeekdayHourHeatmap(events);
+        double[][] grid = DashboardAggregator.BuildWeekdayHourHeatmap([Bucket(Monday, 540, 3), Bucket(Monday.AddDays(6), 850, 1)]);
 
         grid.Should().HaveCount(7);
-        grid[0][9].Should().Be(1);
+        grid[0][9].Should().Be(3);
         grid[6][14].Should().Be(1);
-        grid.Sum(row => row.Sum()).Should().Be(2);
+        grid.Sum(row => row.Sum()).Should().Be(4);
     }
 
     [Fact]
-    public void BuildTimeOfDayStats_ShouldReturnPercentilesAndPeakHour()
+    public void BuildTimeOfDayStats_ShouldInterpolateInsideTenMinuteBuckets()
     {
-        List<DashboardEvent> events = Enumerable.Range(0, 10)
-            .Select(i => Event(DashboardEventType.ManifestCommit, new DateTimeOffset(2026, 9, 1, 6 + i, 0, 0, Vietnam)))
-            .Append(Event(DashboardEventType.ManifestCommit, new DateTimeOffset(2026, 9, 2, 7, 30, 0, Vietnam)))
-            .ToList();
+        List<TimeBucketRow> rows = [Bucket(Monday, 420, 3), Bucket(Monday.AddDays(1), 420, 2), Bucket(Monday, 480, 5)];
 
-        TimeOfDayStats stats = DashboardAggregator.BuildTimeOfDayStats(DashboardEventType.ManifestCommit, events);
+        TimeOfDayStats stats = DashboardAggregator.BuildTimeOfDayStats(DashboardEventType.Arrival, rows);
 
-        stats.Count.Should().Be(11);
+        stats.Count.Should().Be(10);
+        stats.P10.Should().Be(new TimeSpan(7, 2, 0));
+        stats.Median.Should().Be(new TimeSpan(7, 10, 0));
+        stats.P90.Should().Be(new TimeSpan(8, 8, 0));
         stats.PeakHour.Should().Be(7);
-        stats.P10.Should().Be(TimeSpan.FromHours(7));
-        stats.Median.Should().Be(TimeSpan.FromHours(10));
-        stats.P90.Should().Be(TimeSpan.FromHours(14));
     }
 
     [Fact]
-    public void BuildTimeOfDayStats_ShouldReturnEmptyStats_WhenNoEvents()
+    public void BuildTimeOfDayStats_ShouldReturnEmptyStats_WhenNoRows()
     {
-        TimeOfDayStats stats = DashboardAggregator.BuildTimeOfDayStats(DashboardEventType.Arrival, []);
-
-        stats.Should().Be(new TimeOfDayStats(DashboardEventType.Arrival, 0, null, null, null, null));
+        DashboardAggregator.BuildTimeOfDayStats(DashboardEventType.Arrival, [])
+            .Should().Be(new TimeOfDayStats(DashboardEventType.Arrival, 0, null, null, null, null));
     }
 
     [Fact]
-    public void BuildActorStats_ShouldGroupByActorAndOrderByCountDescending()
+    public void BuildActorStats_ShouldMergeHoursAndDaysPerActor()
     {
-        List<DashboardEvent> events =
+        DateTime t0 = new(2026, 9, 21, 1, 0, 0, DateTimeKind.Utc);
+        List<ActorHourRow> rows =
         [
-            Event(DashboardEventType.Failure, new DateTimeOffset(2026, 9, 1, 8, 0, 0, Vietnam), "alice", 2),
-            Event(DashboardEventType.Failure, new DateTimeOffset(2026, 9, 1, 8, 30, 0, Vietnam), "bob", 1),
-            Event(DashboardEventType.Failure, new DateTimeOffset(2026, 9, 2, 8, 45, 0, Vietnam), "bob", 5),
-            Event(DashboardEventType.Failure, new DateTimeOffset(2026, 9, 3, 15, 0, 0, Vietnam), "bob", 1),
-            Event(DashboardEventType.Failure, new DateTimeOffset(2026, 9, 3, 15, 0, 0, Vietnam), " ", 1)
+            new() { Date = Monday, EventType = "x", Actor = "bob", Hour = 8, Count = 2, Quantity = 3, FirstAtUtc = t0, LastAtUtc = t0.AddMinutes(30) },
+            new() { Date = Monday, EventType = "x", Actor = "bob", Hour = 15, Count = 1, Quantity = 1, FirstAtUtc = t0.AddHours(7), LastAtUtc = t0.AddHours(7) },
+            new() { Date = Monday.AddDays(1), EventType = "x", Actor = "bob", Hour = 8, Count = 1, Quantity = 5, FirstAtUtc = t0.AddDays(1), LastAtUtc = t0.AddDays(1) },
+            new() { Date = Monday, EventType = "x", Actor = "alice", Hour = 9, Count = 1, FirstAtUtc = t0, LastAtUtc = t0 },
+            new() { Date = Monday, EventType = "x", Actor = "", Hour = 9, Count = 2, FirstAtUtc = t0, LastAtUtc = t0 }
         ];
 
-        List<ActorStat> stats = DashboardAggregator.BuildActorStats(events);
+        List<ActorStat> stats = DashboardAggregator.BuildActorStats(rows);
 
         stats.Select(x => x.Actor).Should().Equal("bob", DashboardAggregator.UnknownActor, "alice");
         ActorStat bob = stats[0];
-        bob.Count.Should().Be(3);
-        bob.Quantity.Should().Be(7);
-        bob.ActiveDays.Should().Be(3);
-        bob.AveragePerActiveDay.Should().Be(1);
+        bob.Count.Should().Be(4);
+        bob.Quantity.Should().Be(9);
+        bob.ActiveDays.Should().Be(2);
+        bob.AveragePerActiveDay.Should().Be(2);
         bob.PeakHour.Should().Be(8);
-        bob.First.Should().Be(new DateTimeOffset(2026, 9, 1, 8, 30, 0, Vietnam));
-        bob.Last.Should().Be(new DateTimeOffset(2026, 9, 3, 15, 0, 0, Vietnam));
+        bob.First.Should().Be(new DateTimeOffset(t0));
+        bob.Last.Should().Be(new DateTimeOffset(t0.AddDays(1)));
+        DashboardAggregator.CountDistinctActors(rows).Should().Be(2);
     }
 
     [Fact]
-    public void BuildDurationStats_ShouldIgnoreNegativeDurations()
+    public void BuildHistogramStats_ShouldMergeDaysAndInterpolatePercentiles()
     {
-        TimeSpan[] durations = [TimeSpan.FromMinutes(-5), TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(20), TimeSpan.FromMinutes(90)];
+        double[] edges = [60, 120];
+        List<HistogramRow> rows =
+        [
+            Histogram(0, 0, 2, 60, 40),
+            Histogram(1, 60, 1, 80, 80),
+            Histogram(1, 60, 1, 100, 100),
+            Histogram(2, 120, 1, 300, 300),
+            Histogram(0, 0, 50, 500, 20, metric: "other")
+        ];
 
-        DurationStats stats = DashboardAggregator.BuildDurationStats(durations);
+        HistogramStats stats = DashboardAggregator.BuildHistogramStats(rows, "m", edges);
 
-        stats.Count.Should().Be(3);
-        stats.Average.Should().Be(TimeSpan.FromMinutes(40));
-        stats.Median.Should().Be(TimeSpan.FromMinutes(20));
-        stats.P90.Should().Be(TimeSpan.FromMinutes(90));
-        stats.Max.Should().Be(TimeSpan.FromMinutes(90));
+        stats.Count.Should().Be(5);
+        stats.Average.Should().Be(108);
+        stats.Median.Should().Be(70);
+        stats.P90.Should().Be(210);
+        stats.Max.Should().Be(300);
     }
 
     [Fact]
-    public void BuildBuckets_ShouldSplitValuesAtEdges_WithExclusiveUpperBound()
+    public void BuildHistogramStats_ShouldReturnEmpty_WhenMetricHasNoRows()
     {
-        BucketedCounts buckets = DashboardAggregator.BuildBuckets([5, 15, 29.9, 30, 1000], [15, 30], x => $"{x}p");
-
-        buckets.Labels.Should().Equal("< 15p", "15p–30p", "≥ 30p");
-        buckets.Counts.Should().Equal(1, 2, 2);
+        DashboardAggregator.BuildHistogramStats([], "m", [60]).Should().Be(new HistogramStats(0, null, null, null, null));
     }
 
     [Fact]
-    public void BuildManifestLifecycles_ShouldUseFirstArrivalAndLastCompleteAfterCommit()
+    public void Rebucket_ShouldFoldFineBucketsIntoCoarseEdges()
     {
-        DateTimeOffset committedAt = new(2026, 9, 1, 7, 0, 0, Vietnam);
-        ManifestEvent[] commits =
+        List<HistogramRow> rows = [Histogram(0, 0, 2, 0, 0), Histogram(1, 60, 3, 0, 0), Histogram(2, 120, 1, 0, 0), Histogram(3, 300, 4, 0, 0)];
+
+        BucketedCounts buckets = DashboardAggregator.Rebucket(rows, "m", [120, 300], x => $"{x}s");
+
+        buckets.Labels.Should().Equal("< 120s", "120s–300s", "≥ 300s");
+        buckets.Counts.Should().Equal(5, 1, 4);
+        DashboardAggregator.CountAtLeast(rows, "m", 120).Should().Be(5);
+    }
+
+    [Fact]
+    public void BuildLabelCounts_ShouldSumAcrossDaysForOneMetric()
+    {
+        List<LabelCountRow> rows =
         [
-            new("DE1", committedAt),
-            new("DE1", committedAt.AddMinutes(5)),
-            new("DE2", committedAt),
-            new(string.Empty, committedAt)
-        ];
-        ManifestEvent[] arrivals =
-        [
-            new("DE1", committedAt.AddMinutes(-10)),
-            new("DE1", committedAt.AddHours(2)),
-            new("DE1", committedAt.AddHours(1))
-        ];
-        ManifestEvent[] completes =
-        [
-            new("DE1", committedAt.AddHours(3)),
-            new("DE1", committedAt.AddHours(6))
+            new() { Date = Monday, Metric = "failure_type", Label = "A", Count = 2 },
+            new() { Date = Monday.AddDays(1), Metric = "failure_type", Label = "A", Count = 3 },
+            new() { Date = Monday, Metric = "failure_type", Label = "", Count = 1 },
+            new() { Date = Monday, Metric = "transfer_source", Label = "Driver", Count = 9 }
         ];
 
-        List<ManifestLifecycle> lifecycles = DashboardAggregator.BuildManifestLifecycles(commits, arrivals, completes);
-
-        lifecycles.Should().HaveCount(2);
-        lifecycles.Single(x => x.ManifestCode == "DE1").Should().Be(
-            new ManifestLifecycle("DE1", committedAt, committedAt.AddHours(1), committedAt.AddHours(6)));
-        lifecycles.Single(x => x.ManifestCode == "DE2").Should().Be(
-            new ManifestLifecycle("DE2", committedAt, null, null));
+        DashboardAggregator.BuildLabelCounts(rows, "failure_type")
+            .Should().Equal(new LabelCount("A", 5), new LabelCount(DashboardAggregator.UnknownActor, 1));
     }
 
     [Theory]
@@ -231,9 +214,8 @@ public class DashboardAggregatorTests
     [Fact]
     public void RangePresetResolve_ShouldReturnPreviousCalendarMonth_ForLastMonth()
     {
-        (DateOnly Start, DateOnly End)? range = DashboardRangePreset.Resolve(DashboardRangePreset.LastMonth, new DateOnly(2026, 3, 15));
-
-        range.Should().Be((new DateOnly(2026, 2, 1), new DateOnly(2026, 2, 28)));
+        DashboardRangePreset.Resolve(DashboardRangePreset.LastMonth, new DateOnly(2026, 3, 15))
+            .Should().Be((new DateOnly(2026, 2, 1), new DateOnly(2026, 2, 28)));
         DashboardRangePreset.Resolve(DashboardRangePreset.Custom, new DateOnly(2026, 3, 15)).Should().BeNull();
     }
 }

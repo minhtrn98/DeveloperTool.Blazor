@@ -1,106 +1,82 @@
-using Microsoft.EntityFrameworkCore;
+using Dapper;
+using Npgsql;
 using TMS.DeveloperTool.Blazor.Features.Dashboard.Models;
-using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Helpers;
+using TMS.DeveloperTool.Blazor.Features.Report.Models;
+using TMS.DeveloperTool.Blazor.Features.Report.Services;
 
 namespace TMS.DeveloperTool.Blazor.Features.Dashboard.Services;
 
 /// <summary>
-/// Loads lightweight projections of the <c>pro.*_logs</c> tables (synced from SigNoz Pro by
-/// <c>SignozProSyncJob</c>) for a Vietnam-calendar date range; aggregation happens in <see cref="DashboardAggregator"/>.
+/// Loads dashboard data for a Vietnam-calendar date range. Past days already aggregated by
+/// <see cref="DailyReportJob"/> at the current <see cref="DailyReportAggregator.AggregationVersion"/>
+/// are read from <c>report.daily_*</c>; every other day (today, or a day the job hasn't built yet)
+/// is aggregated live from pro.*_logs with the same SQL, so both sources report identical numbers.
 /// </summary>
-public sealed class DashboardProStorageService(IDbContextFactory<ProApplicationDbContext> dbContextFactory)
+public sealed class DashboardProStorageService(
+    ConnectionStringsOptions connectionStrings,
+    ReportSchemaMigrator migrator,
+    DailyReportAggregator aggregator)
 {
-    /// <summary>How far past the range arrivals/completions are read so late-in-range manifests still get a lifecycle.</summary>
-    private static readonly TimeSpan LifecycleLookAhead = TimeSpan.FromDays(2);
+    /// <summary>A handover still unreceived this long after creation counts as stale.</summary>
+    public static readonly TimeSpan StaleHandoverAge = TimeSpan.FromHours(4);
 
     public async Task<DashboardSnapshot> LoadAsync(DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
     {
-        // Npgsql only accepts UTC offsets for timestamptz parameters.
-        DateTimeOffset from = VietnamTimeHelper.FromVietnamLocal(startDate.ToDateTime(TimeOnly.MinValue)).ToUniversalTime();
-        DateTimeOffset to = VietnamTimeHelper.FromVietnamLocal(endDate.AddDays(1).ToDateTime(TimeOnly.MinValue)).ToUniversalTime();
-        DateTimeOffset lookAheadTo = to + LifecycleLookAhead;
+        await migrator.EnsureMigratedAsync().WaitAsync(cancellationToken);
 
-        var manifestCommitsTask = QueryAsync(db => db.DeliveryManifestCommitLogs
-            .Where(x => x.LogTimestamp >= from && x.LogTimestamp < to)
-            .Select(x => new { x.LogTimestamp, x.Actor, x.DeliveryManifestCode }), cancellationToken);
+        // Days before the first synced log, or after today, have nothing to read or aggregate.
+        DateOnly today = DailyReportSchedule.ToVietnamDate(DateTimeOffset.UtcNow);
+        DateOnly firstDay = await aggregator.GetEarliestLogDateAsync(cancellationToken) ?? today;
+        List<DateOnly> allDates = [];
+        for (DateOnly date = startDate < firstDay ? firstDay : startDate; date <= endDate && date <= today; date = date.AddDays(1))
+        {
+            allDates.Add(date);
+        }
 
-        var sessionCommitsTask = QueryAsync(db => db.DeliverySessionCommitLogs
-            .Where(x => x.LogTimestamp >= from && x.LogTimestamp < to)
-            .Select(x => new { x.LogTimestamp, x.Actor, x.ItemCount, x.ManifestCodes }), cancellationToken);
+        Dictionary<DateOnly, AggregationRunInfo> runs = allDates.Count == 0
+            ? []
+            : await aggregator.GetRunsAsync(allDates[0], allDates[^1], cancellationToken);
+        List<DateOnly> reportDates = allDates.Where(date => date < today && IsUsable(runs.GetValueOrDefault(date))).ToList();
+        List<DateOnly> liveDates = allDates.Except(reportDates).ToList();
 
-        var arrivalsTask = QueryAsync(db => db.DeliveryArrivalLogs
-            .Where(x => x.LogTimestamp >= from && x.LogTimestamp < lookAheadTo)
-            .Select(x => new { x.LogTimestamp, x.Actor, x.DeliveryManifestCode, x.DistanceMeters, x.IsGpsValid, x.Superseded }), cancellationToken);
+        Task<ReportDataSet> reportTask = ReadReportAsync(reportDates, cancellationToken);
+        Task<ReportDataSet> liveTask = aggregator.AggregateLiveAsync(liveDates, cancellationToken);
+        Task<int> staleTask = CountStaleHandoversAsync(startDate, endDate, cancellationToken);
+        await Task.WhenAll(reportTask, liveTask, staleTask);
 
-        var completesTask = QueryAsync(db => db.DeliveryTaskCompleteLogs
-            .Where(x => x.LogTimestamp >= from && x.LogTimestamp < lookAheadTo)
-            .Select(x => new { x.LogTimestamp, x.Actor, x.DeliveryManifestCode, x.DeliveredCount, x.CollectedCod }), cancellationToken);
-
-        var failuresTask = QueryAsync(db => db.DeliveryFailureLogs
-            .Where(x => x.LogTimestamp >= from && x.LogTimestamp < to)
-            .Select(x => new { x.LogTimestamp, x.Actor, x.FailureType, x.ItemCount }), cancellationToken);
-
-        var transfersTask = QueryAsync(db => db.DeliveryTransferLogs
-            .Where(x => x.LogTimestamp >= from && x.LogTimestamp < to)
-            .Select(x => new { x.LogTimestamp, x.Actor, x.SourceType, x.OrderCount }), cancellationToken);
-
-        var handoversTask = QueryAsync(db => db.UnloadingHandoverLogs
-            .Where(x => x.LogTimestamp >= from && x.LogTimestamp < to)
-            .Select(x => new { x.LogTimestamp, x.Actor, x.DriverId, x.ItemCount, x.ReceivedAt, x.ConfirmAt }), cancellationToken);
-
-        await Task.WhenAll(manifestCommitsTask, sessionCommitsTask, arrivalsTask, completesTask, failuresTask, transfersTask, handoversTask);
-
-        var manifestCommits = manifestCommitsTask.Result;
-        var sessionCommits = sessionCommitsTask.Result;
-        var arrivalsInRange = arrivalsTask.Result.Where(x => x.LogTimestamp < to).ToList();
-        var completesInRange = completesTask.Result.Where(x => x.LogTimestamp < to).ToList();
-        var failures = failuresTask.Result;
-        var transfers = transfersTask.Result;
-        var handovers = handoversTask.Result;
-
-        List<DashboardEvent> events =
-        [
-            .. manifestCommits.Select(x => new DashboardEvent(DashboardEventType.ManifestCommit, x.LogTimestamp, x.Actor)),
-            .. sessionCommits.Select(x => new DashboardEvent(DashboardEventType.SessionCommit, x.LogTimestamp, x.Actor, x.ItemCount)),
-            .. arrivalsInRange.Select(x => new DashboardEvent(DashboardEventType.Arrival, x.LogTimestamp, x.Actor)),
-            .. completesInRange.Select(x => new DashboardEvent(DashboardEventType.TaskComplete, x.LogTimestamp, x.Actor, x.DeliveredCount, x.CollectedCod)),
-            .. failures.Select(x => new DashboardEvent(DashboardEventType.Failure, x.LogTimestamp, x.Actor, x.ItemCount)),
-            .. transfers.Select(x => new DashboardEvent(DashboardEventType.Transfer, x.LogTimestamp, x.Actor, x.OrderCount)),
-            .. handovers.Select(x => new DashboardEvent(DashboardEventType.UnloadingHandover, x.LogTimestamp, x.Actor, x.ItemCount))
-        ];
-
-        IEnumerable<ManifestEvent> createdManifests = manifestCommits
-            .Select(x => new ManifestEvent(x.DeliveryManifestCode, x.LogTimestamp))
-            .Concat(sessionCommits.SelectMany(x => x.ManifestCodes.Select(code => new ManifestEvent(code, x.LogTimestamp))));
-
-        List<ManifestLifecycle> manifests = DashboardAggregator.BuildManifestLifecycles(
-            createdManifests,
-            arrivalsTask.Result.Select(x => new ManifestEvent(x.DeliveryManifestCode, x.LogTimestamp)),
-            completesTask.Result.Select(x => new ManifestEvent(x.DeliveryManifestCode, x.LogTimestamp)));
-
-        return new DashboardSnapshot(
-            startDate,
-            endDate,
-            events,
-            handovers.Select(x => new HandoverRecord(x.LogTimestamp, x.ReceivedAt, x.ConfirmAt, x.DriverId, x.ItemCount)).ToList(),
-            arrivalsInRange.Select(x => new ArrivalRecord(x.DistanceMeters, x.IsGpsValid, x.Superseded != 0)).ToList(),
-            CountBy(failures.Select(x => x.FailureType)),
-            CountBy(transfers.Select(x => x.SourceType)),
-            manifests);
+        return new DashboardSnapshot(startDate, endDate, reportTask.Result.Concat(liveTask.Result), reportDates, liveDates, staleTask.Result);
     }
 
-    private static List<LabelCount> CountBy(IEnumerable<string> labels)
-        => labels
-            .GroupBy(label => string.IsNullOrWhiteSpace(label) ? DashboardAggregator.UnknownActor : label)
-            .Select(group => new LabelCount(group.Key, group.Count()))
-            .OrderByDescending(x => x.Count)
-            .ToList();
+    private static bool IsUsable(AggregationRunInfo? run)
+        => run is { Status: AggregationRunStatus.Succeeded } && run.AggregationVersion == DailyReportAggregator.AggregationVersion;
 
-    // Each query gets its own context so the table reads run in parallel.
-    private async Task<List<T>> QueryAsync<T>(Func<ProApplicationDbContext, IQueryable<T>> query, CancellationToken cancellationToken)
+    private async Task<ReportDataSet> ReadReportAsync(List<DateOnly> dates, CancellationToken cancellationToken)
     {
-        await using ProApplicationDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-        return await query(dbContext).ToListAsync(cancellationToken);
+        if (dates.Count == 0)
+        {
+            return ReportDataSet.Empty;
+        }
+
+        await using NpgsqlConnection connection = new(connectionStrings.DeveloperDb);
+        await connection.OpenAsync(cancellationToken);
+        return await ReportReader.ReadAsync(connection, null, "report", dates, cancellationToken);
+    }
+
+    // Depends on "now", so it is always read live rather than pre-aggregated.
+    private async Task<int> CountStaleHandoversAsync(DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
+    {
+        DateTimeOffset from = DailyReportSchedule.DayBoundsUtc(startDate).Start;
+        DateTimeOffset to = DailyReportSchedule.DayBoundsUtc(endDate).End;
+        DateTimeOffset staleBefore = DateTimeOffset.UtcNow - StaleHandoverAge;
+
+        await using NpgsqlConnection connection = new(connectionStrings.DeveloperDb);
+        return await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            """
+            SELECT count(*)::int FROM pro.unloading_handover_logs
+            WHERE log_timestamp >= @From AND log_timestamp < @To AND log_timestamp < @StaleBefore
+              AND received_at IS NULL AND confirm_at IS NULL
+            """,
+            new { From = from, To = to, StaleBefore = staleBefore },
+            cancellationToken: cancellationToken));
     }
 }

@@ -1,11 +1,13 @@
 @using TMS.DeveloperTool.Blazor.Features.Dashboard.Models
 @using TMS.DeveloperTool.Blazor.Features.Dashboard.Services
+@using TMS.DeveloperTool.Blazor.Features.Report.Models
+@using TMS.DeveloperTool.Blazor.Features.Report.Services
 
 <MudPaper Elevation="2" Class="pa-4 mb-4">
     <MudText Typo="Typo.h6">Vòng đời sổ phát: tạo → check-in đầu tiên → xác nhận phát cuối cùng</MudText>
     <MudText Typo="Typo.caption" Class="mb-3 d-block">
         Ghép theo mã sổ phát ({DE}). Tính các sổ tạo trong khoảng đã chọn, gồm cả tạo bằng quét mã bàn giao.
-        Check-in và xác nhận phát được đọc thêm 2 ngày sau khoảng.
+        Chỉ tính check-in và xác nhận phát trong vòng 2 ngày sau ngày tạo sổ.
     </MudText>
 
     <MudGrid Spacing="2" Class="mb-2">
@@ -36,40 +38,40 @@
 
 @code {
     private static readonly double[] HourEdges = [0.5, 1, 2, 4, 6, 8, 12];
+    private static readonly double[] SecondEdges = HourEdges.Select(h => h * 3600).ToArray();
 
     [Parameter, EditorRequired]
-    public List<ManifestLifecycle> Manifests { get; set; } = [];
+    public ReportDataSet Data { get; set; } = ReportDataSet.Empty;
 
-    private List<ManifestLifecycle>? lastManifests;
+    private ReportDataSet? lastData;
     private int total;
     private int withArrival;
     private int withComplete;
     private int idle;
-    private DurationStats toArrival = new(0, null, null, null, null);
-    private DurationStats toComplete = new(0, null, null, null, null);
+    private DurationStats toArrival = DurationStats.Empty;
+    private DurationStats toComplete = DurationStats.Empty;
     private List<ChartSeries> series = [];
     private string[] labels = [];
 
     protected override void OnParametersSet()
     {
-        if (ReferenceEquals(lastManifests, Manifests))
+        if (ReferenceEquals(lastData, Data))
         {
             return;
         }
 
-        lastManifests = Manifests;
-        total = Manifests.Count;
-        withArrival = Manifests.Count(x => x.FirstArrivalAt.HasValue);
-        withComplete = Manifests.Count(x => x.LastCompleteAt.HasValue);
-        idle = Manifests.Count(x => !x.FirstArrivalAt.HasValue && !x.LastCompleteAt.HasValue);
+        lastData = Data;
+        total = Data.ManifestDays.Sum(x => x.Created);
+        withArrival = Data.ManifestDays.Sum(x => x.WithArrival);
+        withComplete = Data.ManifestDays.Sum(x => x.WithComplete);
+        idle = Data.ManifestDays.Sum(x => x.Idle);
 
-        List<TimeSpan> arrivalDurations = Manifests.Where(x => x.FirstArrivalAt.HasValue).Select(x => x.FirstArrivalAt!.Value - x.CommittedAt).ToList();
-        List<TimeSpan> completeDurations = Manifests.Where(x => x.LastCompleteAt.HasValue).Select(x => x.LastCompleteAt!.Value - x.CommittedAt).ToList();
-        toArrival = DashboardAggregator.BuildDurationStats(arrivalDurations);
-        toComplete = DashboardAggregator.BuildDurationStats(completeDurations);
+        double[] edges = DailyReportAggregator.DurationEdgesSeconds;
+        toArrival = DurationStats.FromSeconds(DashboardAggregator.BuildHistogramStats(Data.Histograms, ReportMetric.ManifestFirstArrival, edges));
+        toComplete = DurationStats.FromSeconds(DashboardAggregator.BuildHistogramStats(Data.Histograms, ReportMetric.ManifestLastComplete, edges));
 
-        BucketedCounts arrivalBuckets = DashboardAggregator.BuildBuckets(arrivalDurations.Select(d => d.TotalHours), HourEdges, FormatHours);
-        BucketedCounts completeBuckets = DashboardAggregator.BuildBuckets(completeDurations.Select(d => d.TotalHours), HourEdges, FormatHours);
+        BucketedCounts arrivalBuckets = DashboardAggregator.Rebucket(Data.Histograms, ReportMetric.ManifestFirstArrival, SecondEdges, FormatSeconds);
+        BucketedCounts completeBuckets = DashboardAggregator.Rebucket(Data.Histograms, ReportMetric.ManifestLastComplete, SecondEdges, FormatSeconds);
         labels = arrivalBuckets.Labels;
         series =
         [
@@ -78,5 +80,5 @@
         ];
     }
 
-    private static string FormatHours(double hours) => hours < 1 ? $"{hours * 60}p" : $"{hours}h";
+    private static string FormatSeconds(double seconds) => seconds < 3600 ? $"{seconds / 60}p" : $"{seconds / 3600}h";
 }

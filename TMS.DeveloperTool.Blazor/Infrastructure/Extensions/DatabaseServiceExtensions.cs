@@ -1,3 +1,4 @@
+using Dapper;
 using Microsoft.EntityFrameworkCore;
 using TMS.DeveloperTool.Blazor.Infrastructure.Security;
 
@@ -10,6 +11,8 @@ public static class DatabaseServiceExtensions
     /// </summary>
     public static IServiceCollection AddDatabaseServices(this IServiceCollection services)
     {
+        SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
+
         // Application DbContext — registered via factory (not AddDbContext) so every
         // consumer creates its own short-lived context instance per operation instead of
         // sharing one scoped instance for the whole Blazor Server circuit. A single scoped

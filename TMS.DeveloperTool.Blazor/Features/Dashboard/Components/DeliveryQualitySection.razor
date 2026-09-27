@@ -1,5 +1,6 @@
 @using TMS.DeveloperTool.Blazor.Features.Dashboard.Models
 @using TMS.DeveloperTool.Blazor.Features.Dashboard.Services
+@using TMS.DeveloperTool.Blazor.Features.Report.Models
 
 <MudGrid Class="mb-4">
     <MudItem xs="12" md="6">
@@ -13,7 +14,7 @@
                                        ValueColor="Color.Success" />
                 </MudItem>
                 <MudItem xs="4">
-                    <DashboardStatTile Title="Check-in lại" Value="@DashboardAggregator.FormatPercent(superseded, Arrivals.Count)" Caption="@($"{superseded:N0} lần")" />
+                    <DashboardStatTile Title="Check-in lại" Value="@DashboardAggregator.FormatPercent(superseded, arrivals)" Caption="@($"{superseded:N0} lần")" />
                 </MudItem>
                 <MudItem xs="4">
                     <DashboardStatTile Title="Cách xa ≥ 500m" Value="@DashboardAggregator.FormatPercent(farAway, withDistance)" Caption="@($"{farAway:N0} lần")"
@@ -29,14 +30,14 @@
     <MudItem xs="12" md="3">
         <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
             <MudText Typo="Typo.h6">Giao thất bại theo loại</MudText>
-            @if (FailureTypes.Count == 0)
+            @if (failureTypes.Count == 0)
             {
                 <MudText Typo="Typo.body2" Class="mt-4">Không có dữ liệu.</MudText>
             }
             else
             {
-                <MudChart ChartType="ChartType.Donut" InputData="@FailureTypes.Select(x => (double)x.Count).ToArray()"
-                          InputLabels="@FailureTypes.Select(x => $"{x.Label} ({x.Count:N0})").ToArray()"
+                <MudChart ChartType="ChartType.Donut" InputData="@failureTypes.Select(x => (double)x.Count).ToArray()"
+                          InputLabels="@failureTypes.Select(x => $"{x.Label} ({x.Count:N0})").ToArray()"
                           Width="100%" Height="260px" LegendPosition="Position.Bottom" />
             }
         </MudPaper>
@@ -46,14 +47,14 @@
         <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
             <MudText Typo="Typo.h6">Chuyển đơn theo nguồn</MudText>
             <MudText Typo="Typo.caption" Class="d-block">Driver: tài xế → tài xế. Employee: nhân viên bưu cục → tài xế.</MudText>
-            @if (TransferSources.Count == 0)
+            @if (transferSources.Count == 0)
             {
                 <MudText Typo="Typo.body2" Class="mt-4">Không có dữ liệu.</MudText>
             }
             else
             {
-                <MudChart ChartType="ChartType.Donut" InputData="@TransferSources.Select(x => (double)x.Count).ToArray()"
-                          InputLabels="@TransferSources.Select(x => $"{x.Label} ({x.Count:N0})").ToArray()"
+                <MudChart ChartType="ChartType.Donut" InputData="@transferSources.Select(x => (double)x.Count).ToArray()"
+                          InputLabels="@transferSources.Select(x => $"{x.Label} ({x.Count:N0})").ToArray()"
                           Width="100%" Height="260px" LegendPosition="Position.Bottom" />
             }
         </MudPaper>
@@ -64,42 +65,42 @@
     private static readonly double[] MeterEdges = [50, 100, 200, 500, 1000, 5000];
 
     [Parameter, EditorRequired]
-    public List<ArrivalRecord> Arrivals { get; set; } = [];
+    public ReportDataSet Data { get; set; } = ReportDataSet.Empty;
 
-    [Parameter, EditorRequired]
-    public List<LabelCount> FailureTypes { get; set; } = [];
-
-    [Parameter, EditorRequired]
-    public List<LabelCount> TransferSources { get; set; } = [];
-
-    private List<ArrivalRecord>? lastArrivals;
+    private ReportDataSet? lastData;
+    private int arrivals;
     private int gpsValid;
     private int gpsInvalid;
     private int gpsKnown;
     private int superseded;
     private int withDistance;
     private int farAway;
+    private List<LabelCount> failureTypes = [];
+    private List<LabelCount> transferSources = [];
     private List<ChartSeries> distanceSeries = [];
     private string[] distanceLabels = [];
 
     protected override void OnParametersSet()
     {
-        if (ReferenceEquals(lastArrivals, Arrivals))
+        if (ReferenceEquals(lastData, Data))
         {
             return;
         }
 
-        lastArrivals = Arrivals;
-        gpsValid = Arrivals.Count(x => x.IsGpsValid == true);
-        gpsInvalid = Arrivals.Count(x => x.IsGpsValid == false);
+        lastData = Data;
+        List<LabelCount> gps = DashboardAggregator.BuildLabelCounts(Data.LabelCounts, ReportMetric.ArrivalGps);
+        arrivals = gps.Sum(x => x.Count);
+        gpsValid = gps.FirstOrDefault(x => x.Label == "valid")?.Count ?? 0;
+        gpsInvalid = gps.FirstOrDefault(x => x.Label == "invalid")?.Count ?? 0;
         gpsKnown = gpsValid + gpsInvalid;
-        superseded = Arrivals.Count(x => x.Superseded);
+        superseded = DashboardAggregator.BuildLabelCounts(Data.LabelCounts, ReportMetric.ArrivalSuperseded).FirstOrDefault(x => x.Label == "superseded")?.Count ?? 0;
+        failureTypes = DashboardAggregator.BuildLabelCounts(Data.LabelCounts, ReportMetric.FailureType);
+        transferSources = DashboardAggregator.BuildLabelCounts(Data.LabelCounts, ReportMetric.TransferSource);
 
-        List<double> distances = Arrivals.Where(x => x.DistanceMeters.HasValue).Select(x => (double)x.DistanceMeters!.Value).ToList();
-        withDistance = distances.Count;
-        farAway = distances.Count(d => d >= 500);
+        withDistance = DashboardAggregator.CountAtLeast(Data.Histograms, ReportMetric.ArrivalDistance, 0);
+        farAway = DashboardAggregator.CountAtLeast(Data.Histograms, ReportMetric.ArrivalDistance, 500);
 
-        BucketedCounts buckets = DashboardAggregator.BuildBuckets(distances, MeterEdges, m => m < 1000 ? $"{m}m" : $"{m / 1000}km");
+        BucketedCounts buckets = DashboardAggregator.Rebucket(Data.Histograms, ReportMetric.ArrivalDistance, MeterEdges, m => m < 1000 ? $"{m}m" : $"{m / 1000}km");
         distanceLabels = buckets.Labels;
         distanceSeries = [new ChartSeries { Name = "Số check-in", Data = buckets.Counts }];
     }

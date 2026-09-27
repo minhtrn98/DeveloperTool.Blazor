@@ -3,6 +3,7 @@ using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services;
 using TMS.DeveloperTool.Blazor.Features.PickupTaskOrderSync.Services;
 using TMS.DeveloperTool.Blazor.Features.PickupTaskOrderTimeline.Services;
 using TMS.DeveloperTool.Blazor.Features.PickupTaskTrace.Services;
+using TMS.DeveloperTool.Blazor.Features.Report.Services;
 using TMS.DeveloperTool.Blazor.Features.RouteStop.Services;
 using TMS.DeveloperTool.Blazor.Features.SignozProSync.Services;
 using TMS.DeveloperTool.Blazor.Features.UnloadingHandover.Services;
@@ -44,6 +45,8 @@ public static class ExternalApiServiceExtensions
         services.AddScoped<PickupTaskOrderProStorageService>();
         services.AddScoped<UnloadingHandoverProStorageService>();
         services.AddScoped<DashboardProStorageService>();
+        services.AddSingleton<ReportSchemaMigrator>();
+        services.AddSingleton<DailyReportAggregator>();
 
         services.AddSingleton<EventService>();
         services.AddSingleton<LogApiTokenProvider>();
@@ -69,6 +72,7 @@ public static class ExternalApiServiceExtensions
 
         services.AddHostedService<SignozProSyncJob>();
         services.AddHostedService<PickupTaskOrderSyncJob>();
+        services.AddHostedService<DailyReportJob>();
 
         return services;
     }

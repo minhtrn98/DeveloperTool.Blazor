@@ -17,6 +17,7 @@ public static class ServiceCollectionExtensions
         services.AddSettingsAndValidate<RabbitMqConfig>(config);
         services.AddSettingsAndValidate<LogApiOptions>(config);
         services.AddSettingsAndValidate<SignozProOptions>(config);
+        services.AddSettingsAndValidate<ReportAggregationOptions>(config);
 
         // Default BackgroundServiceExceptionBehavior is StopHost — an unhandled exception in
         // any single BackgroundService (e.g. SignozProSyncJob) would otherwise crash this

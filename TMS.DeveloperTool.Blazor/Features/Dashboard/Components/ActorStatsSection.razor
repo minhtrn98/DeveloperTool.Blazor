@@ -1,5 +1,6 @@
 @using TMS.DeveloperTool.Blazor.Features.Dashboard.Models
 @using TMS.DeveloperTool.Blazor.Features.Dashboard.Services
+@using TMS.DeveloperTool.Blazor.Features.Report.Models
 @using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
 
 <MudPaper Elevation="2" Class="pa-4 mb-4">
@@ -89,10 +90,10 @@
     private const int TopCount = 15;
 
     [Parameter, EditorRequired]
-    public List<DashboardEvent> Events { get; set; } = [];
+    public ReportDataSet Data { get; set; } = ReportDataSet.Empty;
 
     private readonly AxisChartOptions axisOptions = new() { XAxisLabelRotation = 45 };
-    private List<DashboardEvent>? lastEvents;
+    private ReportDataSet? lastData;
     private EnumOption? selectedType = DashboardEventType.Options[0];
     private string? actorFilter;
     private List<ActorStat> stats = [];
@@ -110,9 +111,9 @@
 
     protected override void OnParametersSet()
     {
-        if (!ReferenceEquals(lastEvents, Events))
+        if (!ReferenceEquals(lastData, Data))
         {
-            lastEvents = Events;
+            lastData = Data;
             Rebuild();
         }
     }
@@ -129,7 +130,7 @@
     private void Rebuild()
     {
         string eventType = selectedType!.Value;
-        stats = DashboardAggregator.BuildActorStats(Events.Where(x => x.EventType == eventType));
+        stats = DashboardAggregator.BuildActorStats(Data.ActorHours.Where(x => x.EventType == eventType));
         totalCount = stats.Sum(x => x.Count);
         topDecileCount = stats.Take((int)Math.Ceiling(stats.Count / 10.0)).Sum(x => x.Count);
         oneTimers = stats.Count(x => x.Count == 1);

@@ -1,5 +1,7 @@
 @using TMS.DeveloperTool.Blazor.Features.Dashboard.Models
 @using TMS.DeveloperTool.Blazor.Features.Dashboard.Services
+@using TMS.DeveloperTool.Blazor.Features.Report.Models
+@using TMS.DeveloperTool.Blazor.Features.Report.Services
 
 <MudPaper Elevation="2" Class="pa-4 mb-4">
     <MudText Typo="Typo.h6">Bàn giao xuống hàng: thời gian NVKT nhận</MudText>
@@ -18,7 +20,7 @@
             <DashboardStatTile Title="Đã xác nhận" Value="@DashboardAggregator.FormatPercent(confirmed, created)" Caption="@($"{confirmed:N0} mã")" ValueColor="Color.Success" />
         </MudItem>
         <MudItem xs="6" md="2">
-            <DashboardStatTile Title="Chưa xử lý, chờ quá 4h" Value="@staleNotReceived.ToString("N0")" ValueColor="@(staleNotReceived > 0 ? Color.Error : Color.Default)" />
+            <DashboardStatTile Title="Chưa xử lý, chờ quá 4h" Value="@StaleCount.ToString("N0")" ValueColor="@(StaleCount > 0 ? Color.Error : Color.Default)" />
         </MudItem>
         <MudItem xs="6" md="2">
             <DashboardStatTile Title="Trung vị tạo → nhận" Value="@DashboardAggregator.FormatDuration(toReceive.Median)" Caption="@($"P90 {DashboardAggregator.FormatDuration(toReceive.P90)}")" />
@@ -60,50 +62,45 @@
 
 @code {
     private static readonly double[] MinuteEdges = [15, 30, 60, 120, 240, 480];
+    private static readonly double[] SecondEdges = MinuteEdges.Select(m => m * 60).ToArray();
 
     [Parameter, EditorRequired]
-    public List<HandoverRecord> Handovers { get; set; } = [];
+    public ReportDataSet Data { get; set; } = ReportDataSet.Empty;
 
-    private List<HandoverRecord>? lastHandovers;
+    [Parameter, EditorRequired]
+    public int StaleCount { get; set; }
+
+    private ReportDataSet? lastData;
     private int created;
-    private int items;
+    private long items;
     private int received;
     private int confirmed;
-    private int staleNotReceived;
-    private DurationStats toReceive = new(0, null, null, null, null);
-    private DurationStats toConfirm = new(0, null, null, null, null);
-    private DurationStats toFirstHandled = new(0, null, null, null, null);
+    private DurationStats toReceive = DurationStats.Empty;
+    private DurationStats toConfirm = DurationStats.Empty;
+    private DurationStats toFirstHandled = DurationStats.Empty;
     private List<ChartSeries> durationSeries = [];
     private string[] durationLabels = [];
 
     protected override void OnParametersSet()
     {
-        if (ReferenceEquals(lastHandovers, Handovers))
+        if (ReferenceEquals(lastData, Data))
         {
             return;
         }
 
-        lastHandovers = Handovers;
-        DateTimeOffset staleBefore = DateTimeOffset.UtcNow.AddHours(-4);
+        lastData = Data;
+        created = Data.HandoverDays.Sum(x => x.Created);
+        items = Data.HandoverDays.Sum(x => x.Items);
+        received = Data.HandoverDays.Sum(x => x.Received);
+        confirmed = Data.HandoverDays.Sum(x => x.Confirmed);
 
-        created = Handovers.Count;
-        items = Handovers.Sum(x => x.ItemCount);
-        received = Handovers.Count(x => x.ReceivedAt.HasValue);
-        confirmed = Handovers.Count(x => x.ConfirmAt.HasValue);
-        staleNotReceived = Handovers.Count(x => !x.ReceivedAt.HasValue && !x.ConfirmAt.HasValue && x.CreatedAt < staleBefore);
+        double[] edges = DailyReportAggregator.DurationEdgesSeconds;
+        toReceive = DurationStats.FromSeconds(DashboardAggregator.BuildHistogramStats(Data.Histograms, ReportMetric.HandoverReceive, edges));
+        toConfirm = DurationStats.FromSeconds(DashboardAggregator.BuildHistogramStats(Data.Histograms, ReportMetric.HandoverConfirm, edges));
+        toFirstHandled = DurationStats.FromSeconds(DashboardAggregator.BuildHistogramStats(Data.Histograms, ReportMetric.HandoverFirstHandled, edges));
 
-        List<TimeSpan> receiveDurations = Handovers.Where(x => x.ReceivedAt.HasValue).Select(x => x.ReceivedAt!.Value - x.CreatedAt).ToList();
-        List<TimeSpan> confirmDurations = Handovers.Where(x => x.ConfirmAt.HasValue).Select(x => x.ConfirmAt!.Value - x.CreatedAt).ToList();
-        toReceive = DashboardAggregator.BuildDurationStats(receiveDurations);
-        toConfirm = DashboardAggregator.BuildDurationStats(confirmDurations);
-        toFirstHandled = DashboardAggregator.BuildDurationStats(Handovers
-            .Where(x => x.ReceivedAt.HasValue || x.ConfirmAt.HasValue)
-            .Select(x => (x.ReceivedAt ?? DateTimeOffset.MaxValue) < (x.ConfirmAt ?? DateTimeOffset.MaxValue)
-                ? x.ReceivedAt!.Value - x.CreatedAt
-                : x.ConfirmAt!.Value - x.CreatedAt));
-
-        BucketedCounts receiveBuckets = DashboardAggregator.BuildBuckets(receiveDurations.Select(d => d.TotalMinutes), MinuteEdges, FormatMinutes);
-        BucketedCounts confirmBuckets = DashboardAggregator.BuildBuckets(confirmDurations.Select(d => d.TotalMinutes), MinuteEdges, FormatMinutes);
+        BucketedCounts receiveBuckets = DashboardAggregator.Rebucket(Data.Histograms, ReportMetric.HandoverReceive, SecondEdges, FormatSeconds);
+        BucketedCounts confirmBuckets = DashboardAggregator.Rebucket(Data.Histograms, ReportMetric.HandoverConfirm, SecondEdges, FormatSeconds);
         durationLabels = receiveBuckets.Labels;
         durationSeries =
         [
@@ -112,5 +109,5 @@
         ];
     }
 
-    private static string FormatMinutes(double minutes) => minutes < 60 ? $"{minutes}p" : $"{minutes / 60}h";
+    private static string FormatSeconds(double seconds) => seconds < 3600 ? $"{seconds / 60}p" : $"{seconds / 3600}h";
 }

@@ -41,6 +41,10 @@ App runs on `http://localhost:5000`. No browser auto-launch.
 - `Infrastructure/Extensions/DatabaseServiceExtensions.cs` — EF Core + Dapper
 - `Infrastructure/Extensions/ExternalApiServiceExtensions.cs` — Refit clients
 
+## Feature notes
+
+- **Pro dashboard, `report` schema, background jobs:** read [docs/dashboard-and-report.md](docs/dashboard-and-report.md) before touching `Features/Dashboard/`, `Features/Report/`, `report.*` or the hosted jobs. It covers the migration/aggregation versioning rules, VN-time/UTC rules, domain facts and verification steps.
+
 ## UI Conventions
 
 **MudBlazor is the only UI library.** Do not use Radzen, AntDesign, or any other component library. Do not write custom CSS files — use MudBlazor props only.

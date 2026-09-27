@@ -327,3 +327,6 @@ CREATE INDEX IF NOT EXISTS idx_pro_unloading_handover_logs_log_timestamp ON pro.
 CREATE INDEX IF NOT EXISTS idx_pro_unloading_handover_logs_not_received ON pro.unloading_handover_logs (log_timestamp) WHERE NOT is_received;
 
 CREATE INDEX IF NOT EXISTS idx_pro_unloading_handover_logs_not_confirm ON pro.unloading_handover_logs (log_timestamp) WHERE NOT is_confirm;
+
+-- The "report" schema (pre-aggregated daily data) is NOT maintained here: it is created and upgraded
+-- automatically by ReportSchemaMigrator from Features/Report/Migrations/V*__*.sql (see report.schema_versions).

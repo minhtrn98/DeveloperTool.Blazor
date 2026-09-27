@@ -2,6 +2,7 @@
 @using TMS.DeveloperTool.Blazor.Features.Dashboard.Components
 @using TMS.DeveloperTool.Blazor.Features.Dashboard.Models
 @using TMS.DeveloperTool.Blazor.Features.Dashboard.Services
+@using TMS.DeveloperTool.Blazor.Features.Report.Models
 @using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Dtos
 @inject DashboardProStorageService StorageService
 @inject ISnackbar Snackbar
@@ -35,8 +36,15 @@
         </MudGrid>
 
         <MudText Typo="Typo.caption" Class="mt-2 d-block">
-            Dữ liệu từ các bảng log pro.* đồng bộ từ SigNoz Pro. Ngày/giờ tính theo giờ Việt Nam; tuần bắt đầu từ thứ Hai.
+            Ngày đã qua đọc từ bảng tổng hợp report.* (job chạy 00:15 hằng đêm); hôm nay và ngày chưa tổng hợp tính trực tiếp từ log pro.*.
+            Ngày/giờ tính theo giờ Việt Nam; tuần bắt đầu từ thứ Hai.
         </MudText>
+        @if (snapshot is not null)
+        {
+            <MudText Typo="Typo.caption" Class="d-block">
+                Nguồn: @snapshot.ReportDates.Count ngày từ report · @snapshot.LiveDates.Count ngày tính trực tiếp@(LiveDatesCaption)@(snapshot.NoDataDayCount > 0 ? $" · {snapshot.NoDataDayCount} ngày không có log" : "")
+            </MudText>
+        }
         @if (isLoading)
         {
             <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mt-2" />
@@ -48,7 +56,7 @@
         <MudGrid Spacing="2" Class="mb-4">
             @foreach (EnumOption type in DashboardEventType.Options)
             {
-                (int count, int quantity) = totals.GetValueOrDefault(type.Value);
+                (int count, long quantity) = totals.GetValueOrDefault(type.Value);
                 string? quantityLabel = DashboardEventType.QuantityLabel(type.Value);
                 <MudItem xs="6" sm="4" md="3" lg="3">
                     <DashboardStatTile Title="@type.Description" Value="@count.ToString("N0")"
@@ -127,13 +135,13 @@
                       Width="100%" Height="320px" />
         </MudPaper>
 
-        <ManifestLifecycleSection Manifests="snapshot.Manifests" />
+        <ManifestLifecycleSection Data="snapshot.Data" />
 
-        <HandoverStatsSection Handovers="snapshot.Handovers" />
+        <HandoverStatsSection Data="snapshot.Data" StaleCount="snapshot.StaleHandoverCount" />
 
-        <DeliveryQualitySection Arrivals="snapshot.Arrivals" FailureTypes="snapshot.FailureTypes" TransferSources="snapshot.TransferSources" />
+        <DeliveryQualitySection Data="snapshot.Data" />
 
-        <ActorStatsSection Events="snapshot.Events" />
+        <ActorStatsSection Data="snapshot.Data" />
     }
 </MudContainer>
 
@@ -163,9 +171,9 @@
     private bool isLoading;
 
     private DashboardSnapshot? snapshot;
-    private Dictionary<string, (int Count, int Quantity)> totals = [];
-    private int deliveredItems;
-    private int failedItems;
+    private Dictionary<string, (int Count, long Quantity)> totals = [];
+    private long deliveredItems;
+    private long failedItems;
     private decimal collectedCod;
     private int distinctActors;
     private string[] trendLabels = [];
@@ -279,19 +287,23 @@
         }
     }
 
+    private string LiveDatesCaption => snapshot is { LiveDates.Count: > 0 and <= 7 } s
+        ? $" ({string.Join(", ", s.LiveDates.Select(d => d.ToString("dd/MM", System.Globalization.CultureInfo.InvariantCulture)))})"
+        : string.Empty;
+
     private void BuildAll()
     {
-        List<DashboardEvent> events = snapshot!.Events;
+        ReportDataSet data = snapshot!.Data;
 
-        totals = events
+        totals = data.EventStats
             .GroupBy(x => x.EventType)
-            .ToDictionary(g => g.Key, g => (g.Count(), g.Sum(x => x.Quantity)));
+            .ToDictionary(g => g.Key, g => (g.Sum(x => x.Count), g.Sum(x => x.Quantity)));
         deliveredItems = totals.GetValueOrDefault(DashboardEventType.TaskComplete).Quantity;
         failedItems = totals.GetValueOrDefault(DashboardEventType.Failure).Quantity;
-        collectedCod = events.Where(x => x.EventType == DashboardEventType.TaskComplete).Sum(x => x.Amount);
-        distinctActors = events.Where(x => !string.IsNullOrWhiteSpace(x.Actor)).Select(x => x.Actor).Distinct().Count();
+        collectedCod = data.EventStats.Where(x => x.EventType == DashboardEventType.TaskComplete).Sum(x => x.Amount);
+        distinctActors = DashboardAggregator.CountDistinctActors(data.ActorHours);
 
-        ILookup<string, DashboardEvent> byType = events.ToLookup(x => x.EventType);
+        ILookup<string, TimeBucketRow> byType = data.TimeBuckets.ToLookup(x => x.EventType);
         hourSeries = HourProfileTypes
             .Select(type => new ChartSeries { Name = DashboardEventType.Describe(type), Data = DashboardAggregator.BuildHourProfile(byType[type], asPercent: true) })
             .ToList();
@@ -315,14 +327,14 @@
             ? [single]
             : DashboardEventType.Options.Select(x => x.Value);
 
-        TrendResult trend = DashboardAggregator.BuildTrend(snapshot.Events, snapshot.StartDate, snapshot.EndDate, granularity, types);
+        TrendResult trend = DashboardAggregator.BuildTrend(snapshot.Data.EventStats, snapshot.StartDate, snapshot.EndDate, granularity, types);
         trendLabels = trend.Labels;
         trendSeries = trend.Series
             .Select(x => new ChartSeries { Name = DashboardEventType.Describe(x.Key), Data = x.Value })
             .ToList();
 
         TrendResult outcome = DashboardAggregator.BuildTrend(
-            snapshot.Events, snapshot.StartDate, snapshot.EndDate, granularity,
+            snapshot.Data.EventStats, snapshot.StartDate, snapshot.EndDate, granularity,
             [DashboardEventType.TaskComplete, DashboardEventType.Failure],
             x => x.Quantity);
         outcomeSeries =
@@ -340,7 +352,7 @@
         }
 
         string eventType = heatmapType?.Value ?? DashboardEventType.ManifestCommit;
-        double[][] grid = DashboardAggregator.BuildWeekdayHourHeatmap(snapshot.Events.Where(x => x.EventType == eventType));
+        double[][] grid = DashboardAggregator.BuildWeekdayHourHeatmap(snapshot.Data.TimeBuckets.Where(x => x.EventType == eventType));
         heatmapSeries = grid
             .Select((row, index) => new ChartSeries { Name = DashboardAggregator.WeekdayLabels[index], Data = row })
             .ToList();

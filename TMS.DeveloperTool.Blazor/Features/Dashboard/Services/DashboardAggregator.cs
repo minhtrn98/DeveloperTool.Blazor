@@ -1,12 +1,13 @@
 using System.Globalization;
 using TMS.DeveloperTool.Blazor.Features.Dashboard.Models;
+using TMS.DeveloperTool.Blazor.Features.Report.Models;
 using TMS.DeveloperTool.Blazor.Infrastructure.Shared.Helpers;
 
 namespace TMS.DeveloperTool.Blazor.Features.Dashboard.Services;
 
 /// <summary>
-/// Pure, in-memory aggregations over a <see cref="DashboardSnapshot"/>. Every date/hour is taken in
-/// Vietnam time so a 23:30 VN event never lands on the previous UTC day.
+/// Pure, in-memory roll-ups of report rows (<see cref="ReportDataSet"/>) over a date range. Dates
+/// and hours in the rows are already Vietnam time.
 /// </summary>
 public static class DashboardAggregator
 {
@@ -17,13 +18,13 @@ public static class DashboardAggregator
 
     public static readonly string[] HourLabels = Enumerable.Range(0, 24).Select(h => h.ToString("00")).ToArray();
 
-    public static DateTimeOffset ToVietnam(DateTimeOffset value) => VietnamTimeHelper.ToVietnamTime(value);
+    private const int TimeBucketMinutes = 10;
 
-    public static DateOnly ToVietnamDate(DateTimeOffset value) => DateOnly.FromDateTime(ToVietnam(value).DateTime);
+    public static DateOnly ToVietnamDate(DateTimeOffset value) => DateOnly.FromDateTime(VietnamTimeHelper.ToVietnamTime(value).DateTime);
 
     public static DateOnly BucketStart(DateOnly date, string granularity) => granularity switch
     {
-        DashboardGranularity.Week => date.AddDays(-(((int)date.DayOfWeek + 6) % 7)),
+        DashboardGranularity.Week => date.AddDays(-WeekdayIndex(date)),
         DashboardGranularity.Month => new DateOnly(date.Year, date.Month, 1),
         _ => date
     };
@@ -46,30 +47,26 @@ public static class DashboardAggregator
         _ => bucket.ToString("dd/MM", CultureInfo.InvariantCulture)
     };
 
-    /// <summary>Per-bucket event counts for each event type present in <paramref name="eventTypes"/>.</summary>
+    /// <summary>Per-bucket event counts (or <paramref name="valueSelector"/> sums) for each type in <paramref name="eventTypes"/>.</summary>
     public static TrendResult BuildTrend(
-        IEnumerable<DashboardEvent> events,
+        IEnumerable<EventStatRow> rows,
         DateOnly startDate,
         DateOnly endDate,
         string granularity,
         IEnumerable<string> eventTypes,
-        Func<DashboardEvent, double>? valueSelector = null)
+        Func<EventStatRow, double>? valueSelector = null)
     {
-        valueSelector ??= _ => 1;
+        valueSelector ??= row => row.Count;
         List<DateOnly> buckets = BuildBuckets(startDate, endDate, granularity);
         Dictionary<DateOnly, int> bucketIndex = buckets.Select((bucket, index) => (bucket, index)).ToDictionary(x => x.bucket, x => x.index);
         Dictionary<string, double[]> series = eventTypes.Distinct().ToDictionary(type => type, _ => new double[buckets.Count]);
 
-        foreach (DashboardEvent item in events)
+        foreach (EventStatRow row in rows)
         {
-            if (!series.TryGetValue(item.EventType, out double[]? values))
+            if (series.TryGetValue(row.EventType, out double[]? values)
+                && bucketIndex.TryGetValue(BucketStart(row.Date, granularity), out int index))
             {
-                continue;
-            }
-
-            if (bucketIndex.TryGetValue(BucketStart(ToVietnamDate(item.Timestamp), granularity), out int index))
-            {
-                values[index] += valueSelector(item);
+                values[index] += valueSelector(row);
             }
         }
 
@@ -77,12 +74,12 @@ public static class DashboardAggregator
     }
 
     /// <summary>Events per hour of day (0–23). With <paramref name="asPercent"/> each value is the share of the total.</summary>
-    public static double[] BuildHourProfile(IEnumerable<DashboardEvent> events, bool asPercent)
+    public static double[] BuildHourProfile(IEnumerable<TimeBucketRow> rows, bool asPercent)
     {
         double[] hours = new double[24];
-        foreach (DashboardEvent item in events)
+        foreach (TimeBucketRow row in rows)
         {
-            hours[ToVietnam(item.Timestamp).Hour]++;
+            hours[row.MinuteOfDay / 60] += row.Count;
         }
 
         double total = hours.Sum();
@@ -98,74 +95,104 @@ public static class DashboardAggregator
     }
 
     /// <summary>7 rows (Monday → Sunday) × 24 hour columns of event counts.</summary>
-    public static double[][] BuildWeekdayHourHeatmap(IEnumerable<DashboardEvent> events)
+    public static double[][] BuildWeekdayHourHeatmap(IEnumerable<TimeBucketRow> rows)
     {
         double[][] grid = Enumerable.Range(0, 7).Select(_ => new double[24]).ToArray();
-        foreach (DashboardEvent item in events)
+        foreach (TimeBucketRow row in rows)
         {
-            DateTimeOffset local = ToVietnam(item.Timestamp);
-            grid[((int)local.DayOfWeek + 6) % 7][local.Hour]++;
+            grid[WeekdayIndex(row.Date)][row.MinuteOfDay / 60] += row.Count;
         }
 
         return grid;
     }
 
-    public static TimeOfDayStats BuildTimeOfDayStats(string eventType, IEnumerable<DashboardEvent> events)
+    /// <summary>Percentiles interpolated inside the 10-minute buckets.</summary>
+    public static TimeOfDayStats BuildTimeOfDayStats(string eventType, IEnumerable<TimeBucketRow> rows)
     {
-        List<TimeSpan> times = events.Select(x => ToVietnam(x.Timestamp).TimeOfDay).Order().ToList();
-        if (times.Count == 0)
+        List<(double Lower, double Upper, double Count)> buckets = rows
+            .GroupBy(x => x.MinuteOfDay)
+            .OrderBy(g => g.Key)
+            .Select(g => ((double)g.Key, (double)g.Key + TimeBucketMinutes, (double)g.Sum(x => x.Count)))
+            .ToList();
+        int count = (int)buckets.Sum(x => x.Count);
+        if (count == 0)
         {
             return new TimeOfDayStats(eventType, 0, null, null, null, null);
         }
 
-        int peakHour = times.GroupBy(t => t.Hours).OrderByDescending(g => g.Count()).ThenBy(g => g.Key).First().Key;
-        return new TimeOfDayStats(eventType, times.Count, Percentile(times, 0.1), Percentile(times, 0.5), Percentile(times, 0.9), peakHour);
+        int peakHour = buckets.GroupBy(x => (int)x.Lower / 60).OrderByDescending(g => g.Sum(x => x.Count)).ThenBy(g => g.Key).First().Key;
+        return new TimeOfDayStats(
+            eventType,
+            count,
+            TimeSpan.FromMinutes(InterpolatedPercentile(buckets, 0.1)),
+            TimeSpan.FromMinutes(InterpolatedPercentile(buckets, 0.5)),
+            TimeSpan.FromMinutes(InterpolatedPercentile(buckets, 0.9)),
+            peakHour);
     }
 
-    public static List<ActorStat> BuildActorStats(IEnumerable<DashboardEvent> events)
-        => events
-            .GroupBy(x => string.IsNullOrWhiteSpace(x.Actor) ? UnknownActor : x.Actor.Trim())
-            .Select(group =>
-            {
-                List<DateTimeOffset> timestamps = group.Select(x => x.Timestamp).ToList();
-                int peakHour = timestamps.GroupBy(t => ToVietnam(t).Hour).OrderByDescending(g => g.Count()).ThenBy(g => g.Key).First().Key;
-                return new ActorStat(
-                    group.Key,
-                    group.Count(),
-                    group.Sum(x => x.Quantity),
-                    group.Sum(x => x.Amount),
-                    timestamps.Select(ToVietnamDate).Distinct().Count(),
-                    timestamps.Min(),
-                    timestamps.Max(),
-                    peakHour);
-            })
+    public static List<ActorStat> BuildActorStats(IEnumerable<ActorHourRow> rows)
+        => rows
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.Actor) ? UnknownActor : x.Actor)
+            .Select(group => new ActorStat(
+                group.Key,
+                group.Sum(x => x.Count),
+                group.Sum(x => x.Quantity),
+                group.Sum(x => x.Amount),
+                group.Select(x => x.Date).Distinct().Count(),
+                ToUtc(group.Min(x => x.FirstAtUtc)),
+                ToUtc(group.Max(x => x.LastAtUtc)),
+                group.GroupBy(x => x.Hour).OrderByDescending(h => h.Sum(x => x.Count)).ThenBy(h => h.Key).First().Key))
             .OrderByDescending(x => x.Count)
             .ThenBy(x => x.Actor, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-    public static DurationStats BuildDurationStats(IEnumerable<TimeSpan> durations)
+    public static int CountDistinctActors(IEnumerable<ActorHourRow> rows)
+        => rows.Where(x => !string.IsNullOrWhiteSpace(x.Actor)).Select(x => x.Actor).Distinct().Count();
+
+    public static List<LabelCount> BuildLabelCounts(IEnumerable<LabelCountRow> rows, string metric)
+        => rows
+            .Where(x => x.Metric == metric)
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.Label) ? UnknownActor : x.Label)
+            .Select(g => new LabelCount(g.Key, g.Sum(x => x.Count)))
+            .OrderByDescending(x => x.Count)
+            .ThenBy(x => x.Label, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    /// <summary>
+    /// Count / average / max are exact; median and P90 are interpolated inside the fine
+    /// histogram buckets defined by <paramref name="edges"/> (the open top bucket ends at its max).
+    /// </summary>
+    public static HistogramStats BuildHistogramStats(IEnumerable<HistogramRow> rows, string metric, double[] edges)
     {
-        List<TimeSpan> sorted = durations.Where(d => d >= TimeSpan.Zero).Order().ToList();
-        if (sorted.Count == 0)
+        List<(int Index, double Lower, int Count, double Sum, double Max)> buckets = MergeBuckets(rows, metric);
+        int count = buckets.Sum(x => x.Count);
+        if (count == 0)
         {
-            return new DurationStats(0, null, null, null, null);
+            return new HistogramStats(0, null, null, null, null);
         }
 
-        TimeSpan average = TimeSpan.FromTicks((long)sorted.Average(d => d.Ticks));
-        return new DurationStats(sorted.Count, average, Percentile(sorted, 0.5), Percentile(sorted, 0.9), sorted[^1]);
+        List<(double Lower, double Upper, double Count)> ranges = buckets
+            .Select(x => (x.Lower, Math.Min(x.Index < edges.Length ? edges[x.Index] : x.Max, x.Max), (double)x.Count))
+            .ToList();
+
+        return new HistogramStats(
+            count,
+            buckets.Sum(x => x.Sum) / count,
+            InterpolatedPercentile(ranges, 0.5),
+            InterpolatedPercentile(ranges, 0.9),
+            buckets.Max(x => x.Max));
     }
 
     /// <summary>
-    /// Counts values into buckets split at <paramref name="edges"/> (ascending, exclusive upper bound):
-    /// edges [15, 30] give "&lt; 15", "15–30" and "≥ 30".
+    /// Re-buckets a fine histogram into coarser <paramref name="edges"/> (same unit, ascending,
+    /// exclusive upper bound). Exact as long as every coarse edge is also a fine edge.
     /// </summary>
-    public static BucketedCounts BuildBuckets(IEnumerable<double> values, double[] edges, Func<double, string> formatEdge)
+    public static BucketedCounts Rebucket(IEnumerable<HistogramRow> rows, string metric, double[] edges, Func<double, string> formatEdge)
     {
         double[] counts = new double[edges.Length + 1];
-        foreach (double value in values)
+        foreach ((_, double lower, int count, _, _) in MergeBuckets(rows, metric))
         {
-            int index = Array.FindIndex(edges, edge => value < edge);
-            counts[index < 0 ? edges.Length : index]++;
+            counts[edges.Count(edge => edge <= lower)] += count;
         }
 
         string[] labels = new string[edges.Length + 1];
@@ -179,34 +206,9 @@ public static class DashboardAggregator
         return new BucketedCounts(labels, counts);
     }
 
-    /// <summary>
-    /// Joins created manifests with their first check-in and last task completion by manifest code.
-    /// Only arrivals/completions at or after the manifest's creation count.
-    /// </summary>
-    public static List<ManifestLifecycle> BuildManifestLifecycles(
-        IEnumerable<ManifestEvent> commits,
-        IEnumerable<ManifestEvent> arrivals,
-        IEnumerable<ManifestEvent> completes)
-    {
-        ILookup<string, DateTimeOffset> arrivalsByCode = arrivals.Where(x => x.ManifestCode != string.Empty).ToLookup(x => x.ManifestCode, x => x.Timestamp);
-        ILookup<string, DateTimeOffset> completesByCode = completes.Where(x => x.ManifestCode != string.Empty).ToLookup(x => x.ManifestCode, x => x.Timestamp);
-
-        return commits
-            .Where(x => x.ManifestCode != string.Empty)
-            .GroupBy(x => x.ManifestCode)
-            .Select(group =>
-            {
-                DateTimeOffset committedAt = group.Min(x => x.Timestamp);
-                List<DateTimeOffset> arrivalTimes = arrivalsByCode[group.Key].Where(t => t >= committedAt).ToList();
-                List<DateTimeOffset> completeTimes = completesByCode[group.Key].Where(t => t >= committedAt).ToList();
-                return new ManifestLifecycle(
-                    group.Key,
-                    committedAt,
-                    arrivalTimes.Count == 0 ? null : arrivalTimes.Min(),
-                    completeTimes.Count == 0 ? null : completeTimes.Max());
-            })
-            .ToList();
-    }
+    /// <summary>Samples with a value ≥ <paramref name="threshold"/> (must be a fine edge).</summary>
+    public static int CountAtLeast(IEnumerable<HistogramRow> rows, string metric, double threshold)
+        => MergeBuckets(rows, metric).Where(x => x.Lower >= threshold).Sum(x => x.Count);
 
     public static string FormatDuration(TimeSpan? value)
     {
@@ -217,7 +219,7 @@ public static class DashboardAggregator
 
         if (duration.TotalMinutes < 1)
         {
-            return $"{duration.Seconds}s";
+            return $"{(int)duration.TotalSeconds}s";
         }
 
         if (duration.TotalHours < 1)
@@ -235,17 +237,40 @@ public static class DashboardAggregator
     public static string FormatPercent(double numerator, double denominator)
         => denominator == 0 ? "—" : (numerator / denominator).ToString("P1", CultureInfo.InvariantCulture);
 
+    /// <summary>Continuous percentile over ascending, non-overlapping buckets, linear inside a bucket.</summary>
+    internal static double InterpolatedPercentile(IReadOnlyList<(double Lower, double Upper, double Count)> buckets, double percentile)
+    {
+        double target = percentile * buckets.Sum(x => x.Count);
+        double cumulative = 0;
+        foreach ((double lower, double upper, double count) in buckets)
+        {
+            if (count > 0 && cumulative + count >= target)
+            {
+                return lower + (upper - lower) * ((target - cumulative) / count);
+            }
+
+            cumulative += count;
+        }
+
+        return buckets[^1].Upper;
+    }
+
+    private static List<(int Index, double Lower, int Count, double Sum, double Max)> MergeBuckets(IEnumerable<HistogramRow> rows, string metric)
+        => rows
+            .Where(x => x.Metric == metric)
+            .GroupBy(x => x.BucketIndex)
+            .OrderBy(g => g.Key)
+            .Select(g => (g.Key, g.First().BucketLower, g.Sum(x => x.Count), g.Sum(x => x.ValueSum), g.Max(x => x.ValueMax)))
+            .ToList();
+
+    private static int WeekdayIndex(DateOnly date) => ((int)date.DayOfWeek + 6) % 7;
+
+    private static DateTimeOffset ToUtc(DateTime value) => new(DateTime.SpecifyKind(value, DateTimeKind.Utc));
+
     private static DateOnly NextBucket(DateOnly bucket, string granularity) => granularity switch
     {
         DashboardGranularity.Week => bucket.AddDays(7),
         DashboardGranularity.Month => bucket.AddMonths(1),
         _ => bucket.AddDays(1)
     };
-
-    /// <summary>Nearest-rank percentile over an already sorted list.</summary>
-    private static TimeSpan Percentile(List<TimeSpan> sorted, double percentile)
-    {
-        int rank = (int)Math.Ceiling(percentile * sorted.Count);
-        return sorted[Math.Clamp(rank - 1, 0, sorted.Count - 1)];
-    }
 }
