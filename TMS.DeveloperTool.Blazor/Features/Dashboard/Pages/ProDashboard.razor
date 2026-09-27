@@ -98,7 +98,7 @@
                 Tỉ lệ % số thao tác mỗi giờ trên tổng của từng loại, để so sánh các loại có số lượng khác nhau.
             </MudText>
             <MudChart ChartType="ChartType.Line" ChartSeries="@hourSeries" XAxisLabels="@DashboardAggregator.HourLabels"
-                      Width="100%" Height="340px" ChartOptions="percentOptions" />
+                      Width="100%" Height="340px" ChartOptions="percentOptions" AxisChartOptions="plainAxisOptions" />
 
             <MudText Typo="Typo.subtitle2" Class="mt-4">Khung giờ hoạt động (80% thao tác nằm giữa P10 và P90)</MudText>
             <MudSimpleTable Dense="true" Hover="true">
@@ -131,8 +131,10 @@
                                      MaxItems="20" ToStringFunc="AutocompleteDisplayHelper.GetDisplayString<EnumOption>" />
                 </div>
             </div>
+            @* MudBlazor's heatmap ignores MatchBoundsToSize and keeps a 650×350 viewBox, so its width
+               follows the height: 560px tall ≈ 1040px wide. *@
             <MudChart ChartType="ChartType.HeatMap" ChartSeries="@heatmapSeries" XAxisLabels="@DashboardAggregator.HourLabels"
-                      Width="100%" Height="320px" />
+                      Width="100%" Height="560px" />
         </MudPaper>
 
         <ManifestLifecycleSection Data="snapshot.Data" />
@@ -160,7 +162,8 @@
     private static readonly IReadOnlyList<EnumOption> TrendTypeOptions = [new(AllTypes, "Tất cả loại"), .. DashboardEventType.Options];
 
     private readonly CancellationTokenSource disposeCts = new();
-    private readonly AxisChartOptions axisOptions = new() { XAxisLabelRotation = 45 };
+    private readonly AxisChartOptions axisOptions = DashboardChartOptions.Axis(rotateLabels: true);
+    private readonly AxisChartOptions plainAxisOptions = DashboardChartOptions.Axis();
     private readonly ChartOptions percentOptions = new() { YAxisFormat = "0'%'" };
 
     private EnumOption? selectedPreset = DashboardRangePreset.Options.First(x => x.Value == DashboardRangePreset.Last30Days);

@@ -92,7 +92,7 @@
     [Parameter, EditorRequired]
     public ReportDataSet Data { get; set; } = ReportDataSet.Empty;
 
-    private readonly AxisChartOptions axisOptions = new() { XAxisLabelRotation = 45 };
+    private readonly AxisChartOptions axisOptions = DashboardChartOptions.Axis(rotateLabels: true);
     private ReportDataSet? lastData;
     private EnumOption? selectedType = DashboardEventType.Options[0];
     private string? actorFilter;

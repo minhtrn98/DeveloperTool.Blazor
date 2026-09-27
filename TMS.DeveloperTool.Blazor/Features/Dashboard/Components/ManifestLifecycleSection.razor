@@ -33,7 +33,7 @@
     </MudGrid>
 
     <MudText Typo="Typo.subtitle2">Phân bố thời gian (số sổ phát)</MudText>
-    <MudChart ChartType="ChartType.Bar" ChartSeries="@series" XAxisLabels="@labels" Width="100%" Height="300px" />
+    <MudChart ChartType="ChartType.Bar" ChartSeries="@series" XAxisLabels="@labels" Width="100%" Height="300px" AxisChartOptions="axisOptions" />
 </MudPaper>
 
 @code {
@@ -43,6 +43,7 @@
     [Parameter, EditorRequired]
     public ReportDataSet Data { get; set; } = ReportDataSet.Empty;
 
+    private readonly AxisChartOptions axisOptions = DashboardChartOptions.Axis();
     private ReportDataSet? lastData;
     private int total;
     private int withArrival;

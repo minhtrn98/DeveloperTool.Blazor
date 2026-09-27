@@ -4,9 +4,11 @@
 @using TMS.DeveloperTool.Blazor.Features.Report.Services
 
 <MudPaper Elevation="2" Class="pa-4 mb-4">
-    <MudText Typo="Typo.h6">Bàn giao xuống hàng: thời gian NVKT nhận</MudText>
+    <MudText Typo="Typo.h6">Bàn giao xuống hàng: tạo mã → đã nhận → đã xác nhận</MudText>
     <MudText Typo="Typo.caption" Class="mb-3 d-block">
-        Chỉ tính mã bàn giao được tạo trong khoảng đã chọn. NVKT nhận theo 2 cách: [ReceiveUnloadingHandover] (nhận) hoặc [ConfirmUnloadingHandover] (nhận kèm commit kiện), nên cả hai đều đo từ lúc tạo. "Chờ quá 4h" là mã chưa được nhận theo cách nào dù đã tạo hơn 4 giờ.
+        Chỉ tính mã bàn giao được tạo trong khoảng đã chọn; thời gian đo từ lúc tạo mã.
+        "Đã nhận" là log [ConfirmUnloadingHandover], "Đã xác nhận" là log [ReceiveUnloadingHandover] (luôn xảy ra sau).
+        "Chờ quá 4h" là mã chưa có bước nào dù đã tạo hơn 4 giờ.
     </MudText>
 
     <MudGrid Spacing="2" Class="mb-2">
@@ -34,7 +36,7 @@
         <MudItem xs="12" md="7">
             <MudText Typo="Typo.subtitle2">Phân bố thời gian chờ (số mã bàn giao)</MudText>
             <MudChart ChartType="ChartType.Bar" ChartSeries="@durationSeries" XAxisLabels="@durationLabels"
-                      Width="100%" Height="300px" />
+                      Width="100%" Height="300px" AxisChartOptions="axisOptions" />
         </MudItem>
         <MudItem xs="12" md="5">
             <MudText Typo="Typo.subtitle2">Thống kê thời gian</MudText>
@@ -43,7 +45,7 @@
                     <tr><th>Giai đoạn</th><th>Số mã</th><th>TB</th><th>Trung vị</th><th>P90</th><th>Max</th></tr>
                 </thead>
                 <tbody>
-                    @foreach ((string name, DurationStats stats) in new[] { ("Tạo → nhận", toReceive), ("Tạo → xác nhận", toConfirm), ("Tạo → xử lý đầu tiên", toFirstHandled) })
+                    @foreach ((string name, DurationStats stats) in new[] { ("Tạo → nhận", toReceive), ("Tạo → xác nhận", toConfirm) })
                     {
                         <tr>
                             <td>@name</td>
@@ -70,6 +72,7 @@
     [Parameter, EditorRequired]
     public int StaleCount { get; set; }
 
+    private readonly AxisChartOptions axisOptions = DashboardChartOptions.Axis();
     private ReportDataSet? lastData;
     private int created;
     private long items;
@@ -77,7 +80,6 @@
     private int confirmed;
     private DurationStats toReceive = DurationStats.Empty;
     private DurationStats toConfirm = DurationStats.Empty;
-    private DurationStats toFirstHandled = DurationStats.Empty;
     private List<ChartSeries> durationSeries = [];
     private string[] durationLabels = [];
 
@@ -91,16 +93,20 @@
         lastData = Data;
         created = Data.HandoverDays.Sum(x => x.Created);
         items = Data.HandoverDays.Sum(x => x.Items);
-        received = Data.HandoverDays.Sum(x => x.Received);
-        confirmed = Data.HandoverDays.Sum(x => x.Confirmed);
+
+        // Business steps are create → "đã nhận" → "đã xác nhận", but the logs are named the other
+        // way round: [ConfirmUnloadingHandover] (confirm_* columns) always comes first and
+        // [ReceiveUnloadingHandover] (received_* columns) second. The DB keeps the log names; only
+        // this section maps confirm_* → "nhận" and received_* → "xác nhận".
+        received = Data.HandoverDays.Sum(x => x.Confirmed);
+        confirmed = Data.HandoverDays.Sum(x => x.Received);
 
         double[] edges = DailyReportAggregator.DurationEdgesSeconds;
-        toReceive = DurationStats.FromSeconds(DashboardAggregator.BuildHistogramStats(Data.Histograms, ReportMetric.HandoverReceive, edges));
-        toConfirm = DurationStats.FromSeconds(DashboardAggregator.BuildHistogramStats(Data.Histograms, ReportMetric.HandoverConfirm, edges));
-        toFirstHandled = DurationStats.FromSeconds(DashboardAggregator.BuildHistogramStats(Data.Histograms, ReportMetric.HandoverFirstHandled, edges));
+        toReceive = DurationStats.FromSeconds(DashboardAggregator.BuildHistogramStats(Data.Histograms, ReportMetric.HandoverConfirm, edges));
+        toConfirm = DurationStats.FromSeconds(DashboardAggregator.BuildHistogramStats(Data.Histograms, ReportMetric.HandoverReceive, edges));
 
-        BucketedCounts receiveBuckets = DashboardAggregator.Rebucket(Data.Histograms, ReportMetric.HandoverReceive, SecondEdges, FormatSeconds);
-        BucketedCounts confirmBuckets = DashboardAggregator.Rebucket(Data.Histograms, ReportMetric.HandoverConfirm, SecondEdges, FormatSeconds);
+        BucketedCounts receiveBuckets = DashboardAggregator.Rebucket(Data.Histograms, ReportMetric.HandoverConfirm, SecondEdges, FormatSeconds);
+        BucketedCounts confirmBuckets = DashboardAggregator.Rebucket(Data.Histograms, ReportMetric.HandoverReceive, SecondEdges, FormatSeconds);
         durationLabels = receiveBuckets.Labels;
         durationSeries =
         [

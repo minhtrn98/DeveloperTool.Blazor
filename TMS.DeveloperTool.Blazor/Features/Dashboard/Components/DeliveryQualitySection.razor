@@ -23,7 +23,8 @@
             </MudGrid>
 
             <MudText Typo="Typo.subtitle2">Phân bố khoảng cách (số check-in)</MudText>
-            <MudChart ChartType="ChartType.Bar" ChartSeries="@distanceSeries" XAxisLabels="@distanceLabels" Width="100%" Height="260px" />
+            <MudChart ChartType="ChartType.Bar" ChartSeries="@distanceSeries" XAxisLabels="@distanceLabels" Width="100%" Height="260px"
+                      AxisChartOptions="axisOptions" />
         </MudPaper>
     </MudItem>
 
@@ -67,6 +68,7 @@
     [Parameter, EditorRequired]
     public ReportDataSet Data { get; set; } = ReportDataSet.Empty;
 
+    private readonly AxisChartOptions axisOptions = DashboardChartOptions.Axis();
     private ReportDataSet? lastData;
     private int arrivals;
     private int gpsValid;
