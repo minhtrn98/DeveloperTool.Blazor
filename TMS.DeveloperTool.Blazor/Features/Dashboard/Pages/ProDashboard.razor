@@ -132,9 +132,17 @@
                 </div>
             </div>
             @* MudBlazor's heatmap ignores MatchBoundsToSize and keeps a 650×350 viewBox, so its width
-               follows the height: 560px tall ≈ 1040px wide. *@
-            <MudChart ChartType="ChartType.HeatMap" ChartSeries="@heatmapSeries" XAxisLabels="@DashboardAggregator.HourLabels"
-                      Width="100%" Height="560px" />
+               follows the height: 560px tall ≈ 1040px wide.
+               MudHeatMapCell registers itself once and is never removed, so the chart is re-keyed on
+               every rebuild to drop the previous set of grey zero cells. *@
+            <MudChart @key="heatmapVersion" ChartType="ChartType.HeatMap" ChartSeries="@heatmapSeries"
+                      XAxisLabels="@DashboardAggregator.HourLabels" ChartOptions="heatmapOptions" Width="100%" Height="560px">
+                @* An (empty) ChildContent makes the heatmap skip its value label for the cell. *@
+                @foreach ((int row, int column) in heatmapZeroCells)
+                {
+                    <MudHeatMapCell Row="row" Column="column" MudColor="ZeroCellColor" ChildContent="EmptyCellContent" />
+                }
+            </MudChart>
         </MudPaper>
 
         <ManifestLifecycleSection Data="snapshot.Data" />
@@ -165,6 +173,7 @@
     private readonly AxisChartOptions axisOptions = DashboardChartOptions.Axis(rotateLabels: true);
     private readonly AxisChartOptions plainAxisOptions = DashboardChartOptions.Axis();
     private readonly ChartOptions percentOptions = new() { YAxisFormat = "0'%'" };
+    private readonly ChartOptions heatmapOptions = new() { ValueFormatString = "0" };
 
     private EnumOption? selectedPreset = DashboardRangePreset.Options.First(x => x.Value == DashboardRangePreset.Last30Days);
     private EnumOption? selectedGranularity = DashboardGranularity.Options[0];
@@ -185,6 +194,11 @@
     private List<ChartSeries> hourSeries = [];
     private List<TimeOfDayStats> timeOfDayStats = [];
     private List<ChartSeries> heatmapSeries = [];
+    private List<(int Row, int Column)> heatmapZeroCells = [];
+    private int heatmapVersion;
+
+    private static readonly MudBlazor.Utilities.MudColor ZeroCellColor = new(Colors.Gray.Default);
+    private static readonly RenderFragment EmptyCellContent = _ => { };
 
     protected override async Task OnInitializedAsync()
     {
@@ -359,5 +373,12 @@
         heatmapSeries = grid
             .Select((row, index) => new ChartSeries { Name = DashboardAggregator.WeekdayLabels[index], Data = row })
             .ToList();
+        heatmapZeroCells = grid
+            .SelectMany((row, rowIndex) => row
+                .Select((value, column) => (Value: value, Column: column))
+                .Where(x => x.Value == 0)
+                .Select(x => (rowIndex, x.Column)))
+            .ToList();
+        heatmapVersion++;
     }
 }
