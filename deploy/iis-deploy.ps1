@@ -4,13 +4,15 @@
 
 .DESCRIPTION
     Drops app_offline.htm first so IIS releases the locked DLLs, mirrors the publish output
-    (keeping App_Data and logs), then removes app_offline.htm.
-    The site runs with ASPNETCORE_ENVIRONMENT=Local (see web.config), so appsettings.Local.json is deployed as-is.
+    (keeping App_Data, logs and the server's appsettings.Local.json), then removes app_offline.htm.
+    The site runs with ASPNETCORE_ENVIRONMENT=Local (see web.config). appsettings.Local.json is git-ignored,
+    so CI builds don't have it: the server copy is kept unless -IncludeLocalSettings pushes your local one.
 
     TargetPath can be a local folder or a UNC share, e.g. \\tms-server\d$\TMS\Deployments\TMS.DeveloperTool.Blazor
 #>
 param(
-    [string]$TargetPath = "D:\TMS\Deployments\TMS.DeveloperTool.Blazor"
+    [string]$TargetPath = "D:\TMS\Deployments\TMS.DeveloperTool.Blazor",
+    [switch]$IncludeLocalSettings
 )
 
 $ErrorActionPreference = "Stop"
@@ -32,8 +34,16 @@ try {
     # /MIR mirrors the publish output; /XD and /XF keep server-only data out of the mirror.
     robocopy $publishDir $TargetPath /MIR /R:3 /W:2 /NFL /NDL /NP `
         /XD (Join-Path $TargetPath "App_Data") (Join-Path $TargetPath "logs") `
-        /XF app_offline.htm
+        /XF app_offline.htm appsettings.Local.json
     if ($LASTEXITCODE -ge 8) { throw "robocopy failed with exit code $LASTEXITCODE" }
+
+    $localSettings = Join-Path $publishDir "appsettings.Local.json"
+    if ($IncludeLocalSettings) {
+        if (-not (Test-Path $localSettings)) { throw "appsettings.Local.json not found in publish output" }
+        Copy-Item $localSettings $TargetPath -Force
+    } elseif (-not (Test-Path (Join-Path $TargetPath "appsettings.Local.json"))) {
+        Write-Warning "appsettings.Local.json is missing on the target; run once with -IncludeLocalSettings."
+    }
 }
 finally {
     Remove-Item $appOffline -Force -ErrorAction SilentlyContinue
