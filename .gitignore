@@ -494,3 +494,5 @@ private.pem
 
 # LSCache files
 *.lscache
+# Data Protection keys
+TMS.DeveloperTool.Blazor/App_Data/keys/
