@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddSettingsAndValidate<SignozProOptions>(config);
         services.AddSettingsAndValidate<ReportAggregationOptions>(config);
         services.AddSettingsAndValidate<RouteStopTraceLogCleanupOptions>(config);
+        services.AddSettingsAndValidate<DeliveryArrivalLocationFillOptions>(config);
 
         // Default BackgroundServiceExceptionBehavior is StopHost — an unhandled exception in
         // any single BackgroundService (e.g. SignozProSyncJob) would otherwise crash this

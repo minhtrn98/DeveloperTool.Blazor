@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"d:\\\\TMS\\\\Projects\\\\TMS.DeveloperTool.Blazor\\\\\" -Filter Features)",
+      "Bash(dir d:\\\\TMS\\\\Projects\\\\TMS.DeveloperTool.Blazor\\\\Features /s /b /ad)",
+      "Bash(dir d:\\\\TMS\\\\Projects\\\\TMS.DeveloperTool.Blazor\\\\Infrastructure /s /b /ad)",
+      "Bash(cd \"d:\\\\TMS\\\\Projects\\\\TMS.DeveloperTool.Blazor\\\\TMS.DeveloperTool.Blazor\" && find . -iname \"ServiceCollectionExtensions.cs\" -o -iname \"CLAUDE.md\" 2>/dev/null; find .. -maxdepth 1 -iname \"CLAUDE.md\")",
+      "Read(//d/TMS/Projects/**)",
+      "Bash(dotnet build *)",
+      "Bash(curl -s http://localhost:5000/pickup-tasks/reattribution --max-time 15)"
+    ]
+  }
+}

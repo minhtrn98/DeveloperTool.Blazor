@@ -126,6 +126,7 @@ CREATE INDEX IF NOT EXISTS idx_pro_route_stop_trace_logs_vehicle_id ON pro.route
 CREATE INDEX IF NOT EXISTS idx_pro_route_stop_trace_logs_assignment_id ON pro.route_stop_trace_logs (assignment_id, log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_pro_route_stop_trace_logs_action_object_id ON pro.route_stop_trace_logs (action_object_id, log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_pro_route_stop_trace_logs_log_timestamp ON pro.route_stop_trace_logs (log_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_pro_route_stop_trace_logs_delivery_arrival_trace_id ON pro.route_stop_trace_logs (trace_id) WHERE action = 'DeliveryArrival';
 CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_pickup_task_trace_logs_log_id ON pro.pickup_task_trace_logs (log_id);
 CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_trace_logs_pickup_task_id ON pro.pickup_task_trace_logs (pickup_task_id, log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_trace_logs_delivery_line_id ON pro.pickup_task_trace_logs (delivery_line_id, log_timestamp DESC);
@@ -278,6 +279,40 @@ CREATE INDEX IF NOT EXISTS idx_pro_delivery_arrival_logs_order_id ON pro.deliver
 CREATE INDEX IF NOT EXISTS idx_pro_delivery_arrival_logs_task_id ON pro.delivery_arrival_logs (task_id);
 CREATE INDEX IF NOT EXISTS idx_pro_delivery_arrival_logs_vehicle_id ON pro.delivery_arrival_logs (vehicle_id, log_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_pro_delivery_arrival_logs_actor ON pro.delivery_arrival_logs (actor, log_timestamp DESC);
+
+-- Location columns for checking wrong-location deliveries (every arrival, any gpsValid):
+--   device_*  : driver's device at check-in (log attributes Lat/Lng, 3 decimals), set by the sync
+--   vehicle_* : Latitude/Longitude of the same-trace route_stop_trace_logs row with action 'DeliveryArrival'
+--   order_*   : order's configured location from order_location_logs (latest at/before the arrival, else the
+--               first after); order_location_at is that log's time
+-- vehicle_* and order_* are filled by DeliveryArrivalLocationFillJob; null until their source is synced.
+ALTER TABLE pro.delivery_arrival_logs ADD COLUMN IF NOT EXISTS device_lat NUMERIC(10, 7) NULL;
+ALTER TABLE pro.delivery_arrival_logs ADD COLUMN IF NOT EXISTS device_lng NUMERIC(10, 7) NULL;
+ALTER TABLE pro.delivery_arrival_logs ADD COLUMN IF NOT EXISTS vehicle_lat NUMERIC(10, 7) NULL;
+ALTER TABLE pro.delivery_arrival_logs ADD COLUMN IF NOT EXISTS vehicle_lng NUMERIC(10, 7) NULL;
+ALTER TABLE pro.delivery_arrival_logs ADD COLUMN IF NOT EXISTS order_lat NUMERIC(10, 7) NULL;
+ALTER TABLE pro.delivery_arrival_logs ADD COLUMN IF NOT EXISTS order_lng NUMERIC(10, 7) NULL;
+ALTER TABLE pro.delivery_arrival_logs ADD COLUMN IF NOT EXISTS order_location_at TIMESTAMPTZ NULL;
+CREATE INDEX IF NOT EXISTS idx_pro_delivery_arrival_logs_trace_id ON pro.delivery_arrival_logs (trace_id);
+
+-- "[ORDER-LOCATION] Upserted" — configured delivery location of an order (lat/lng parsed from the body, full precision).
+CREATE TABLE IF NOT EXISTS pro.order_location_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    log_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    span_id TEXT NOT NULL,
+    log_timestamp TIMESTAMPTZ NOT NULL,
+    order_id TEXT NOT NULL DEFAULT '',
+    month DATE NULL,
+    lat NUMERIC(10, 7) NULL,
+    lng NUMERIC(10, 7) NULL,
+    source TEXT NOT NULL DEFAULT '',
+    env TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_pro_order_location_logs_log_id ON pro.order_location_logs (log_id);
+CREATE INDEX IF NOT EXISTS idx_pro_order_location_logs_order_id ON pro.order_location_logs (order_id, log_timestamp DESC);
 
 CREATE TABLE IF NOT EXISTS pro.delivery_session_commit_logs (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

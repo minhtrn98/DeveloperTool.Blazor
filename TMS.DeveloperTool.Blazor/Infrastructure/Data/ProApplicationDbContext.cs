@@ -16,6 +16,7 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
     public DbSet<DeliveryFailureLog> DeliveryFailureLogs { get; set; }
     public DbSet<DeliveryTransferLog> DeliveryTransferLogs { get; set; }
     public DbSet<DeliveryArrivalLog> DeliveryArrivalLogs { get; set; }
+    public DbSet<OrderLocationLog> OrderLocationLogs { get; set; }
     public DbSet<DeliverySessionCommitLog> DeliverySessionCommitLogs { get; set; }
     public DbSet<UnloadingHandoverLog> UnloadingHandoverLogs { get; set; }
 
@@ -58,6 +59,9 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
 
         modelBuilder.Entity<DeliveryArrivalLog>()
             .ToTable("delivery_arrival_logs");
+
+        modelBuilder.Entity<OrderLocationLog>()
+            .ToTable("order_location_logs");
 
         modelBuilder.Entity<DeliverySessionCommitLog>()
             .ToTable("delivery_session_commit_logs");
@@ -246,7 +250,31 @@ public class ProApplicationDbContext(DbContextOptions<ProApplicationDbContext> o
             entity.Property(e => e.DistanceMeters).HasColumnName("distance_meters").HasPrecision(12, 2);
             entity.Property(e => e.IsGpsValid).HasColumnName("is_gps_valid");
             entity.Property(e => e.Superseded).HasColumnName("superseded");
+            entity.Property(e => e.DeviceLat).HasColumnName("device_lat").HasPrecision(10, 7);
+            entity.Property(e => e.DeviceLng).HasColumnName("device_lng").HasPrecision(10, 7);
+            entity.Property(e => e.VehicleLat).HasColumnName("vehicle_lat").HasPrecision(10, 7);
+            entity.Property(e => e.VehicleLng).HasColumnName("vehicle_lng").HasPrecision(10, 7);
+            entity.Property(e => e.OrderLat).HasColumnName("order_lat").HasPrecision(10, 7);
+            entity.Property(e => e.OrderLng).HasColumnName("order_lng").HasPrecision(10, 7);
+            entity.Property(e => e.OrderLocationAt).HasColumnName("order_location_at");
             entity.Property(e => e.Actor).HasColumnName("actor");
+            entity.Property(e => e.Env).HasColumnName("env");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(e => e.LogId).IsUnique();
+        });
+
+        modelBuilder.Entity<OrderLocationLog>(entity =>
+        {
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.LogId).HasColumnName("log_id");
+            entity.Property(e => e.TraceId).HasColumnName("trace_id");
+            entity.Property(e => e.SpanId).HasColumnName("span_id");
+            entity.Property(e => e.LogTimestamp).HasColumnName("log_timestamp");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.Month).HasColumnName("month");
+            entity.Property(e => e.Lat).HasColumnName("lat").HasPrecision(10, 7);
+            entity.Property(e => e.Lng).HasColumnName("lng").HasPrecision(10, 7);
+            entity.Property(e => e.Source).HasColumnName("source");
             entity.Property(e => e.Env).HasColumnName("env");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.LogId).IsUnique();

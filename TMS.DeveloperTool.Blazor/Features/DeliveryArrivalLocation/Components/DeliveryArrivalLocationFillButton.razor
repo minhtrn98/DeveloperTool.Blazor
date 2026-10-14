@@ -1,0 +1,50 @@
+@using TMS.DeveloperTool.Blazor.Features.DeliveryArrivalLocation.Models
+@using TMS.DeveloperTool.Blazor.Features.DeliveryArrivalLocation.Services
+@inject DeliveryArrivalLocationFillService FillService
+@inject DeliveryArrivalLocationFillOptions FillOptions
+@inject ISnackbar Snackbar
+@inject ILogger<DeliveryArrivalLocationFillButton> Logger
+
+<MudTooltip Text="@($"Điền vị trí xe và vị trí đơn cho check-in giao hàng {FillOptions.LookbackDays} ngày gần nhất")">
+    <MudButton OnClick="FillAsync"
+               Variant="Variant.Filled"
+               Color="Color.Primary"
+               Size="Size.Small"
+               Disabled="_isRunning"
+               StartIcon="@(_isRunning ? null : Icons.Material.Filled.MyLocation)">
+        @if (_isRunning)
+        {
+            <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="mr-2" />
+            <span>Đang fill...</span>
+        }
+        else
+        {
+            <span>Fill vị trí check-in</span>
+        }
+    </MudButton>
+</MudTooltip>
+
+@code {
+    private bool _isRunning;
+
+    private async Task FillAsync()
+    {
+        _isRunning = true;
+        try
+        {
+            DeliveryArrivalLocationFillResult result = await FillService.FillAsync(CancellationToken.None);
+            Snackbar.Add(
+                $"Đã fill vị trí xe cho {result.VehicleFilled} và vị trí đơn cho {result.OrderFilled} check-in.",
+                Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Manual delivery arrival location fill failed.");
+            Snackbar.Add($"Fill vị trí check-in thất bại: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isRunning = false;
+        }
+    }
+}

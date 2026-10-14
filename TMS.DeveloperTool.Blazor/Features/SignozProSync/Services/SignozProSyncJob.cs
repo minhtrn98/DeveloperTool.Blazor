@@ -3,7 +3,7 @@ using TMS.DeveloperTool.Blazor.Features.SignozProSync.Models;
 namespace TMS.DeveloperTool.Blazor.Features.SignozProSync.Services;
 
 /// <summary>
-/// Every 5 minutes, pulls the last window of RouteStop/PickupTask/CommitDeliveryManifest/CompleteDeliveryTask/RecordDeliveryFailure/(External)CreateDeliveryTransfer/RecordDeliveryArrival/CommitCreateDeliverySession/CreateUnloadingHandover/ReceiveUnloadingHandover/ConfirmUnloadingHandover trace logs from SigNoz Pro
+/// Every 5 minutes, pulls the last window of RouteStop/PickupTask/CommitDeliveryManifest/CompleteDeliveryTask/RecordDeliveryFailure/(External)CreateDeliveryTransfer/ORDER-LOCATION/RecordDeliveryArrival/CommitCreateDeliverySession/CreateUnloadingHandover/ReceiveUnloadingHandover/ConfirmUnloadingHandover trace logs from SigNoz Pro
 /// (the Production monitor) and stores any new rows into the "pro" schema. Each page returned
 /// by SigNoz is saved as soon as it arrives (instead of buffering the whole window in memory),
 /// and the shared DbContext's change tracker is cleared right after — keeps a long backfill
@@ -120,6 +120,13 @@ public sealed class SignozProSyncJob(
             await queryService.QueryDriverDeliveryTransferAsync(start, end, SaveDeliveryTransferPageAsync, cancellationToken)
             + await queryService.QueryEmployeeDeliveryTransferAsync(start, end, SaveDeliveryTransferPageAsync, cancellationToken);
 
+        int orderLocationSaved = 0;
+        int orderLocationFetched = await queryService.QueryOrderLocationAsync(start, end, async (page, ct) =>
+        {
+            orderLocationSaved += await ingestionService.SaveIfNewAsync(dbContext, page, ct);
+            SignozProTraceIngestionService.ClearTracking(dbContext);
+        }, cancellationToken);
+
         int deliveryArrivalSaved = 0;
         int deliveryArrivalFetched = await queryService.QueryDeliveryArrivalAsync(start, end, async (page, ct) =>
         {
@@ -170,6 +177,7 @@ public sealed class SignozProSyncJob(
             "{TaskCompleteCount} delivery-task-complete ({TaskCompleteSaved} new), " +
             "{DeliveryFailureCount} delivery-failure ({DeliveryFailureSaved} new), " +
             "{DeliveryTransferCount} delivery-transfer ({DeliveryTransferSaved} new), " +
+            "{OrderLocationCount} order-location ({OrderLocationSaved} new), " +
             "{DeliveryArrivalCount} delivery-arrival ({DeliveryArrivalSaved} new), " +
             "{DeliverySessionCommitCount} delivery-session-commit ({DeliverySessionCommitSaved} new), " +
             "{UnloadingHandoverCount} unloading-handover ({UnloadingHandoverSaved} new), " +
@@ -182,6 +190,7 @@ public sealed class SignozProSyncJob(
             taskCompleteFetched, taskCompleteSaved,
             deliveryFailureFetched, deliveryFailureSaved,
             deliveryTransferFetched, deliveryTransferSaved,
+            orderLocationFetched, orderLocationSaved,
             deliveryArrivalFetched, deliveryArrivalSaved,
             deliverySessionCommitFetched, deliverySessionCommitSaved,
             unloadingHandoverFetched, unloadingHandoverSaved,

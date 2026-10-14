@@ -49,6 +49,11 @@ public sealed class LogRowData
     [JsonPropertyName("span_id")]
     public string SpanId { get; set; } = string.Empty;
 
+    // The rendered message. Numeric attributes come back rounded to 3 decimals, so values that
+    // need full precision (e.g. ORDER-LOCATION lat/long) are parsed from here instead.
+    [JsonPropertyName("body")]
+    public string Body { get; set; } = string.Empty;
+
     [JsonPropertyName("attributes_string")]
     public Dictionary<string, string> AttributesString { get; set; } = [];
 

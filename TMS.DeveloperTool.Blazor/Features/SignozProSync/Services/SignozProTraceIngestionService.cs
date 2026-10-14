@@ -162,14 +162,42 @@ public sealed class SignozProTraceIngestionService(IDbContextFactory<ProApplicat
         return savedCount;
     }
 
+    /// <summary>
+    /// Saves arrivals with the device position only; vehicle and order positions are filled later
+    /// by <see cref="DeliveryArrivalLocation.Services.DeliveryArrivalLocationFillService"/>.
+    /// </summary>
     public async Task<int> SaveIfNewAsync(ProApplicationDbContext dbContext, IReadOnlyList<DeliveryArrivalLogEntry> entries, CancellationToken cancellationToken)
     {
         int savedCount = 0;
         foreach (DeliveryArrivalLogEntry entry in entries)
         {
             int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
-                INSERT INTO pro.delivery_arrival_logs (log_id, trace_id, span_id, log_timestamp, delivery_manifest_code, arrival_id, task_id, order_id, vehicle_id, distance_meters, is_gps_valid, superseded, actor, env, created_at)
-                VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.DeliveryManifestCode}, {entry.ArrivalId}, {entry.TaskId}, {entry.OrderId}, {entry.VehicleId}, {entry.DistanceMeters}, {entry.IsGpsValid}, {entry.Superseded}, {entry.Actor}, {Env}, {DateTimeOffset.UtcNow})
+                INSERT INTO pro.delivery_arrival_logs (log_id, trace_id, span_id, log_timestamp, delivery_manifest_code, arrival_id, task_id, order_id, vehicle_id, distance_meters, is_gps_valid, superseded, device_lat, device_lng, actor, env, created_at)
+                VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.DeliveryManifestCode}, {entry.ArrivalId}, {entry.TaskId}, {entry.OrderId}, {entry.VehicleId}, {entry.DistanceMeters}, {entry.IsGpsValid}, {entry.Superseded}, {entry.DeviceLat}, {entry.DeviceLng}, {entry.Actor}, {Env}, {DateTimeOffset.UtcNow})
+                ON CONFLICT (log_id) DO NOTHING;
+                """, cancellationToken);
+
+            if (rowsAffected > 0)
+            {
+                savedCount++;
+            }
+        }
+
+        return savedCount;
+    }
+
+    /// <summary>
+    /// Saves "[ORDER-LOCATION] Upserted" rows into <c>order_location_logs</c>; they are applied to
+    /// arrivals by <see cref="DeliveryArrivalLocation.Services.DeliveryArrivalLocationFillService"/>.
+    /// </summary>
+    public async Task<int> SaveIfNewAsync(ProApplicationDbContext dbContext, IReadOnlyList<OrderLocationLogEntry> entries, CancellationToken cancellationToken)
+    {
+        int savedCount = 0;
+        foreach (OrderLocationLogEntry entry in entries)
+        {
+            int rowsAffected = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO pro.order_location_logs (log_id, trace_id, span_id, log_timestamp, order_id, month, lat, lng, source, env, created_at)
+                VALUES ({entry.LogId}, {entry.TraceId}, {entry.SpanId}, {entry.Timestamp.ToUniversalTime()}, {entry.OrderId}, {entry.Month}, {entry.Lat}, {entry.Lng}, {entry.Source}, {Env}, {DateTimeOffset.UtcNow})
                 ON CONFLICT (log_id) DO NOTHING;
                 """, cancellationToken);
 

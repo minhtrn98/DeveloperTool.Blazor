@@ -33,6 +33,27 @@ public sealed class DeliveryArrivalLog
     /// <summary>Check-in lại ({Superseded}); bool lưu 0/1.</summary>
     public int Superseded { get; set; }
 
+    /// <summary>Vĩ độ thiết bị (điện thoại tài xế) lúc check-in (attributes Lat, 3 chữ số thập phân).</summary>
+    public decimal? DeviceLat { get; set; }
+
+    /// <summary>Kinh độ thiết bị (điện thoại tài xế) lúc check-in (attributes Lng, 3 chữ số thập phân).</summary>
+    public decimal? DeviceLng { get; set; }
+
+    /// <summary>Vĩ độ xe lúc check-in (Latitude trong message detail của route stop DeliveryArrival cùng trace id); null khi chưa có.</summary>
+    public decimal? VehicleLat { get; set; }
+
+    /// <summary>Kinh độ xe lúc check-in (Longitude trong message detail của route stop DeliveryArrival cùng trace id); null khi chưa có.</summary>
+    public decimal? VehicleLng { get; set; }
+
+    /// <summary>Vĩ độ cấu hình của đơn (ORDER-LOCATION {Lat}); null khi chưa có.</summary>
+    public decimal? OrderLat { get; set; }
+
+    /// <summary>Kinh độ cấu hình của đơn (ORDER-LOCATION {Long}); null khi chưa có.</summary>
+    public decimal? OrderLng { get; set; }
+
+    /// <summary>Thời điểm log ORDER-LOCATION được dùng cho <see cref="OrderLat"/>/<see cref="OrderLng"/>.</summary>
+    public DateTimeOffset? OrderLocationAt { get; set; }
+
     /// <summary>Người thao tác (attributes_string.User).</summary>
     public string Actor { get; set; } = string.Empty;
 

@@ -1,4 +1,5 @@
 using TMS.DeveloperTool.Blazor.Features.Dashboard.Services;
+using TMS.DeveloperTool.Blazor.Features.DeliveryArrivalLocation.Services;
 using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services;
 using TMS.DeveloperTool.Blazor.Features.PickupTaskOrderSync.Services;
 using TMS.DeveloperTool.Blazor.Features.PickupTaskOrderTimeline.Services;
@@ -53,6 +54,7 @@ public static class ExternalApiServiceExtensions
         services.AddSingleton<SignozProSyncCheckpointStore>();
         services.AddScoped<SignozProQueryService>();
         services.AddScoped<SignozProTraceIngestionService>();
+        services.AddSingleton<DeliveryArrivalLocationFillService>();
 
         return services;
     }
@@ -72,6 +74,7 @@ public static class ExternalApiServiceExtensions
         services.AddHostedService<PickupTaskOrderSyncJob>();
         services.AddHostedService<DailyReportJob>();
         services.AddHostedService<RouteStopTraceLogCleanupJob>();
+        services.AddHostedService<DeliveryArrivalLocationFillJob>();
 
         return services;
     }

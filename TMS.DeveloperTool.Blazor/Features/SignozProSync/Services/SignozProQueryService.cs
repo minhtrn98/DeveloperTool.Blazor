@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using TMS.DeveloperTool.Blazor.Features.OrderStep1.Contracts;
 using TMS.DeveloperTool.Blazor.Features.OrderStep1.Models;
 using TMS.DeveloperTool.Blazor.Features.OrderStep1.Services;
@@ -20,7 +21,7 @@ namespace TMS.DeveloperTool.Blazor.Features.SignozProSync.Services;
 /// <see cref="LogQueryService.QueryAsync"/> — SigNoz has too many OrderStep1 events to poll in
 /// bulk without an id filter.
 /// </summary>
-public sealed class SignozProQueryService(
+public sealed partial class SignozProQueryService(
     IHttpClientFactory httpClientFactory,
     SignozProOptions signozProOptions,
     SignozProTokenProvider tokenProvider,
@@ -86,6 +87,13 @@ public sealed class SignozProQueryService(
     public Task<int> QueryDeliveryArrivalAsync(
         DateTimeOffset start, DateTimeOffset end, Func<List<DeliveryArrivalLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
         => QueryAsync($"message_template.text = '{DeliveryArrivalMessageTemplateText}'", ToDeliveryArrivalEntry, start, end, onPageAsync, cancellationToken);
+
+    private const string OrderLocationMessageTemplateText =
+        "{FL} - [ORDER-LOCATION] Upserted {OrderId} month={Month} lat={Lat} long={Long} source={Source} elapsedMs={ElapsedMs}";
+
+    public Task<int> QueryOrderLocationAsync(
+        DateTimeOffset start, DateTimeOffset end, Func<List<OrderLocationLogEntry>, CancellationToken, Task> onPageAsync, CancellationToken cancellationToken)
+        => QueryAsync($"message_template.text = '{OrderLocationMessageTemplateText}'", ToOrderLocationEntry, start, end, onPageAsync, cancellationToken);
 
     private const string DeliverySessionCommitMessageTemplateText =
         "{FL} - [CommitCreateDeliverySession] created {ManifestCount} manifest(s) [{Codes}] from pre-created handover; items={Count}, actor={Actor}";
@@ -373,8 +381,44 @@ public sealed class SignozProQueryService(
                 false => 0,
                 null => (int)GetNumberAttribute(row.Data, "Superseded")
             },
-            GetActor(row.Data));
+            GetActor(row.Data),
+            GetOptionalNumberAttribute(row.Data, "Lat"),
+            GetOptionalNumberAttribute(row.Data, "Lng"));
     }
+
+    // {FL} and {ElapsedMs} are deliberately ignored. {Month} is "yyyy-MM-dd" in attributes_string
+    // (the body renders it culture-formatted, e.g. "10/1/2026", so it isn't read from there).
+    internal static OrderLocationLogEntry? ToOrderLocationEntry(LogRow row)
+    {
+        if (row.Data is null)
+        {
+            return null;
+        }
+
+        Match bodyMatch = OrderLocationBodyRegex().Match(row.Data.Body);
+        DateOnly? month = DateOnly.TryParse(GetTextAttribute(row.Data, "Month"), CultureInfo.InvariantCulture, out DateOnly parsedMonth)
+            ? parsedMonth
+            : null;
+
+        return new OrderLocationLogEntry(
+            row.Data.Id,
+            row.Data.TraceId,
+            row.Data.SpanId,
+            row.Timestamp,
+            GetTextAttribute(row.Data, "OrderId"),
+            month,
+            ParseBodyNumber(bodyMatch, "lat") ?? GetOptionalNumberAttribute(row.Data, "Lat"),
+            ParseBodyNumber(bodyMatch, "long") ?? GetOptionalNumberAttribute(row.Data, "Long"),
+            GetTextAttribute(row.Data, "Source"));
+    }
+
+    [GeneratedRegex(@"\blat=(?<lat>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?) long=(?<long>-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)")]
+    private static partial Regex OrderLocationBodyRegex();
+
+    private static decimal? ParseBodyNumber(Match match, string group)
+        => match.Success && decimal.TryParse(match.Groups[group].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal value)
+            ? value
+            : null;
 
     // {FL} is deliberately ignored.
     internal static DeliverySessionCommitLogEntry? ToDeliverySessionCommitEntry(LogRow row)
@@ -483,6 +527,21 @@ public sealed class SignozProQueryService(
             && decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsed)
             ? parsed
             : 0m;
+    }
+
+    // Like GetNumberAttribute, but null instead of 0 when the attribute is absent — for values
+    // (coordinates) where 0 is a real, wrong answer.
+    private static decimal? GetOptionalNumberAttribute(LogRowData data, string key)
+    {
+        if (data.AttributesNumber.TryGetValue(key, out double number))
+        {
+            return (decimal)number;
+        }
+
+        return data.AttributesString.TryGetValue(key, out string? text)
+            && decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsed)
+            ? parsed
+            : null;
     }
 
     private static LogQueryRangeRequest BuildRequest(string filterExpression, DateTimeOffset start, DateTimeOffset end, int offset)
