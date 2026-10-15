@@ -164,6 +164,8 @@ CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_order_items_pickup_task_id_order_
 CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_order_items_order_id ON pro.pickup_task_order_items (order_id);
 CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_orders_trace_id ON pro.pickup_task_orders (trace_id);
 CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_order_items_trace_id ON pro.pickup_task_order_items (trace_id);
+CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_orders_created_at ON pro.pickup_task_orders (created_at);
+CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_order_items_created_at ON pro.pickup_task_order_items (created_at);
 
 ALTER TABLE pro.pickup_task_trace_logs ADD COLUMN IF NOT EXISTS is_processed BOOLEAN NOT NULL DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS idx_pro_pickup_task_trace_logs_unprocessed ON pro.pickup_task_trace_logs (log_timestamp, id) WHERE NOT is_processed;

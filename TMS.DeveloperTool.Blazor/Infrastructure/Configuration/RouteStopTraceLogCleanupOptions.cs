@@ -15,4 +15,11 @@ public sealed class RouteStopTraceLogCleanupOptions
     /// </summary>
     [Range(1, 365)]
     public int RetentionDays { get; init; } = 3;
+
+    /// <summary>
+    /// Number of most recent full Vietnam days of <c>pro.pickup_task_orders</c> and
+    /// <c>pro.pickup_task_order_items</c> kept (plus today), by <c>created_at</c>.
+    /// </summary>
+    [Range(1, 365)]
+    public int PickupTaskOrderRetentionDays { get; init; } = 14;
 }
